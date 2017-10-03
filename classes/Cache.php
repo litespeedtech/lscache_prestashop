@@ -22,9 +22,9 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-use LiteSpeedCacheDebugLog as DebugLog;
-use LiteSpeedCacheConfig as Conf;
 use LiteSpeedCache as LSC;
+use LiteSpeedCacheLog as LSLog;
+use LiteSpeedCacheConfig as Conf;
 
 class LiteSpeedCacheCore
 {
@@ -36,56 +36,21 @@ class LiteSpeedCacheCore
     private $cacheTags = array();
     private $purgeTags;
     private $config;
-    private $isDebug;
-    private $esiUrl = '';
     private $esiTtl;
+    private $curHeaders;
 
     public function __construct(LiteSpeedCacheConfig $config)
     {
         $this->config = $config;
-        $this->isDebug = $config->isDebug();
         $this->purgeTags = array('pub' => array(), 'priv' => array());
-    }
-
-    private function getEsiUrl($moduleName, $hookName)
-    {
-        if ($this->esiUrl == '') {
-            $context = Context::getContext();
-            $cookie = $context->cookie;
-            $esiparams = array('s' => $context->shop->id, 'm' => '_MODULE_', 'h' => '_HOOK_');
-            if (isset($cookie->iso_code_country)) {
-                $esiparams['ct'] = $cookie->iso_code_country;
-            }
-            if (isset($cookie->id_currency)) {
-                $esiparams['c'] = $cookie->id_currency;
-            }
-            if (isset($cookie->id_lang)) {
-                $esiparams['l'] = $cookie->id_lang;
-            }
-            $esiurl = $context->link->getModuleLink(LiteSpeedCache::MODULE_NAME, 'esi', $esiparams);
-            $baselink = $context->link->getBaseLink();
-
-            $this->esiUrl = str_replace($baselink, '/', $esiurl);
-        }
-        $url = str_replace(array('_MODULE_', '_HOOK_'), array($moduleName, $hookName), $this->esiUrl);
-        return $url;
-    }
-
-    public function getEsiInclude($module, $hookName)
-    {
-        $moduleName = $module->name;
-        $esiurl = $this->getEsiUrl($moduleName, $hookName);
-        $conf = $this->config->getEsiModuleConf($moduleName);
-        $tag = $conf['tag'];
-        $ptype = ($conf['priv'] == 1) ? 'private' : 'public';
-        $format = '<esi:include src=\'%s\' cache-control=\'no-vary,%s\' cache-tag=\'%s\'/>';
-        $esiInclude = sprintf($format, $esiurl, $ptype, $tag);
-        return $esiInclude;
+        $this->curHeaders = array(self::LSHEADER_CACHE_CONTROL => '',
+            self::LSHEADER_CACHE_TAG => '',
+            self::LSHEADER_PURGE => '');
     }
 
     public function setEsiTtl($ttl)
     {
-        $this->esiTtl = $ttl;
+        $this->esiTtl = $ttl; // todo: may retire
     }
 
     public function isCacheableRoute($controllerType, $controllerClass)
@@ -105,8 +70,19 @@ class LiteSpeedCacheCore
         }
         if ($reason) {
             $reason = 'Route not cacheable: ' . $controllerClass . ' - ' . $reason;
-        } elseif ($this->isDebug >= DebugLog::LEVEL_CACHE_ROUTE) {
-            DebugLog::log('route in defined cacheable controllers ' . $controllerClass, DebugLog::LEVEL_CACHE_ROUTE);
+        } elseif (_LITESPEED_DEBUG_ >= LSLog::LEVEL_CACHE_ROUTE) {
+            LSLog::log('route in defined cacheable controllers ' . $controllerClass, LSLog::LEVEL_CACHE_ROUTE);
+        }
+
+        // check purge by controller
+        if ($ptags = $this->config->isPurgeController($controllerClass)) {
+            // usually won't happen for both pub and priv together
+            if (!empty($ptags['pub'])) {
+                $this->purgeByTags($ptags['pub'], false, $controllerClass);
+            }
+            if (!empty($ptags['priv'])) {
+                $this->purgeByTags($ptags['priv'], true, $controllerClass);
+            }
         }
         return $reason;
     }
@@ -158,26 +134,30 @@ class LiteSpeedCacheCore
             return; // already initialized
         }
         if (!isset($params['controller'])) {
-            if ($this->isDebug >= DebugLog::LEVEL_UNEXPECTED) {
-                DebugLog::log('initCacheTagsByController - no controller in param', DebugLog::LEVEL_UNEXPECTED);
+            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED) {
+                LSLog::log('initCacheTagsByController - no controller in param', LSLog::LEVEL_UNEXPECTED);
             }
             return;
         }
         $controller = $params['controller'];
         $tag = null;
-        if (isset($params['entity'])) {
-            switch ($params['entity']) {
-                case 'product':
-                    if (method_exists($controller, 'getProduct')) {
-                        $tag = Conf::TAG_PREFIX_PRODUCT . $controller->getProduct()->id;
-                    }
-                    break;
-                case 'category':
-                    if (method_exists($controller, 'getCategory')) {
-                        $tag = Conf::TAG_PREFIX_CATEGORY . $controller->getCategory()->id;
-                    }
-                    break;
-            }
+        $entity = isset($params['entity']) ?
+                $params['entity'] // PS 1.7
+                : $controller->php_self; // PS 1.6
+
+        switch ($entity) {
+            case 'product':
+                if (method_exists($controller, 'getProduct')
+                        && ($p = $controller->getProduct()) != null) {
+                    $tag = Conf::TAG_PREFIX_PRODUCT . $p->id;
+                }
+                break;
+            case 'category':
+                if (method_exists($controller, 'getCategory')
+                        && ($c = $controller->getCategory()) != null) {
+                    $tag = Conf::TAG_PREFIX_CATEGORY . $c->id;
+                }
+                break;
         }
 
         if (!$tag && isset($params['id'])) {
@@ -203,41 +183,20 @@ class LiteSpeedCacheCore
 
         if ($tag) {
             $this->addCacheTags($tag);
-        } elseif ($this->isDebug >= DebugLog::LEVEL_UNEXPECTED) {
-            DebugLog::log('check what we have here - initCacheTagsByController', DebugLog::LEVEL_UNEXPECTED);
-        }
-    }
-
-    public function initCacheTagsByEntityId($entity, $id)
-    {
-        if (!empty($this->cacheTags)) {
-            return; // already initialized
-        }
-
-        $tag = null;
-        switch ($entity) {
-            case 'manufacturer':
-                $tag = Conf::TAG_PREFIX_MANUFACTURER . $id;
-                break;
-            case 'supplier':
-                $tag = Conf::TAG_PREFIX_SUPPLIER . $id;
-                break;
-        }
-
-        if ($tag) {
-            $this->addCacheTags($tag);
-        } elseif ($this->isDebug >= DebugLog::LEVEL_UNEXPECTED) {
-            DebugLog::log('check what we have here - initCacheTagsByEntityId' . $entity, DebugLog::LEVEL_UNEXPECTED);
+        } elseif (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED) {
+            LSLog::log('check what we have here - initCacheTagsByController', LSLog::LEVEL_UNEXPECTED);
         }
     }
 
     public function addCacheTags($tag)
     {
+        $old = count($this->cacheTags);
         if (is_array($tag)) {
             $this->cacheTags = array_unique(array_merge($this->cacheTags, $tag));
         } elseif (!in_array($tag, $this->cacheTags)) {
             $this->cacheTags[] = $tag;
         }
+        return (count($this->cacheTags) > $old);
     }
 
     // return 1: added, 0: already exists, 2: already has purgeall
@@ -266,30 +225,22 @@ class LiteSpeedCacheCore
         return $returnCode;
     }
 
-    public function purgeByEvent($event)
+    private function isNewPurgeTag($tag, $isPrivate)
     {
-        if ($this->isDebug >= DebugLog::LEVEL_PURGE_EVENT) {
-            DebugLog::log('purgeByEvent ' . $event, DebugLog::LEVEL_PURGE_EVENT);
+        $type = $isPrivate ? 'priv' : 'pub';
+        if (in_array('*', $this->purgeTags['pub'])
+            || in_array($tag, $this->purgeTags[$type])
+            || ($isPrivate && in_array('*', $this->purgeTags[$type]))) {
+            return false;
+        } else {
+            return true;
         }
-
-        $tags = $this->config->getPurgeTagsByEvent($event);
-        $added = false;
-        if (!empty($tags['pub']) && ($this->addPurgeTags($tags['pub'], false) == 1)) {
-            $added = true;
-        }
-        if (!empty($tags['priv']) && ($this->addPurgeTags($tags['priv'], true) == 1)) {
-            $added = true;
-        }
-        if ($added) {
-            $this->setPurgeHeader();
-        }
-        return $added;
     }
 
     public function purgeByTags($tags, $isPrivate, $from)
     {
-        if ($from && $this->isDebug >= DebugLog::LEVEL_PURGE_EVENT) {
-            DebugLog::log('purgeByTags from ' . $from, DebugLog::LEVEL_PURGE_EVENT);
+        if ($from && _LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
+            LSLog::log('purgeByTags from ' . $from, LSLog::LEVEL_PURGE_EVENT);
         }
 
         if ($this->addPurgeTags($tags, $isPrivate) == 1) {
@@ -297,133 +248,190 @@ class LiteSpeedCacheCore
         }
     }
 
-    public function purgeByProduct($id_product, $product, $isupdate, $from)
+    private function getPurgeTagsByProduct($id_product, $product, $isupdate)
     {
-        if ($from && $this->isDebug >= DebugLog::LEVEL_PURGE_EVENT) {
-            DebugLog::log('purgeByProduct id=' . $id_product . ' from ' . $from, DebugLog::LEVEL_PURGE_EVENT);
+        $pid = Conf::TAG_PREFIX_PRODUCT . $id_product;
+        if (!$this->isNewPurgeTag($pid, false)) {
+            return null; // has purge all or already added
         }
 
-        $added = $this->addPurgeTags(Conf::TAG_PREFIX_PRODUCT . $id_product, false);
-        if ($added != 1) {
-            return; // has purge all or already added
-        }
-        $tags = $this->config->getDefaultPurgeTagsByProduct();
+        $tags = array();
+        $tags['pub'] = $this->config->getDefaultPurgeTagsByProduct();
+        $tags['pub'][] = $pid;
         if ($product === null) {
             // populate product
             $product = new Product((int) $id_product);
         }
 
-        $tags[] = Conf::TAG_PREFIX_MANUFACTURER . $product->id_manufacturer;
-        $tags[] = Conf::TAG_PREFIX_SUPPLIER . $product->id_supplier;
+        $tags['pub'][] = Conf::TAG_PREFIX_MANUFACTURER . $product->id_manufacturer;
+        $tags['pub'][] = Conf::TAG_PREFIX_SUPPLIER . $product->id_supplier;
         if (!$isupdate) {
             // new or delete, also purge all suppliers and manufacturers list, as it shows # of products in it
-            $tags[] = Conf::TAG_PREFIX_MANUFACTURER;
-            $tags[] = Conf::TAG_PREFIX_SUPPLIER;
+            $tags['pub'][] = Conf::TAG_PREFIX_MANUFACTURER;
+            $tags['pub'][] = Conf::TAG_PREFIX_SUPPLIER;
         }
         $cats = $product->getCategories();
         if (!empty($cats)) {
             foreach ($cats as $catid) {
-                $tags[] = Conf::TAG_PREFIX_CATEGORY . $catid;
+                $tags['pub'][] = Conf::TAG_PREFIX_CATEGORY . $catid;
             }
         }
-        $this->addPurgeTags($tags, false);
-        $this->setPurgeHeader();
+        return $tags;
     }
 
-    public function purgeByCategory($category, $from)
+    private function getPurgeTagsByCategory($category)
     {
-        if ($from && $this->isDebug >= DebugLog::LEVEL_PURGE_EVENT) {
-            DebugLog::log('purgeByCategory from ' . $from, DebugLog::LEVEL_PURGE_EVENT);
-        }
-        $added = $this->addPurgeTags(Conf::TAG_PREFIX_CATEGORY . $category->id_category, false);
-        if ($added != 1) {
-            return; // has purge all or already added
+        $cid = Conf::TAG_PREFIX_CATEGORY . $category->id_category;
+        if (!$this->isNewPurgeTag($cid, false)) {
+            return null; // has purge all or already added
         }
 
-        $tags = $this->config->getDefaultPurgeTagsByCategory();
+        $tags = array();
+        $tags['pub'] = $this->config->getDefaultPurgeTagsByCategory();
+        $tags['pub'][] = $cid;
+
         if (!$category->is_root_category) {
             $cats = $category->getParentsCategories();
             if (!empty($cats)) {
                 foreach ($cats as $catid) {
-                    $tags[] = Conf::TAG_PREFIX_CATEGORY . $catid;
+                    $tags['pub'][] = Conf::TAG_PREFIX_CATEGORY . $catid;
                 }
             }
         }
-
-        $this->addPurgeTags($tags, false);
-        $this->setPurgeHeader();
+        return $tags;
     }
 
-    public function purgeByCms($cms, $from)
+    public function purgeByCatchAllMethod($method, $args)
     {
-        if ($from && $this->isDebug >= DebugLog::LEVEL_PURGE_EVENT) {
-            DebugLog::log('purgeByCms from ' . $from, DebugLog::LEVEL_PURGE_EVENT);
+        $tags = $this->getPurgeTagsByHookMethod($method, $args);
+        if (empty($tags)) {
+            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED) {
+                LSLog::log('Unexpected hook function called ' . $method, LSLog::LEVEL_UNEXPECTED);
+            }
+            return;
         }
 
-        $tags = array(Conf::TAG_PREFIX_CMS . $cms->id,
-            Conf::TAG_PREFIX_CMS, // cmscategory
-            Conf::TAG_SITEMAP);
-        if ($this->addPurgeTags($tags, false) == 1) {
+        $returnCode = 0;
+        if (!empty($tags['pub'])) {
+            $returnCode |= $this->addPurgeTags($tags['pub'], false);
+        }
+        if (!empty($tags['priv'])) {
+            $returnCode |= $this->addPurgeTags($tags['priv'], true);
+        }
+        if (($returnCode & 1) == 1) { // added
             $this->setPurgeHeader();
         }
-    }
-
-    public function purgeByManufacturer($manufacturer, $from)
-    {
-        if ($from && $this->isDebug >= DebugLog::LEVEL_PURGE_EVENT) {
-            DebugLog::log('purgeByManufacturer from ' . $from, DebugLog::LEVEL_PURGE_EVENT);
-        }
-
-        $tags = array(Conf::TAG_PREFIX_MANUFACTURER . $manufacturer->id,
-            Conf::TAG_PREFIX_MANUFACTURER,
-            Conf::TAG_SITEMAP); // allbrands
-        if ($this->addPurgeTags($tags, false) == 1) {
-            $this->setPurgeHeader();
+        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
+            LSLog::log('purgeByCatchAll ' . $method . ' res=' . $returnCode, LSLog::LEVEL_PURGE_EVENT);
         }
     }
 
-    public function purgeBySupplier($supplier, $from)
+    private function getPurgeTagsByHookMethod($method, $args)
     {
-        if ($from && $this->isDebug >= DebugLog::LEVEL_PURGE_EVENT) {
-            DebugLog::log('purgeBySupplier from ' . $from, DebugLog::LEVEL_PURGE_EVENT);
+        if (strncmp($method, 'hook', 4) != 0) {
+            return null;
         }
 
-        $tags = array(Conf::TAG_PREFIX_SUPPLIER . $supplier->id,
-            Conf::TAG_PREFIX_SUPPLIER, // all supplier
-            Conf::TAG_SITEMAP);
-        if ($this->addPurgeTags($tags, false) == 1) {
-            $this->setPurgeHeader();
+        $event = Tools::strtolower(Tools::substr($method, 4));
+        $tags = array();
+
+        switch ($event) {
+            case 'actioncustomerlogoutafter':
+            case 'actionauthentication':
+            case 'actioncustomeraccountadd':
+                $tags['priv'] = array('*');
+                break;
+
+            case 'actionproductadd':
+            case 'actionproductsave':
+            case 'actionproductupdate':
+            case 'actionproductdelete':
+                return $this->getPurgeTagsByProduct($args['id_product'], $args['product'], false);
+            case 'actionobjectspecificpricecoreaddafter':
+            case 'actionobjectspecificpricecoredeleteafter':
+                return $this->getPurgeTagsByProduct($args['object']->id_product, null, true);
+            case 'actionwatermark':
+                return $this->getPurgeTagsByProduct($args['id_product'], null, true);
+
+            case 'categoryupdate':
+            case 'actioncategoryupdate':
+            case 'actioncategoryadd':
+            case 'actioncategorydelete':
+                return $this->getPurgeTagsByCategory($args['category']);
+
+            case 'actionobjectcmsupdateafter':
+            case 'actionobjectcmsdeleteafter':
+            case 'actionobjectcmsaddafter':
+                $tags['pub'] = array(Conf::TAG_PREFIX_CMS . $args['object']->id,
+                    Conf::TAG_PREFIX_CMS, // cmscategory
+                    Conf::TAG_SITEMAP);
+                break;
+
+            case 'actionobjectsupplierupdateafter':
+            case 'actionobjectsupplierdeleteafter':
+            case 'actionobjectsupplieraddafter':
+                $tags['pub'] = array(Conf::TAG_PREFIX_SUPPLIER . $args['object']->id,
+                Conf::TAG_PREFIX_SUPPLIER, // all supplier
+                Conf::TAG_SITEMAP);
+                break;
+
+            case 'actionobjectmanufacturerupdateafter':
+            case 'actionobjectmanufacturerdeleteafter':
+            case 'actionobjectmanufactureraddAfter':
+                $tags['pub'] = array(Conf::TAG_PREFIX_MANUFACTURER . $args['object']->id,
+                    Conf::TAG_PREFIX_MANUFACTURER,
+                    Conf::TAG_SITEMAP); // allbrands
+                break;
+
+            case 'actionobjectstoreupdateafter':
+                $tags['pub'] = array(Conf::TAG_STORES);
+                break;
+
+            default: // custom defined events
+                return $this->config->getPurgeTagsByEvent($event);
         }
+        return $tags;
     }
 
     private function setPurgeHeader()
     {
+        if (headers_sent() ||
+                (count($this->purgeTags['pub']) == 0 &&
+                count($this->purgeTags['priv']) == 0)) {
+            return;
+        }
         $purgeHeader = '';
         $pre = 'tag=' . LiteSpeedCacheHelper::getTagPrefix();
 
-        if (count($this->purgeTags['pub'])) {
-            if (in_array('*', $this->purgeTags['pub'])) {
-                $purgeHeader .= $pre; // when purge all public, also purge all private block
-                $purgeHeader .= ',' . $pre . '_PRIV';
-            } else {
-                $pre .= '_';
+        if (in_array('*', $this->purgeTags['pub'])) {
+            // when purge all public, also purge all private block
+            $purgeHeader .= $pre . ',' . $pre . '_PRIV';
+        } else {
+            $pre .= '_';
+            if (count($this->purgeTags['pub'])) {
                 $purgeHeader .= $pre . implode(",$pre", $this->purgeTags['pub']);
             }
-        } elseif (count($this->purgeTags['priv'])) { // public & private will not coexist
-            $purgeHeader .= 'private,';
-            if (in_array('*', $this->purgeTags['priv'])) {
-                $purgeHeader .= '*';
-            } else {
-                $pre .= '_';
-                $purgeHeader .= $pre . implode(",$pre", $this->purgeTags['priv']);
+            if (count($this->purgeTags['priv'])) {
+                if ($purgeHeader) {
+                    $purgeHeader .= ';'; // has public
+                }
+                $purgeHeader .= 'private,';
+                if (in_array('*', $this->purgeTags['priv'])) {
+                    $purgeHeader .= '*';
+                } else {
+                    $purgeHeader .= $pre . implode(",$pre", $this->purgeTags['priv']);
+                }
             }
         }
 
-        if ($purgeHeader) {
+        if ($purgeHeader
+                && ($purgeHeader != $this->curHeaders[self::LSHEADER_PURGE])
+                && !headers_sent()) {
+            $this->curHeaders[self::LSHEADER_PURGE] = $purgeHeader;
             $purgeHeader = self::LSHEADER_PURGE . ': ' . $purgeHeader;
             header($purgeHeader);   // due to ajax call, always set header on the event
-            if ($this->isDebug >= DebugLog::LEVEL_SETHEADER) {
-                DebugLog::log('Set header ' . $purgeHeader, DebugLog::LEVEL_SETHEADER);
+            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_SETHEADER) {
+                LSLog::log('Set header ' . $purgeHeader, LSLog::LEVEL_SETHEADER);
             }
         }
     }
@@ -432,11 +440,15 @@ class LiteSpeedCacheCore
     {
         $purgeHeader = self::LSHEADER_PURGE . ': *';
         header($purgeHeader);
-        DebugLog::log('Set header ' . $purgeHeader . ' (' . $from . ')', DebugLog::LEVEL_FORCE);
+        LSLog::log('Set header ' . $purgeHeader . ' (' . $from . ')', LSLog::LEVEL_FORCE);
     }
 
     public function setCacheControlHeader($from)
     {
+        if (headers_sent()) {
+            return;
+        }
+
         $this->setPurgeHeader();
 
         $cacheControlHeader = '';
@@ -469,25 +481,25 @@ class LiteSpeedCacheCore
             }
 
             $cacheTagHeader = self::LSHEADER_CACHE_TAG . ': ' . implode(',', $tags);
-            header($cacheTagHeader);
-
-            $dbgMesg .= 'Set header ' . $cacheTagHeader . "\n";
+            if ($cacheTagHeader != $this->curHeaders[self::LSHEADER_CACHE_TAG]) {
+                $this->curHeaders[self::LSHEADER_CACHE_TAG] = $cacheTagHeader;
+                header($cacheTagHeader);
+                $dbgMesg .= 'Set header ' . $cacheTagHeader . "\n";
+            }
+        } else {
+            $cacheControlHeader = 'no-cache';
         }
         if (($ccflag & LSC::CCBM_ESI_ON) != 0) {
-            if ($cacheControlHeader) {
-                $cacheControlHeader .= ',';
-            }
-            $cacheControlHeader .= 'esi=on';
+            $cacheControlHeader .= ',esi=on';
         }
-        if ($cacheControlHeader) {
+        if ($cacheControlHeader != $this->curHeaders[self::LSHEADER_CACHE_CONTROL]) {
+            $this->curHeaders[self::LSHEADER_CACHE_CONTROL] = $cacheControlHeader;
             $cacheControlHeader = self::LSHEADER_CACHE_CONTROL . ': ' . $cacheControlHeader;
             header($cacheControlHeader);
             $dbgMesg .= 'Set header ' . $cacheControlHeader;
-        } else {
-            $dbgMesg .= 'No cache control header set';
         }
-        if ($this->isDebug >= DebugLog::LEVEL_SETHEADER) {
-            DebugLog::log($dbgMesg . ' from ' . $from, DebugLog::LEVEL_SETHEADER);
+        if ($dbgMesg && _LITESPEED_DEBUG_ >= LSLog::LEVEL_SETHEADER) {
+            LSLog::log($dbgMesg . ' from ' . $from, LSLog::LEVEL_SETHEADER);
         }
     }
 }

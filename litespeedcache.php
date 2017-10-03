@@ -26,20 +26,18 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/Config.php';
-require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/Cache.php';
-require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/DebugLog.php';
-require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/VaryCookie.php';
-require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/Helper.php';
-
-use LiteSpeedCacheDebugLog as DebugLog;
-use LiteSpeedCacheConfig as Conf;
+require_once(_PS_MODULE_DIR_ . 'litespeedcache/classes/Helper.php');
+require_once(_PS_MODULE_DIR_ . 'litespeedcache/classes/EsiItem.php');
+require_once(_PS_MODULE_DIR_ . 'litespeedcache/classes/DebugLog.php');
+require_once(_PS_MODULE_DIR_ . 'litespeedcache/classes/Config.php');
+require_once(_PS_MODULE_DIR_ . 'litespeedcache/classes/Cache.php');
+require_once(_PS_MODULE_DIR_ . 'litespeedcache/classes/VaryCookie.php');
 
 class LiteSpeedCache extends Module
 {
     private $cache;
     private $config;
-    private $isDebug;
+    private $esiInjection;
     private static $ccflag = 0; // cache control flag
 
     const MODULE_NAME = 'litespeedcache';
@@ -49,20 +47,25 @@ class LiteSpeedCache extends Module
     const CCBM_CAN_INJECT_ESI = 4;
     const CCBM_ESI_ON = 8;
     const CCBM_ESI_REQ = 16;
+    const CCBM_DISPLAY_INIT = 32; // properly initiliazed, displayheader hook called
+    const CCBM_ERROR_CODE = 64; // response code is not 200
     const CCBM_NOT_CACHEABLE = 128; // for redirect, as first bit is not set, may mean don't know cacheable or not
     const CCBM_MOD_ACTIVE = 256; // module is enabled
     const CCBM_MOD_ALLOWIP = 512; // allow cache for listed IP
+    // ESI MARKER
+    const ESI_MARKER_END = '_LSCESIEND_';
 
     public function __construct()
     {
         $this->name = 'litespeedcache'; // self::MODULE_NAME was rejected by validator
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '1.0.0'; // validator does not allow const here
+        $this->version = '1.1.0'; // validator does not allow const here
         $this->need_instance = 0;
+        $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
         $this->ps_versions_compliancy = array(
-            'min' => '1.7.1.0',
+            'min' => '1.6', //'1.7.1.0',
             'max' => _PS_VERSION_,
         );
 
@@ -74,15 +77,13 @@ class LiteSpeedCache extends Module
         $this->displayName = $this->l('LiteSpeed Cache Plugin');
         $this->description = $this->l('Integrates with LiteSpeed Full Page Cache on LiteSpeed Server.');
 
-        $this->config = Conf::getInstance();
+        $this->config = LiteSpeedCacheConfig::getInstance();
         // instantiate cache even when module not enabled, because may still need purge cache.
         $this->cache = new LiteSpeedCacheCore($this->config);
+        $this->esiInjection = array('tracker' => array(),
+            'marker' => array());
 
         self::$ccflag |= $this->config->moduleEnabled();
-        $this->isDebug = $this->config->isDebug();
-        if (!defined('_LITESPEED_CACHE_DEBUG_')) {
-            define('_LITESPEED_CACHE_DEBUG_', $this->isDebug);
-        }
         if (!defined('_LITESPEED_CACHE_')) {
             define('_LITESPEED_CACHE_', 1);
         }
@@ -124,14 +125,6 @@ class LiteSpeedCache extends Module
         return ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) != 0);
     }
 
-    public static function setEsiReq()
-    {
-        if (self::isActive()) { // not check ip for esi
-            self::$ccflag |= self::CCBM_ESI_REQ;
-            self::$ccflag &= ~self::CCBM_NOT_CACHEABLE;
-        }
-    }
-
     public static function getCCFlag()
     {
         return self::$ccflag;
@@ -140,46 +133,52 @@ class LiteSpeedCache extends Module
     // allow other plugins to set current response not cacheable
     private function setNotCacheable($reason = '')
     {
-        if (self::isActive()) { // not check ip for force nocache
-            self::$ccflag |= self::CCBM_NOT_CACHEABLE;
-            if ($reason && $this->isDebug >= DebugLog::LEVEL_NOCACHE_REASON) {
-                DebugLog::log('SetNotCacheable - ' . $reason, DebugLog::LEVEL_NOCACHE_REASON);
-            }
+        if (!self::isActive()) { // not check ip for force nocache
+            return;
+        }
+        self::$ccflag |= self::CCBM_NOT_CACHEABLE;
+        if ($reason && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_NOCACHE_REASON) {
+            LiteSpeedCacheLog::log(__FUNCTION__ . ' - ' . $reason, LiteSpeedCacheLog::LEVEL_NOCACHE_REASON);
         }
     }
 
-    // used by override hook
-    public static function overrideRenderWidget($module, $hook_name)
+    public function addCacheControlByEsiModule($moduleName, $hasInline)
     {
-        if ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) == 0) {
-            return false;
+        if (!self::isActive()) {
+            return;
         }
-        $lsc = Module::getInstanceByName(self::MODULE_NAME);
-        if ($lsc->config->isEsiModule($module->name)) {
-            $esiInclude = $lsc->cache->getEsiInclude($module, $hook_name);
-            self::$ccflag |= self::CCBM_ESI_ON;
-            if ($lsc->isDebug >= DebugLog::LEVEL_ESI_INCLUDE) {
-                DebugLog::log($esiInclude, DebugLog::LEVEL_ESI_INCLUDE);
-            }
-            return $esiInclude;
-        }
-        return false;
-    }
-
-    public function addCacheControlByEsiModule($moduleName)
-    {
-        if (self::isActive()
-            && (($conf = $this->config->getEsiModuleConf($moduleName)) != null)) {
-            $this->cache->addCacheTags($conf['tag']);
-            if ($conf['ttl'] > 0) {
-                $this->cache->setEsiTtl($conf['ttl']);
+        $msg = '';
+        $conf = $this->config->getEsiModuleConf($moduleName);
+        if ($conf != null) {
+            $ttl = $conf->getTTL();
+            if ($ttl === 0 || $ttl === '0') {
+                self::$ccflag |= self::CCBM_NOT_CACHEABLE;
+                $msg .= 'ttl is 0, no cache';
+            } else {
+                $this->cache->addCacheTags($conf->getTag());
                 self::$ccflag |= self::CCBM_CACHEABLE;
-                if ($conf['priv'] == 1) {
+                $isPrivate = $conf->isPrivate();
+                if ($isPrivate) {
                     self::$ccflag |= self::CCBM_PRIVATE;
                 }
-            } else {
-                self::$ccflag |= self::CCBM_NOT_CACHEABLE;
+                if ($ttl === '') {
+                    $ttl = $isPrivate ?
+                        $this->config->get(LiteSpeedCacheConfig::CFG_PRIVATE_TTL) :
+                        $this->config->get(LiteSpeedCacheConfig::CFG_PUBLIC_TTL);
+                }
+                $msg .= 'ttl is ' . $ttl;
+                $this->cache->setEsiTtl($ttl);
             }
+            if ($hasInline) {
+                self::$ccflag |= self::CCBM_ESI_ON;
+                $msg .= ' has inline';
+            }
+            $this->cache->setCacheControlHeader(__FUNCTION__);
+        } else {
+            $msg .= $moduleName . ' conf not found';
+        }
+        if ($msg && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_OUTPUT) {
+            LiteSpeedCacheLog::log(__FUNCTION__ . ' - ' . $msg, LiteSpeedCacheLog::LEVEL_ESI_OUTPUT);
         }
     }
 
@@ -190,69 +189,55 @@ class LiteSpeedCache extends Module
         }
     }
 
-    public function hookActionCustomerLogoutAfter($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByTags('*', true, 'actionCustomerLogoutAfter');
-        }
-    }
-
-    public function hookActionAuthentication($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByTags('*', true, 'actionAuthentication');
-        }
-    }
-
-    /* this is catchall function for purge events */
-    public function __call($method, $args)
-    {
-        if (!self::isActive()) {
-            return;
-        }
-        if (strpos($method, 'hook') === 0) {
-            $event = Tools::substr($method, 4);
-            $res = $this->cache->purgeByEvent($event);
-        }
-        if ($this->isDebug >= DebugLog::LEVEL_PURGE_EVENT) {
-            DebugLog::log('CATCH_ALL ' . $method . ' argc=' . count($args)
-                . ' purgeByEvent=' . $res, DebugLog::LEVEL_PURGE_EVENT);
-        }
-    }
-
-    public function hookActionOutputHTMLBefore($params)
-    {
-        if (self::isActive()) {
-            $this->cache->setCacheControlHeader('actionOutputHTMLBefore');
-        }
-    }
-
-    public function hookActionAjaxDieCategoryControllerdoProductSearchBefore($params)
-    {
-        if (self::isActive()) {
-            $this->cache->setCacheControlHeader('actionAjaxDieCategoryControllerdoProductSearchBefore');
-        }
-    }
-
     public function hookActionDispatcher($params)
     {
+        $ctype = $params['controller_type'];
+        $cclass = $params['controller_class'];
+        LiteSpeedCacheLog::log(__FUNCTION__ . ' type=' . $ctype
+            . ' controller=' . $cclass . ' req=' . $_SERVER['REQUEST_URI'], LiteSpeedCacheLog::LEVEL_CACHE_ROUTE);
         if (!self::isActiveForUser()) { // check for ip restriction
             return;
         }
-        $reason = $this->cache->isCacheableRoute($params['controller_type'], $params['controller_class']);
+
+        ob_start('LiteSpeedCache::callbackOutputFilter');
+
+        // 3rd party integration init needs to be before checkRoute
+        include_once(_PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php');
+
+        // here also check purge controller
+        $reason = $this->cache->isCacheableRoute($ctype, $cclass);
         if ($reason) {
-            $this->setNotCacheable($reason);
+            if ($cclass == 'litespeedcacheesiModuleFrontController') {
+                self::$ccflag |= self::CCBM_ESI_REQ;
+            } else {
+                $this->setNotCacheable($reason);
+            }
         } else {
             self::$ccflag |= (self::CCBM_CACHEABLE | self::CCBM_CAN_INJECT_ESI);
         }
     }
 
+    public static function callbackOutputFilter($buffer)
+    {
+        $lsc = self::myInstance();
+
+        if (count($lsc->esiInjection['marker']) || self::isCacheable()) {
+            // if no injection, but cacheable, still need to check token
+            $buffer = $lsc->replaceEsiMarker($buffer);
+        }
+        // need to set header after replace, as flag may change
+        $lsc->cache->setCacheControlHeader(__FUNCTION__);
+        return $buffer;
+    }
+
     public function hookDisplayHeader($params)
     {
-        if (self::isActiveForUser() // check for ip restriction
-            && LiteSpeedCacheVaryCookie::setCookieVary()) {
-            $this->setNotCacheable('Env cookie change');
-            $this->cache->purgeByTags('*', true, 'Env cookie change');
+        if (self::isActiveForUser()) { // check for ip restriction
+            self::$ccflag |= self::CCBM_DISPLAY_INIT;
+            if (LiteSpeedCacheVaryCookie::setCookieVary()) {
+                $this->setNotCacheable('Env cookie change');
+                $this->cache->purgeByTags('*', true, 'Env cookie change');
+            }
         }
     }
 
@@ -280,7 +265,7 @@ class LiteSpeedCache extends Module
     {
         if (self::isCacheable()) {
             if (isset($params['object']['id'])) {
-                $this->cache->addCacheTags(Conf::TAG_PREFIX_CATEGORY . $params['object']['id']);
+                $this->cache->addCacheTags(LiteSpeedCacheConfig::TAG_PREFIX_CATEGORY . $params['object']['id']);
             }
         }
     }
@@ -288,7 +273,7 @@ class LiteSpeedCache extends Module
     public function hookFilterProductContent($params)
     {
         if (self::isCacheable() && isset($params['object']['id'])) {
-            $this->cache->addCacheTags(Conf::TAG_PREFIX_PRODUCT . $params['object']['id']);
+            $this->cache->addCacheTags(LiteSpeedCacheConfig::TAG_PREFIX_PRODUCT . $params['object']['id']);
         }
     }
 
@@ -297,161 +282,22 @@ class LiteSpeedCache extends Module
         if (self::isCacheable()) {
             // any cms page update, will purge all cmscategory pages, as the assignment may change,
             // so we do not distinguish by cms category id
-            $this->cache->addCacheTags(Conf::TAG_PREFIX_CMS);
+            $this->cache->addCacheTags(LiteSpeedCacheConfig::TAG_PREFIX_CMS);
         }
     }
 
     public function hookFilterCmsContent($params)
     {
         if (self::isCacheable() && isset($params['object']['id'])) {
-            $this->cache->addCacheTags(Conf::TAG_PREFIX_CMS . $params['object']['id']);
+            $this->cache->addCacheTags(LiteSpeedCacheConfig::TAG_PREFIX_CMS . $params['object']['id']);
         }
     }
+    /* this is catchall function for purge events */
 
-    public function hookActionProductAdd($params)
+    public function __call($method, $args)
     {
         if (self::isActive()) {
-            $this->cache->purgeByProduct($params['id_product'], $params['product'], false, 'actionProductAdd');
-        }
-    }
-
-    public function hookActionProductSave($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByProduct($params['id_product'], $params['product'], true, 'actionProductSave');
-        }
-    }
-
-    public function hookActionProductUpdate($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByProduct($params['id_product'], $params['product'], true, 'actionProductUpdate');
-        }
-    }
-
-    public function hookActionProductDelete($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByProduct($params['id_product'], $params['product'], false, 'actionProductDelete');
-        }
-    }
-
-    public function hookActionObjectSpecificPriceCoreAddAfter($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByProduct($params['object']->id_product, null, true, 'SpecificPriceCoreAddAfter');
-        }
-    }
-
-    public function hookActionObjectSpecificPriceCoreDeleteAfter($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByProduct($params['object']->id_product, null, true, 'SpecificPriceCoreDeleteAfter');
-        }
-    }
-
-    public function hookActionWatermark($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByProduct($params['id_product'], null, true, 'actionWatermark');
-        }
-    }
-
-    public function hookActionCategoryUpdate($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByCategory($params['category'], 'actionCategoryUpdate');
-        }
-    }
-
-    public function hookCategoryUpdate($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByCategory($params['category'], 'hookCategoryUpdate');
-        }
-    }
-
-    public function hookActionCategoryAdd($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByCategory($params['category'], 'actionCategoryAdd');
-        }
-    }
-
-    public function hookActionCategoryDelete($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByCategory($params['category'], 'actionCategoryDelete');
-        }
-    }
-
-    public function hookActionObjectCmsUpdateAfter($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByCms($params['object'], 'actionObjectCmsUpdateAfter');
-        }
-    }
-
-    public function hookActionObjectCmsDeleteAfter($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByCms($params['object'], 'actionObjectCmsDeleteAfter');
-        }
-    }
-
-    public function hookActionObjectCmsAddAfter($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByCms($params['object'], 'actionObjectCmsAddAfter');
-        }
-    }
-
-    public function hookActionObjectSupplierUpdateAfter($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeBySupplier($params['object'], 'actionObjectSupplierUpdateAfter');
-        }
-    }
-
-    public function hookActionObjectSupplierDeleteAfter($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeBySupplier($params['object'], 'actionObjectSupplierDeleteAfter');
-        }
-    }
-
-    public function hookActionObjectSupplierAddAfter($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeBySupplier($params['object'], 'actionObjectSupplierAddAfter');
-        }
-    }
-
-    public function hookActionObjectManufacturerUpdateAfter($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByManufacturer($params['object'], 'actionObjectManufacturerUpdateAfter');
-        }
-    }
-
-    public function hookActionObjectManufacturerDeleteAfter($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByManufacturer($params['object'], 'actionObjectManufacturerDeleteAfter');
-        }
-    }
-
-    public function hookActionObjectManufacturerAddAfter($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByManufacturer($params['object'], 'actionObjectManufacturerAddAfter');
-        }
-    }
-
-    public function hookActionObjectStoreUpdateAfter($params)
-    {
-        if (self::isActive()) {
-            $this->cache->purgeByTags(Conf::TAG_STORES, false, 'actionObjectStoreUpdateAfter');
+            $this->cache->purgeByCatchAllMethod($method, $args);
         }
     }
     /* our own hook
@@ -462,7 +308,7 @@ class LiteSpeedCache extends Module
 
     public function hookLitespeedCachePurge($params)
     {
-        $msg = 'hookLitespeedCachePurge: ';
+        $msg = __FUNCTION__ . ' ';
         $err = '';
 
         if (!isset($params['from'])) {
@@ -489,13 +335,13 @@ class LiteSpeedCache extends Module
             }
         }
 
-        if ($err && $this->isDebug >= DebugLog::LEVEL_PURGE_EVENT) {
-            DebugLog::log($err, DebugLog::LEVEL_PURGE_EVENT);
+        if ($err && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_PURGE_EVENT) {
+            LiteSpeedCacheLog::log($err, LiteSpeedCacheLog::LEVEL_PURGE_EVENT);
         }
     }
 
     // allow other modules to set
-    public function hookLitespeedCacheNotCacheable($params)
+    public function hookLitespeedNotCacheable($params)
     {
         $reason = '';
         if (isset($params['reason'])) {
@@ -510,27 +356,292 @@ class LiteSpeedCache extends Module
     // if debug enabled, show generation timestamp in comments
     public function hookDisplayFooterAfter($params)
     {
-        if (self::isCacheable() && $this->isDebug) {
+        if (self::isCacheable() && _LITESPEED_DEBUG_) {
             $comment = '<!-- LiteSpeed Cache snapshot generated at ' . gmdate("Y/m/d H:i:s") . ' GMT -->';
-            DebugLog::log('Add html comments in footer ' . $comment, DebugLog::LEVEL_FOOTER_COMMENT);
+            LiteSpeedCacheLog::log('Add html comments in footer ' . $comment, LiteSpeedCacheLog::LEVEL_FOOTER_COMMENT);
             return $comment;
         }
     }
 
+    private static function myInstance()
+    {
+        return Module::getInstanceByName(self::MODULE_NAME);
+    }
+
+    // called by Media override addJsDef
+    public static function filterJsDef(&$jsDef)
+    {
+        if ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) == 0) {
+            return;
+        }
+        $injected = array();
+        if (LscIntegration::filterJSDef($jsDef, $injected)) {
+            $lsc = self::myInstance();
+            foreach ($injected as $id => $item) {
+                if (!isset($lsc->esiInjection['marker'][$id])) {
+                    $lsc->esiInjection['marker'][$id] = $item;
+                }
+            }
+        }
+    }
+
+    private function registerEsiMarker($params, $conf)
+    {
+        $item = new LiteSpeedCacheEsiItem($params, $conf);
+        $id = $item->getId();
+        if (!isset($this->esiInjection['marker'][$id])) {
+            $this->esiInjection['marker'][$id] = $item;
+        }
+        return '_LSCESI-' . $id . '-START_';
+    }
+
+    private function replaceEsiMarker($buf)
+    {
+        if (!self::canInjectEsi()) {
+            return $buf;
+        }
+
+        $code = http_response_code();
+        if ($code == 404) {
+            if (LiteSpeedCacheHelper::isStaticResource($_SERVER['REQUEST_URI'])) {
+                $buf = '<!-- 404 not found -->';
+                LiteSpeedCacheLog::log('404 for static asset, filter out all', LiteSpeedCacheLog::LEVEL_NOCACHE_REASON);
+                return $buf;
+            }
+        } elseif ($code != 200) {
+            self::$ccflag |= self::CCBM_ERROR_CODE;
+            $this->setNotCacheable('Response code is ' . $code);
+        } elseif ((self::$ccflag & self::CCBM_DISPLAY_INIT) == 0) {
+            $this->setNotCacheable('Not proper initialized');
+        }
+
+        if (count($this->esiInjection['marker'])) {
+            // U :ungreedy s: dotall m: multiline
+            $nb = preg_replace_callback(
+                array('/_LSC(ESI)-(.+)-START_(.*)_LSCESIEND_/Usm',
+                '/(\'|\")_LSCESIJS-(.+)-START__LSCESIEND_(\'|\")/Usm'),
+                function ($m) {
+                    if (!self::isCacheable()) {
+                        return '';
+                    }
+                    $id = $m[2];
+                    $lsc = self::myInstance();
+                    if (!isset($lsc->esiInjection['marker'][$id])) {
+                        // should not happen
+                        LiteSpeedCacheLog::log('Lost Injection ' . $id, LiteSpeedCacheLog::LEVEL_UNEXPECTED);
+                        return '';
+                    }
+                    $item = $lsc->esiInjection['marker'][$id];
+                    $esiInclude = $item->getInclude();
+                    if ($esiInclude === false) {
+                        if ($item->getParam('pt') == $item::ESI_JSDEF) {
+                            LscIntegration::processJsDef($item); // content set inside
+                        } else {
+                            $item->setContent($m[3]);
+                        }
+                        $esiInclude = $item->getInclude();
+                    }
+                    return $esiInclude;
+                },
+                $buf,
+                -1,
+                $count
+            );
+        } else {
+            // log here, shouldn't happen
+            $nb = $buf;
+        }
+
+        if (!self::isCacheable()) {
+            // if error, all markers removed and not cacheable
+            return $nb;
+        }
+
+        $bufInline = '';
+        // do token replace,
+        // Tools::getToken() is not really used for cacheable pages
+        // Tools::getToken(false) is used -------------- caninject
+        $static_token = Tools::getToken(false);
+        if (strpos($nb, $static_token)) {
+            $tkconf = $this->config->getEsiModuleConf(LscToken::NAME);
+            $tkparam = array('pt' => LiteSpeedCacheEsiItem::ESI_TOKEN,
+                'm' => LscToken::NAME,
+                'd' => 'static');
+            $item = new LiteSpeedCacheEsiItem($tkparam, $tkconf);
+            $item->setContent($static_token);
+            $tokenInc = $item->getInclude();
+            // global replacement
+            $nb = str_replace($static_token, $tokenInc, $nb);
+            $this->esiInjection['marker'][$item->getId()] = $item;
+        }
+
+        $allPrivateItems = array();
+        // last adding esi:inline, which needs to be in front of esi:include
+        foreach ($this->esiInjection['marker'] as $item) {
+            $inline = $item->getInline();
+            if ($inline !== false) {
+                $bufInline .= $inline;
+                if ($item->getConf()->isPrivate()) {
+                    $allPrivateItems[] = $item;
+                }
+            } else {
+                // todo log err
+            }
+        }
+        if ($bufInline) {
+            if (!empty($allPrivateItems)) {
+                LiteSpeedCacheHelper::syncItemCache($allPrivateItems);
+            }
+            self::$ccflag |= self::CCBM_ESI_ON;
+        }
+        if ($bufInline && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_OUTPUT) {
+            LiteSpeedCacheLog::log('ESI inline output ' . $bufInline, LiteSpeedCacheLog::LEVEL_ESI_OUTPUT);
+        }
+        return $bufInline . $nb;
+    }
+
+    public function hookLitespeedEsiBegin($params)
+    {
+        if ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) == 0) {
+            return '';
+        }
+        $err = 0;
+        $err_field = '';
+        $m = $f = 'NA';
+        $pt = LiteSpeedCacheEsiItem::ESI_SMARTYFIELD;
+
+        if (isset($params['m'])) {
+            $m = $params['m'];
+        } else {
+            $err |= 1;
+            $err_field .= 'm ';
+        }
+        if (isset($params['field'])) {
+            $f = $params['field'];
+        } else {
+            $err |= 1;
+            $err_field .= 'field ';
+        }
+        if (count($this->esiInjection['tracker']) > 0) {
+            $err |= 2;
+        }
+
+        $esiParam = array('pt' => $pt, 'm' => $m, 'f' => $f);
+        if ($f == 'widget' && isset($params['hook'])) {
+            $esiParam['h'] = $params['hook'];
+        } elseif ($f == 'widget_block') {
+            if (isset($params['tpl'])) {
+                $esiParam['t'] = $params['tpl'];
+            } else {
+                $err |= 1;
+                $err_field .= 'tpl ';
+            }
+        }
+
+        $conf = $this->config->canInjectEsi($m, $esiParam);
+        if ($conf == false) {
+            $err |= 4;
+        }
+
+        array_push($this->esiInjection['tracker'], $err);
+        // check here for template name
+        if ($err) {
+            if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_CUST_SMARTY) {
+                $msg = '';
+                if ($err & 1) {
+                    $msg .= 'Missing hookLitespeedEsiBegin param (' .
+                        $err_field . '). ';
+                }
+                if ($err & 2) {
+                    $msg .= 'Ignore due to nested hookLitespeedEsiBegin. ';
+                }
+                if ($err & 4) {
+                    $msg .= 'Cannot inject ESI for ' . $m;
+                }
+                LiteSpeedCacheLog::log(__FUNCTION__ . ' ' . $msg, LiteSpeedCacheLog::LEVEL_CUST_SMARTY);
+            }
+            return '';
+        }
+        return $this->registerEsiMarker($esiParam, $conf);
+    }
+
+    public function hookLitespeedEsiEnd($params)
+    {
+        if ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) == 0) {
+            return '';
+        }
+        $res = array_pop($this->esiInjection['tracker']);
+        if ($res === 0) { // begin has no error, output end marker
+            // here simply output marker
+            return self::ESI_MARKER_END;
+        }
+        if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_CUST_SMARTY) {
+            // check here for template name
+            $err = ($res === null) ? ' Mismatched hookLitespeedEsiEnd detected' :
+                ' Ignored hookLitespeedEsiEnd due to error  in hookLitespeedEsiBegin';
+            LiteSpeedCacheLog::log(__FUNCTION__ . $err, LiteSpeedCacheLog::LEVEL_CUST_SMARTY);
+        }
+        return '';
+    }
+
+    // used by override hook, return false or marker
+    public static function injectRenderWidget($module, $hook_name)
+    {
+        if ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) == 0) {
+            return false;
+        }
+
+        $lsc = self::myInstance();
+        $m = $module->name;
+        $pt = LiteSpeedCacheEsiItem::ESI_RENDERWIDGET;
+
+        $esiParam = array('pt' => $pt, 'm' => $m, 'h' => $hook_name);
+        $conf = $lsc->config->canInjectEsi($m, $esiParam);
+        if ($conf == false) {
+            return false;
+        }
+        if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_INCLUDE) {
+            LiteSpeedCacheLog::log(__FUNCTION__ . " $m : $hook_name", LiteSpeedCacheLog::LEVEL_ESI_INCLUDE);
+        }
+        return $lsc->registerEsiMarker($esiParam, $conf);
+    }
+
+    // used by override hook
+    public static function injectCallHook($module, $method)
+    {
+        if ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) == 0) {
+            return false;
+        }
+
+        $lsc = self::myInstance();
+        $m = $module->name;
+        $pt = LiteSpeedCacheEsiItem::ESI_CALLHOOK;
+
+        $esiParam = array('pt' => $pt, 'm' => $m, 'mt' => $method);
+        $conf = $lsc->config->canInjectEsi($m, $esiParam);
+        if ($conf == false) {
+            return false;
+        }
+        if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_INCLUDE) {
+            LiteSpeedCacheLog::log(__FUNCTION__ . " $m : $method", LiteSpeedCacheLog::LEVEL_ESI_INCLUDE);
+        }
+        return $lsc->registerEsiMarker($esiParam, $conf);
+    }
+
     public function install()
     {
-        $this->initTabs();
+        $this->installTab();
         if (Shop::isFeatureActive()) {
             Shop::setContext(Shop::CONTEXT_ALL);
         }
 
         if (parent::install()) {
-            $all = json_encode($this->config->getDefaultConfData(Conf::ENTRY_ALL));
-            $shop = json_encode($this->config->getDefaultConfData(Conf::ENTRY_SHOP));
-            $mod = json_encode($this->config->getDefaultConfData(Conf::ENTRY_MODULE));
-            Configuration::updateValue(Conf::ENTRY_ALL, $all);
-            Configuration::updateValue(Conf::ENTRY_SHOP, $shop);
-            Configuration::updateValue(Conf::ENTRY_MODULE, $mod);
+            $all = json_encode($this->config->getDefaultConfData(LiteSpeedCacheConfig::ENTRY_ALL));
+            $shop = json_encode($this->config->getDefaultConfData(LiteSpeedCacheConfig::ENTRY_SHOP));
+            $mod = json_encode($this->config->getDefaultConfData(LiteSpeedCacheConfig::ENTRY_MODULE));
+            Configuration::updateValue(LiteSpeedCacheConfig::ENTRY_ALL, $all);
+            Configuration::updateValue(LiteSpeedCacheConfig::ENTRY_SHOP, $shop);
+            Configuration::updateValue(LiteSpeedCacheConfig::ENTRY_MODULE, $mod);
             return $this->installHooks();
         } else {
             return false;
@@ -539,11 +650,11 @@ class LiteSpeedCache extends Module
 
     public function uninstall()
     {
-        $this->initTabs();
+        $this->uninstallTab();
         $this->cache->purgeByTags('*', false, 'from uninstall');
-        Configuration::deleteByName(Conf::ENTRY_ALL);
-        Configuration::deleteByName(Conf::ENTRY_SHOP);
-        Configuration::deleteByName(Conf::ENTRY_MODULE);
+        Configuration::deleteByName(LiteSpeedCacheConfig::ENTRY_ALL);
+        Configuration::deleteByName(LiteSpeedCacheConfig::ENTRY_SHOP);
+        Configuration::deleteByName(LiteSpeedCacheConfig::ENTRY_MODULE);
 
         return parent::uninstall();
     }
@@ -553,39 +664,74 @@ class LiteSpeedCache extends Module
         Tools::redirectAdmin($this->context->link->getAdminLink('AdminLiteSpeedCacheConfig'));
     }
 
+    private function installTab()
+    {
+        $definedtabs = $this->uninstallTab();
+        if ($definedtabs == null) {
+            return;
+        }
+        foreach ($definedtabs as $t) {
+            $tab = new Tab();
+            $tab->active = 1;
+            $tab->class_name = $t['class_name'];
+            $tab->name = array();
+            foreach (Language::getLanguages(true) as $lang) {
+                $tab->name[$lang['id_lang']] = $t['name'];
+            }
+
+            $tab->id_parent = is_int($t['ParentClassName']) ?
+                $t['ParentClassName'] : (int) Tab::getIdFromClassName($t['ParentClassName']);
+            $tab->module = $this->name;
+            $tab->add();
+        }
+    }
+
+    private function uninstallTab()
+    {
+        $definedtabs = $this->initTabs();
+        if (version_compare(_PS_VERSION_, '1.7.1.0', '>=')) {
+            $this->tabs = $definedtabs;
+            return null;
+        }
+        foreach ($definedtabs as $t) {
+            if ($id_tab = (int) Tab::getIdFromClassName($t['class_name'])) {
+                $tab = new Tab($id_tab);
+                $tab->delete();
+            }
+        }
+        return $definedtabs;
+    }
+
     private function initTabs()
     {
-        $this->tabs = array();
-        $this->tabs[] = array(
-            'class_name' => 'AdminLiteSpeedCache',
-            'name' => 'LiteSpeed Cache',
-            'visible' => true,
-            'icon' => 'flash_on',
-            'ParentClassName' => 'DEFAULT',
+        $root_node = version_compare(_PS_VERSION_, '1.7.1.0', '>=') ? 'AdminAdvancedParameters' : 0;
+        $definedtabs = array(
+            array(
+                'class_name' => 'AdminLiteSpeedCache',
+                'name' => 'LiteSpeed Cache',
+                'visible' => 1,
+                'icon' => 'flash_on',
+                'ParentClassName' => $root_node,
+            ),
+            array(
+                'class_name' => 'AdminLiteSpeedCacheManage',
+                'name' => 'Manage',
+                'visible' => 1,
+                'ParentClassName' => 'AdminLiteSpeedCache',
+            ),
+            array(
+                'class_name' => 'AdminLiteSpeedCacheConfig',
+                'name' => 'Configuration',
+                'visible' => 1,
+                'ParentClassName' => 'AdminLiteSpeedCache',
+            ),
+            array(
+                'class_name' => 'AdminLiteSpeedCacheCustomize',
+                'name' => 'Customization',
+                'visible' => 1,
+                'ParentClassName' => 'AdminLiteSpeedCache',
+            ),
         );
-        $this->tabs[] = array(
-            'class_name' => 'AdminLiteSpeedCacheConfigParent',
-            'name' => 'Settings',
-            'visible' => true,
-            'ParentClassName' => 'AdminLiteSpeedCache',
-        );
-        $this->tabs[] = array(
-            'class_name' => 'AdminLiteSpeedCacheConfig',
-            'name' => 'Configuration',
-            'visible' => true,
-            'ParentClassName' => 'AdminLiteSpeedCacheConfigParent',
-        );
-        $this->tabs[] = array(
-            'class_name' => 'AdminLiteSpeedCacheCustomize',
-            'name' => 'Customization',
-            'visible' => true,
-            'ParentClassName' => 'AdminLiteSpeedCacheConfigParent',
-        );
-        $this->tabs[] = array(
-            'class_name' => 'AdminLiteSpeedCacheManage',
-            'name' => 'Manage',
-            'visible' => true,
-            'ParentClassName' => 'AdminLiteSpeedCache',
-        );
+        return $definedtabs;
     }
 }

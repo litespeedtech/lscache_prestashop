@@ -20,7 +20,7 @@ Make sure that your license includes the LSCache module enabled. A 2-CPU trial l
 The server must be configured to have caching enabled. If you are the server admin, click here. Otherwise request that the server admin configure the cache root for the server.
 
 ### Module Features
-* Support for PrestaShop 1.7.1+
+* Support for PrestaShop 1.6 and 1.7+
 * LSCPS supports multiple stores, multi-language, multi-currency and geolocation.
 * Integrated into both LiteSpeed Web Server and LiteSpeed Web ADC. Works in a single-server environment using LSWS, or a clustered environment using LS Web ADC.
 * Caching is highly customizable on both a global level and a per-store basis. Tag-based caching allows purge by tag from external programs.

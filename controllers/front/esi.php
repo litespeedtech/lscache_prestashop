@@ -22,46 +22,148 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-use LiteSpeedCacheDebugLog as DebugLog;
+use LiteSpeedCacheLog as LSLog;
+use LiteSpeedCacheHelper as LSHelper;
+use LiteSpeedCacheEsiItem as EsiItem;
 
 class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 {
-
-    public function init()
+    public function __construct()
     {
-        parent::init();
         $this->content_only = true;
-        LiteSpeedCache::setEsiReq();
+        $this->display_header = false;
+        $this->display_header_javascript = false;
+        $this->display_footer = false;
+        parent::__construct();
     }
 
     public function display()
     {
-        DebugLog::log('In ESI controller display', DebugLog::LEVEL_ESI_INCLUDE);
-        $moduleName = Tools::getValue('m');
-        $hookName = Tools::getValue('h');
-        // basic validation
-        if ($hookName && $moduleName && ($module = Module::getInstanceByName($moduleName))) {
-            $context = Context::getContext();
-            $context->smarty->assign(array(
-                'layout' => $this->getLayout(),
-            ));
-            $lsc = Module::getInstanceByName(LiteSpeedCache::MODULE_NAME);
-            $lsc->addCacheControlByEsiModule($moduleName);
+        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
+            LSLog::log('In ESI controller display', LSLog::LEVEL_ESI_INCLUDE);
+        }
+        $item = EsiItem::decodeEsiUrl();
 
-            $hook_args = array();
-            $hook_args['smarty'] = $context->smarty;
-            if (!isset($hook_args['cookie']) || !$hook_args['cookie']) {
-                $hook_args['cookie'] = $context->cookie;
-            }
-            if (!isset($hook_args['cart']) || !$hook_args['cart']) {
-                $hook_args['cart'] = $context->cart;
-            }
-            $html = $module->renderWidget($hookName, $hook_args);
-            Hook::exec('actionOutputHTMLBefore', array('html' => &$html));
-            echo trim($html);
+        if (is_string($item)) {
+            LSLog::log('Invalid ESI url ' . $item, LSLog::LEVEL_EXCEPTION);
+            return;
+        }
+
+        $this->populateItemContent($item);
+        $html = $item->getContent();
+
+        if ($html == EsiItem::RES_FAILED) {
+            LSLog::log('Invalid ESI url - module not found ', LSLog::LEVEL_EXCEPTION);
+            return;
+        }
+
+        $related = LSHelper::getRelatedItems($item->getId());
+        $inline = '';
+        foreach ($related as $ri) {
+            $this->populateItemContent($ri);
+            $inline .= $ri->getInline();
+        }
+        $lsc = Module::getInstanceByName(LiteSpeedCache::MODULE_NAME);
+
+        $lsc->addCacheControlByEsiModule($item->getParam('m'), ($inline != ''));
+
+        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_OUTPUT) {
+            LSLog::log('In ESI controller output ' . $inline . $html, LSLog::LEVEL_ESI_OUTPUT);
+        }
+        echo $inline . $html;
+    }
+
+    private function populateItemContent($item)
+    {
+        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
+            LSLog::log(__FUNCTION__ . ' start ' . $item->getInfoLog(), LSLog::LEVEL_ESI_INCLUDE);
+        }
+
+        switch ($item->getParam('pt')) {
+            case EsiItem::ESI_RENDERWIDGET:
+                $this->processRenderWidget($item);
+                break;
+            case EsiItem::ESI_CALLHOOK:
+                $this->processCallHook($item);
+                break;
+            case EsiItem::ESI_SMARTYFIELD:
+                $this->processSmartyField($item);
+                break;
+            case EsiItem::ESI_JSDEF:
+                LscIntegration::processJsDef($item);
+                break;
+            case EsiItem::ESI_TOKEN:
+                $this->processToken($item);
+                break;
+            default:
+                $item->setFailed();
+        }
+        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
+            LSLog::log(__FUNCTION__ . ' end ' . $item->getInfoLog(), LSLog::LEVEL_ESI_INCLUDE);
+        }
+    }
+
+    private function initWidget($moduleName, &$params)
+    {
+        $module = Module::getInstanceByName($moduleName);
+        if ($module != null) {
+            $params['smarty'] = $this->context->smarty;
+            $params['cookie'] = $this->context->cookie;
+            $params['cart'] = $this->context->cart;
+        }
+        return $module;
+    }
+
+    private function processRenderWidget($item)
+    {
+        $params = array();
+        if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
+            $item->setFailed();
         } else {
-            DebugLog::log('Invalid ESI url', DebugLog::LEVEL_EXCEPTION);
-            echo '';
+            // h can be empty
+            $item->setContent($module->renderWidget($item->getParam('h'), $params));
+        }
+    }
+
+    private function processWidgetBlock($item)
+    {
+        $params = array();
+        if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
+            $item->setFailed();
+        } else {
+            $this->context->smarty->assign($module->getWidgetVariables('', $params));
+            $item->setContent($this->context->smarty->fetch($item->getParam('t')));
+        }
+    }
+
+    private function processCallHook($item)
+    {
+        $params = array();
+        if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
+            $item->setFailed();
+        } else {
+            if (method_exists($module, getWidgetVariables)) {
+                $this->context->smarty->assign($module->getWidgetVariables('', $params));
+            }
+            $method = $item->getParam('mt');
+            $item->setContent($module->$method($params));
+        }
+    }
+
+    private function processToken($item)
+    {
+        $item->setContent(Tools::getToken(false));
+    }
+
+    private function processSmartyField($item)
+    {
+        $f = $item->getParam('f');
+        if ($f == 'widget') {
+            $this->processRenderWidget($item);
+        } elseif ($f == 'widget_block') {
+            $this->processWidgetBlock($item);
+        } else {
+            LscIntegration::processModField($item);
         }
     }
 }

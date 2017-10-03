@@ -22,8 +22,9 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-use LiteSpeedCacheDebugLog as DebugLog;
+use LiteSpeedCacheLog as LSLog;
 use LiteSpeedCacheConfig as Conf;
+use LiteSpeedCacheEsiModConf as EsiConf;
 
 class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
 {
@@ -31,7 +32,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
     private $is_shop_level; // -1: not multishop, 0: multishop global, 1: multishop shop
     private $labels;
     private $current_values;
-    private $default;
+    private $default_ids;
     private $license_disabled;
     private $module_options;
     private $changed;
@@ -42,15 +43,17 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
     public function __construct()
     {
         $this->bootstrap = true;
+        //$this->display = 'list';
         parent::__construct();
 
-        $this->config = Conf::getInstance();
         if (!$this->module->active) {
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminHome'));
         }
 
-        $this->page_header_toolbar_title = $this->l('LiteSpeed Cache Settings');
-        $this->meta_title = $this->l('LiteSpeed Cache Customization');
+        $this->config = Conf::getInstance();
+        $title = $this->l('LiteSpeed Cache Customization');
+        $this->page_header_toolbar_title = $title;
+        $this->meta_title = $title;
         $this->list_id = 'esimods';
         $this->identifier = 'id';
         $this->table = 'esimod'; // no real table, faked
@@ -72,30 +75,91 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                     . $this->l('Please contact your sysadmin or your host to get a valid LiteSpeed license.');
         }
 
-        $this->default = $this->config->getDefaultConfData(Conf::ENTRY_MODULE);
         $this->initDisplayValues();
         $this->labels = array(
             'id' => $this->l('Module'),
+            'name' => $this->l('Name'),
+            'pubpriv' => $this->l('Cache'),
             'priv' => $this->l('Is Private'),
             'ttl' => $this->l('TTL'),
             'tag' => $this->l('Cache Tag'),
+            'type' => $this->l('Type'),
             'events' => $this->l('Purge Events'),
+            'ctrl' => $this->l('Purge Controllers'),
+            'methods' => $this->l('Hooked Methods'),
+            'render' => $this->l('Widget Render Hooks'),
+            'asvar' => $this->l('As Variable'),
+            'ie' => $this->l('Ignore If Empty'),
         );
+    }
+
+    public function initPageHeaderToolbar()
+    {
+        if ($this->is_shop_level !== 1) {
+            if ($this->display == 'list') {
+                $this->page_header_toolbar_btn['new_esi'] = array(
+                    'href' => self::$currentIndex . '&addesimod&token=' . $this->token,
+                    'desc' => $this->l('Add New ESI Block'),
+                    'icon' => 'process-icon-new'
+                );
+            } else {
+                $this->page_header_toolbar_btn['goback'] = array(
+                    'href' => self::$currentIndex . '&token=' . $this->token,
+                    'desc' => $this->l('Back to List'),
+                    'icon' => 'process-icon-back'
+                );
+            }
+        }
+        parent::initPageHeaderToolbar();
     }
 
     private function initDisplayValues()
     {
-        $this->config_values = $this->config->getModConfigValues();
+        $data = $this->config->get(Conf::ENTRY_MODULE);
+        $this->config_values = array();
+        $this->default_ids = array();
+
+        foreach ($data as $id => $ci) {
+            $idata = $ci->getCustConfArray();
+            if ($idata['priv']) {
+                $idata['pubpriv'] = $this->l('Private');
+                $idata['badge_success'] = true;
+            } else {
+                $idata['pubpriv'] = $this->l('Public');
+                $idata['badge_danger'] = true;
+            }
+            if ($idata['type'] == EsiConf::TYPE_CUSTOMIZED) {
+                $idata['typeD'] = $this->l('Customized');
+            } else {
+                $this->default_ids[] = $id;
+                $idata['badge_warning'] = 1; // no edits allowed
+                $idata['typeD'] = ($idata['type'] == EsiConf::TYPE_BUILTIN) ?
+                        $this->l('Built-in') : $this->l('Integrated');
+            }
+            if ($idata['tipurl']) {
+                $this->warnings[] = $idata['name'] . ': <a href="'. $idata['tipurl'] . '">'
+                    . $this->l('See online tips') . '</a>';
+                $idata['name'] .= ' (*)';
+            }
+            $this->config_values[$id] = $idata;
+        }
+
         if ($this->display == 'edit' || $this->display == 'view') {
             $name = $this->current_id;
             $this->original_values = $this->config_values[$name];
         } elseif ($this->display == 'add') {
             $this->original_values = array(
                 'id' => '',
+                'name' => '',
                 'priv' => 1,
                 'ttl' => 1800,
                 'tag' => '',
                 'events' => '',
+                'ctrl' => '',
+                'methods' => '',
+                'render' => '',
+                'asvar' => '',
+                'ie' => '',
             );
         } else { // list
             $this->original_values = $this->config_values;
@@ -116,14 +180,14 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         $this->display = 'list'; // default
 
         if (Tools::getIsset('add' . $t)) {
-            if ($this->access('add')) {
+            if ($this->canDo('add')) {
                 $this->action = 'new';
                 $this->display = 'add';
             } else {
                 $this->errors[] = $this->l('You do not have permission to add this.');
             }
         } elseif (Tools::getIsset('update' . $t) && $this->current_id) {
-            if ($this->access('edit')) {
+            if ($this->canDo('edit')) {
                 $this->action = 'edit';
                 $this->display = 'edit';
             } else {
@@ -131,7 +195,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             }
         } elseif (Tools::getIsset('delete' . $t) && $this->current_id) {
             /* Delete object */
-            if ($this->access('delete')) {
+            if ($this->canDo('delete')) {
                 $this->action = 'delete';
             } else {
                 $this->errors[] = $this->l('You do not have permission to delete this.');
@@ -142,26 +206,39 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         }
     }
 
+    protected function canDo($action)
+    {
+        if (method_exists($this, 'access')) { // 1.7 +
+            return $this->access($action);
+        } else {
+            return ($this->tabAccess[$action] === '1');
+        }
+    }
+
     public function initContent()
     {
-        if (!$this->viewAccess()) {
-            $this->errors[] = $this->l('You do not have permission to view this.');
-            return;
-        }
+//        if (!$this->viewAccess()) {
+//            $this->errors[] = $this->l('You do not have permission to view this.');
+//            return;
+//        }
+//
+
+        parent::initContent();
         if ($this->is_shop_level == 1) {
             $this->informations[] = $this->l('This section is only available at the global level.');
             return;
         }
 
         if ($this->display == 'edit' || $this->display == 'add' || $this->display == 'view') {
-            $this->content .= $this->renderForm();
+            $this->content = $this->renderForm();
         } elseif ($this->display == 'list') {
             $s = ' ';
             $this->informations[] = $this->l('You can make an ESI block for a widget, also known as Hole-Punching.').$s
-                . $this->l('Default modules are "Customer Sign in" and "Shopping cart" which cannot be changed.') . $s
+                . $this->l('Built-in and integrated modules cannot be changed.') . $s
                 . $this->l('These are advanced settings for third-party modules.') . $s
-                . $this->l('If you need help, you can order support service from LiteSpeed Tech.');
-            $this->content .= $this->renderList();
+                . '<a href="https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps">'
+                . $this->l('Wiki Help') . '</a>';
+            $this->content = $this->renderList();
         }
 
         $this->context->smarty->assign(array(
@@ -187,6 +264,8 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         $origVal = $this->original_values[$name];
         $invalid = $this->l('Invalid value') . ': ' . $this->labels[$name];
         $s = ' - '; // spacer
+        $invalidChars = $this->l('Invalid characters found.');
+        $splitPattern = '/[\s,]+/';
 
         switch ($name) {
             case 'id':
@@ -208,20 +287,71 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 if ($postVal === '') {
                     // ok, will use default value
                 } elseif (preg_match('/^[a-zA-Z-_0-9]+$/', $postVal) !== 1) {
-                    $this->errors[] = $invalid . $s . $this->l('Invalid characters found.');
+                    $this->errors[] = $invalid . $s . $invalidChars;
                 }
                 break;
 
             case 'events':
-                $clean = array_unique(preg_split("/[\s,]+/", $postVal, null, PREG_SPLIT_NO_EMPTY));
+                $clean = array_unique(preg_split($splitPattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
                 if (count($clean) == 0) {
                     $postVal = '';
                 } else {
-                    foreach ($clean as $evt) {
-                        if (!preg_match('/^[a-zA-Z]+$/', $evt)) {
-                            $this->errors[] = $invalid . $s . $this->l('Invalid characters found.');
-                        } elseif (Tools::strlen($evt) < 8) {
+                    foreach ($clean as $ci) {
+                        if (!preg_match('/^[a-zA-Z]+$/', $ci)) {
+                            $this->errors[] = $invalid . $s . $invalidChars;
+                        } elseif (Tools::strlen($ci) < 8) {
                             $this->errors[] = $invalid . $s . $this->l('Event string usually starts with "action".');
+                        }
+                    }
+                    $postVal = implode(', ', $clean);
+                }
+                break;
+
+            case 'ctrl':
+                $clean = array_unique(preg_split($splitPattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                if (count($clean) == 0) {
+                    $postVal = '';
+                } else {
+                    foreach ($clean as $ci) {
+                        // allow ClassName?param1&param2
+                        if (!preg_match('/^([a-zA-Z_]+)(\?[a-zA-Z_0-9\-&]+)?$/', $ci, $m)) {
+                            $this->errors[] = $invalid . $s . $invalidChars;
+                        } elseif (!class_exists($m[1])) {
+                            $this->errors[] = $invalid . $s . $this->l('Invalid class name.');
+                        }
+                    }
+                    $postVal = implode(', ', $clean);
+                }
+                break;
+
+            case 'methods':
+                $clean = array_unique(preg_split($splitPattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                if (count($clean) == 0) {
+                    $postVal = '';
+                } else {
+                    foreach ($clean as $ci) {
+                        if (!preg_match('/^(\!)?([a-zA-Z_]+)$/', $ci, $m)) {
+                            $this->errors[] = $invalid . $s . $invalidChars;
+                        } else {
+                            // no further validation for now
+                        }
+                    }
+                    $postVal = implode(', ', $clean);
+                }
+                break;
+
+            case 'render':
+                $clean = array_unique(preg_split($splitPattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                if (count($clean) == 0) {
+                    $postVal = '';
+                } elseif (count($clean) == 1 && $clean[0] == '*') {
+                    $postVal = '*'; // allow * for all
+                } else {
+                    foreach ($clean as $ci) {
+                        if (!preg_match('/^(\!)?([a-zA-Z_]+)$/', $ci, $m)) {
+                            $this->errors[] = $invalid . $s . $invalidChars;
+                        } else {
+                            // no further validation for now
                         }
                     }
                     $postVal = implode(', ', $clean);
@@ -238,7 +368,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
 
     private function processFormSave()
     {
-        $inputs = array('id', 'priv', 'ttl', 'tag', 'events');
+        $inputs = array('id', 'priv', 'ttl', 'tag', 'events', 'ctrl', 'methods', 'render', 'asvar', 'ie');
         $this->changed = 0;
         foreach ($inputs as $field) {
             $this->validateInput($field);
@@ -275,6 +405,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
     private function getModuleOptions()
     {
         $moduleOptions = array();
+        $is17 = version_compare(_PS_VERSION_, '1.7.0.0', '>=');
         if ($this->display == 'edit' || $this->display == 'view') {
             $name = $this->current_id;
             $moduleOptions[] = array(
@@ -289,7 +420,8 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 if (($module['active'] == 1)
                     && (!in_array($module['name'], $existing))
                     && ($tmp_instance = Module::getInstanceByName($module['name']))
-                    && ($tmp_instance instanceof PrestaShop\PrestaShop\Core\Module\WidgetInterface)) {
+                    && (!$is17
+                            || ($tmp_instance instanceof PrestaShop\PrestaShop\Core\Module\WidgetInterface))) {
                     $list[$module['name']] = $tmp_instance->displayName;
                 }
             }
@@ -304,6 +436,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
 
     public function renderForm()
     {
+        $s = ' ';
         // for new & edit & view
         $disabled = ($this->display == 'view');
         $form = array(
@@ -311,23 +444,26 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'title' => $this->l('Convert Widget to ESI Block'),
                 'icon' => 'icon-cogs'
             ),
-            'description' => $this->l('You can hole punch a widget as an ESI block.') . ' '
-                . $this->l('Each ESI block can have its own TTL and purge events.'),
+            'description' => $this->l('You can hole punch a widget as an ESI block.') . $s
+                . $this->l('Each ESI block can have its own TTL and purge events.') . $s
+                . $this->l('For more complicated cases, third-party integration class is required.') . $s
+                . $this->l('This requires a deep understanding of the internals of Prestashop.') . $s
+                . $this->l('If you need help, you can order Support service from LiteSpeed Tech.'),
             'input' => array(
                 array(
                     'type'    => 'select',
                     'label'   => $this->labels['id'],
                     'name'    => 'id',
+                    'hint'  => $this->l('This will only be effective if this widget is showing on a cacheable page.'),
                     'options' => array('query' => $this->module_options,
                         'id'    => 'id', 'name'  => 'name'),
-                    'desc'    => $this->l('Please select a front-end widget module only.') . ' '
-                        . $this->l('This will only be effective if this widget is showing on a cacheable page.'),
+                    'desc'    => $this->l('Please select a front-end widget module only.'),
                 ),
                 array(
                     'type' => 'switch',
                     'label' => $this->labels['priv'],
-                    'desc' => $this->l('A public block will only have one cached copy which is shared by everyone.') . ' '
-                        . $this->l('A private block will be cached individually for each user.'),
+                    'desc' => $this->l('A public block will only have one cached copy which is shared by everyone.')
+                        . $s . $this->l('A private block will be cached individually for each user.'),
                     'name' => 'priv',
                     'disabled'=> $disabled,
                     'is_bool' => true,
@@ -346,24 +482,75 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                     'label' => $this->labels['tag'],
                     'name' => 'tag',
                     'readonly'=> $disabled,
-                    'desc' => $this->l('Only allow one tag per module.') . ' '
-                        . $this->l('Same tag can be used for multiple modules.') . ' '
+                    'desc' => $this->l('Only allow one tag per module.') . $s
+                        . $this->l('Same tag can be used for multiple modules.') . $s
                         . $this->l('Leave blank to use the module name as the default value.'),
                 ),
                 array(
                     'type' => 'textarea',
                     'label' => $this->labels['events'],
                     'name' => 'events',
-                    'hint' => $this->l('This requires a deep understanding of the internals of Prestashop.') . ' ' .
-                    $this->l('If you need help, you can order Support service from LiteSpeed Tech.'),
+                    'hint' => $this->l('No need to add login/logout events.') . $s
+                    . $this->l('Those are included by default for all private blocks.'),
                     'readonly'=> $disabled,
-                    'desc' => $this->l('You can automatically purge the cached ESI blocks by events.') . ' ' .
-                    $this->l('Leave blank to solely rely on the TTL for timeout.') . ' ' .
-                    $this->l('Login and logout events are included by default for all private blocks.') . ' ' .
+                    'desc' => $this->l('You can automatically purge the cached ESI blocks by events.') . $s .
                     $this->l('Specify a comma-delimited list of events.'),
                 ),
+                array(
+                    'type' => 'textarea',
+                    'label' => $this->labels['ctrl'],
+                    'name' => 'ctrl',
+                    'hint' => $this->l('For example, cart block is set to be purged by this setting:')
+                    . $s . '"CartController:id_product"',
+                    'readonly'=> $disabled, // allow ClassName?param1&param2
+                    'desc' => $this->l('You can automatically purge the cached ESI blocks by dispatched controllers.')
+                    . $s .  $this->l('Specify a comma-delimited list of controller class names.') . $s
+                    . $this->l('If you add ":param" after the name, only if that param is set will trigger the purge.')
+                    . $s . $this->l('You can add multiple parameters, like "className:param1&param2".'),
+                ),
+                array(
+                    'type' => 'textarea',
+                    'label' => $this->labels['methods'],
+                    'name' => 'methods',
+                    'hint' => $this->l('Instead of listing all possible ones, you can simply define an exlusion list.'),
+                    'readonly'=> $disabled,
+                    'desc' => $this->l('Hooked methods that will trigger ESI injection.') . $s
+                    . $this->l('Specify a comma-delimited list of methods (prefix with "!" to exclude one).') . $s
+                    . $this->l('Leave blank will disable injection on CallHook method.'),
+                ),
+                array(
+                    'type' => 'textarea',
+                    'label' => $this->labels['render'],
+                    'name' => 'render',
+                    'hint' => $this->l('This is only available for PS1.7.'),
+                    'readonly'=> $disabled,
+                    'desc' => $this->l('You can further tune ESI injection for widget rendering by invoking hooks.')
+                    . '<br> '
+                    . $this->l('Use "*" for all hooks allowed, leave blank will disable renderWidget injection;')
+                    . $s . $this->l('Or specify a comma-delimited list of allowed hooks;')
+                    . $s . $this->l('Or a list of not-allowed hooks by prefixing with "!".'),
+                ),
+                array(
+                    'type' => 'switch',
+                    'label' => $this->labels['asvar'],
+                    'desc' => $this->l('If the rendered content is used as a variable such as token.')
+                    . $s . $this->l('Or it is small enough like less than 256 bytes.'),
+                    'name' => 'asvar',
+                    'disabled'=> $disabled,
+                    'is_bool' => true,
+                    'values' => array(array('value' => 1), array('value' => 0)),
+                ),
+                array(
+                    'type' => 'switch',
+                    'label' => $this->labels['ie'],
+                    'desc' => $this->l('Do not hole hunch an ESI block if current rendered content is empty.'),
+                    'name' => 'ie',
+                    'hint' => $this->l('No need to hole-punch if the overridden template intentionally blank it out.'),
+                    'disabled'=> $disabled,
+                    'is_bool' => true,
+                    'values' => array(array('value' => 1), array('value' => 0)),
+                ),
             ),
-
         );
         if (!$disabled) {
             $form['submit'] = array('title' => $this->l('Save'));
@@ -393,11 +580,13 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
     public function renderList()
     {
         $this->fields_list = array(
-            'name' => array('title' => $this->labels['id'], 'width' => 'auto'),
-            'priv' => array('title' => $this->labels['priv'], 'width' => '25', 'align' => 'center', 'type' => 'bool'),
+            'id' => array('title' => $this->labels['id'], 'width' => 'auto'),
+            'name' => array('title' => $this->labels['name'], 'width' => 'auto'),
+            'pubpriv' => array('title' => $this->labels['pubpriv'], 'width' => '25', 'align' => 'center',
+                'badge_success' => true, 'badge_danger' => true),
             'ttl' => array('title' => $this->labels['ttl'], 'align' => 'center', 'class' => 'fixed-width-sm'),
             'tag' => array('title' => $this->labels['tag'], 'align' => 'center', 'class' => 'fixed-width-sm'),
-            'events' => array('title' => $this->labels['events'], 'align' => 'center', 'width' => 'auto'),
+            'typeD' => array('title' => $this->labels['type'], 'align' => 'center', 'badge_warning' => true),
         );
 
         $this->_list = $this->config_values;
@@ -406,9 +595,8 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         $this->actions[] = 'edit';
         $this->actions[] = 'delete';
 
-        $defaultmods = array_keys($this->default);
-        $this->list_skip_actions['edit'] = $defaultmods;
-        $this->list_skip_actions['delete'] = $defaultmods;
+        $this->list_skip_actions['edit'] = $this->default_ids;
+        $this->list_skip_actions['delete'] = $this->default_ids;
         // populate _list
         $helper = new HelperList();
 
@@ -427,25 +615,5 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         $list = $helper->generateList($this->_list, $this->fields_list);
 
         return $list;
-    }
-
-    public function initPageHeaderToolbar()
-    {
-        if ($this->is_shop_level !== 1) {
-            if ($this->display == 'list') {
-                $this->page_header_toolbar_btn['new_esi'] = array(
-                    'href' => self::$currentIndex . '&addesimod&token=' . $this->token,
-                    'desc' => $this->l('Add New ESI Block'),
-                    'icon' => 'process-icon-new'
-                );
-            } else {
-                $this->page_header_toolbar_btn['goback'] = array(
-                    'href' => self::$currentIndex . '&token=' . $this->token,
-                    'desc' => $this->l('Back to List'),
-                    'icon' => 'process-icon-back'
-                );
-            }
-        }
-        parent::initPageHeaderToolbar();
     }
 }

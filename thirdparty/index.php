@@ -22,9 +22,12 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-class AdminLiteSpeedCacheConfigParentController extends ModuleAdminController
-{
-    /* this file serve as place holder for tab space. No content needed.
-     * But class needs to be existed and extend ModuleAdminController
-     */
-}
+header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
+
+header("Cache-Control: no-store, no-cache, must-revalidate");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
+header("Location: ../");
+exit;

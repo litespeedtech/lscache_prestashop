@@ -22,6 +22,7 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
+use LiteSpeedCacheLog as LSLog;
 use LiteSpeedCacheConfig as Conf;
 
 class AdminLiteSpeedCacheConfigController extends ModuleAdminController
@@ -54,8 +55,9 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminHome'));
         }
 
-        $this->page_header_toolbar_title = $this->l('LiteSpeed Cache Settings');
-        $this->meta_title = $this->l('LiteSpeed Cache Configuration');
+        $title = $this->l('LiteSpeed Cache Configuration');
+        $this->page_header_toolbar_title = $title;
+        $this->meta_title = $title;
         //// -1: not multishop, 0: multishop global, 1: multishop shop or group
         if (Shop::isFeatureActive()) {
             $this->is_shop_level = (Shop::getContext() == Shop::CONTEXT_ALL) ? 0 : 1;
@@ -197,8 +199,8 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             case Conf::CFG_PUBLIC_TTL:
                 if (!Validate::isUnsignedInt($postVal)) {
                     $this->errors[] = $invalid;
-                } elseif ($postVal < 600) {
-                    $this->errors[] = $invalid . $s . $this->l('Must be greater than 600 seconds');
+                } elseif ($postVal < 300) {
+                    $this->errors[] = $invalid . $s . $this->l('Must be greater than 300 seconds');
                 } elseif ($postVal != $origVal) {
                     $this->changed |= self::BMC_SHOP;
                     $this->changed |= ($postVal < $origVal) ? self::BMC_MUST_PURGE : self::BMC_MAY_PURGE;

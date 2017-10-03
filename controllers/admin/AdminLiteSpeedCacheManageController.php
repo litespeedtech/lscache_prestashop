@@ -122,6 +122,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         if ($this->doPurge(1, 'ALL')) {
             $this->confirmations[] = $this->l('Notified LiteSpeed Server to flush the entire cache storage.');
         }
+        LiteSpeedCacheHelper::clearInternalCache();
     }
 
     private function processPurgeShops()
@@ -129,6 +130,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         if ($this->doPurge('*')) {
             $this->confirmations[] = $this->l('Notified LiteSpeed Server to flush all pages of this PrestaShop.');
         }
+        LiteSpeedCacheHelper::clearInternalCache();
     }
 
     private function processPurgeSelection()
@@ -166,6 +168,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         if (Tools::getValue('cbPurge_priv')) {
             $tags[] = Conf::TAG_PREFIX_PRIVATE;
             $info[] = $this->labels['priv'];
+            LiteSpeedCacheHelper::clearInternalCache();
         }
         if ($cid = Tools::getValue('rcats')) {
             $tags[] = Conf::TAG_PREFIX_CATEGORY . $cid;
@@ -178,6 +181,21 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             }
         } else {
             $this->warnings[] = $this->l('Nothing selected. No action taken.');
+        }
+    }
+
+    protected function clearMenuCache() // check later todo
+    {
+        $dir = $this->getCacheDirectory();
+
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        foreach (scandir($dir) as $entry) {
+            if (preg_match('/\.json$/', $entry)) {
+                unlink($dir . DIRECTORY_SEPARATOR . $entry);
+            }
         }
     }
 

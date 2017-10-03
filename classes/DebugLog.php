@@ -22,16 +22,15 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/Config.php';
-
-class LiteSpeedCacheDebugLog
+class LiteSpeedCacheLog
 {
     // LEVEL is by meaning only, number can be duplicated
     const LEVEL_FORCE = 0;
-    const LEVEL_FOOTER_COMMENT = 0.5;
+    const LEVEL_FOOTER_COMMENT = 3.5;
     const LEVEL_EXCEPTION = 1;
     const LEVEL_UNEXPECTED = 2;
     const LEVEL_NOTICE = 3;
+    const LEVEL_CUST_SMARTY = 3;
     const LEVEL_UPDCONFIG = 3;
     const LEVEL_SETHEADER = 4;
     const LEVEL_ENVCOOKIE_CHANGE = 5;
@@ -40,6 +39,7 @@ class LiteSpeedCacheDebugLog
     const LEVEL_ESI_INCLUDE = 7;
     const LEVEL_CACHE_ROUTE = 8;
     const LEVEL_ENVCOOKIE_DETAIL = 9;
+    const LEVEL_ESI_OUTPUT = 10;
     const LEVEL_HOOK_DETAIL =10;
     const LEVEL_TEMPORARY = 8.5;
 
@@ -51,7 +51,7 @@ class LiteSpeedCacheDebugLog
     public static function getInstance()
     {
         if (!self::$instance) {
-            self::$instance = new LiteSpeedCacheDebugLog();
+            self::$instance = new LiteSpeedCacheLog();
         }
         return self::$instance;
     }
@@ -66,7 +66,8 @@ class LiteSpeedCacheDebugLog
     {
         if ($this->logger == null) {
             $this->logger = new FileLogger(FileLogger::DEBUG);
-            $this->logger->setFilename(_PS_ROOT_DIR_ . '/app/logs/lscache.log');
+            $path = version_compare(_PS_VERSION_, '1.7.0.0', '>=') ? '/app/logs' : '/log';
+            $this->logger->setFilename(_PS_ROOT_DIR_ . $path . '/lscache.log');
         }
         return $this->logger;
     }
@@ -87,7 +88,9 @@ class LiteSpeedCacheDebugLog
             } elseif ($debugLevel == self::LEVEL_TEMPORARY) {
                 $mesg .= ' ###############';
             }
-            $mesg = str_replace("\n", ("\n" . $this->prefix . '  '), $mesg);
+            if ($debugLevel != self::LEVEL_TEMPORARY) {
+                $mesg = str_replace("\n", ("\n" . $this->prefix . '  '), $mesg);
+            }
             $this->getLogger()->logDebug($this->prefix . ' (' . $debugLevel . ') ' . $mesg);
         }
     }

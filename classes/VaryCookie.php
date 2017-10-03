@@ -22,13 +22,12 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-use LiteSpeedCacheDebugLog as DebugLog;
+use LiteSpeedCacheLog as LSLog;
 
 class LiteSpeedCacheVaryCookie extends CookieCore
 {
     private $defaultEnvVaryCookie = '_lscache_vary'; // system default
     private $cacheVary;
-    private $isDebug;
     private $diffCustomerGroup; // 0: No; 1: Yes; 2: login_out
 
     // to extend CookieCore is to retrieve the internal variables.
@@ -43,7 +42,6 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         parent::__construct($name, $path);
         $this->cacheVary = array($name => array());
         $conf = LiteSpeedCacheConfig::getInstance();
-        $this->isDebug = $conf->isDebug();
         $this->diffCustomerGroup = $conf->get(LiteSpeedCacheConfig::CFG_DIFFCUSTGRP);
     }
 
@@ -144,13 +142,13 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             }
             if ($changed) {
                 $write[$cookieName] = $newVal;
-                if ($this->isDebug >= DebugLog::LEVEL_ENVCOOKIE_CHANGE) {
+                if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_ENVCOOKIE_CHANGE) {
                     $mesg = 'env cookie changed ' . $cookieName . ' ov=' . $oldVal . ' nv=' . $newVal;
-                    DebugLog::log($mesg, DebugLog::LEVEL_ENVCOOKIE_CHANGE);
+                    LSLog::log($mesg, LSLog::LEVEL_ENVCOOKIE_CHANGE);
                 }
-            } elseif ($newVal && $this->isDebug >= DebugLog::LEVEL_ENVCOOKIE_DETAIL) {
+            } elseif ($newVal && _LITESPEED_DEBUG_ >= LSLog::LEVEL_ENVCOOKIE_DETAIL) {
                 $mesg = 'env cookie found and match ' . $cookieName . ' = ' . $newVal;
-                DebugLog::log($mesg, DebugLog::LEVEL_ENVCOOKIE_DETAIL);
+                LSLog::log($mesg, LSLog::LEVEL_ENVCOOKIE_DETAIL);
             }
         }
 

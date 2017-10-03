@@ -22,7 +22,9 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-use LiteSpeedCacheDebugLog as DebugLog;
+require_once('EsiModConf.php');
+use LiteSpeedCacheLog as LSLog;
+use LiteSpeedCacheEsiModConf as EsiConf;
 
 class LiteSpeedCacheConfig
 {
@@ -41,6 +43,9 @@ class LiteSpeedCacheConfig
     const TAG_SITEMAP = 'SP';
     const TAG_STORES = 'ST';
     const TAG_404 = 'D404';
+    /* common private tags */
+    const TAG_CART = 'cart';
+    const TAG_SIGNIN = 'signin';
 
     /* config entry */
     const ENTRY_ALL = 'LITESPEED_CACHE_GLOBAL';
@@ -63,9 +68,10 @@ class LiteSpeedCacheConfig
 
     private $esiModConf = null;
     private $pubController = null;
+    private $purgeController = array();
     private $all = null;
     private $shop = null;
-    private $mod = null;
+    private $custMod = null;
     private $isDebug = 0;
     private static $instance = null;
 
@@ -114,7 +120,7 @@ class LiteSpeedCacheConfig
                 return $this->shop[$configField];
             // in module customization
             case self::ENTRY_MODULE:
-                return $this->mod;
+                return $this->esiModConf['mods'];
         }
         return null;
     }
@@ -147,41 +153,12 @@ class LiteSpeedCacheConfig
                 self::CFG_404_TTL => 86400,
                 self::CFG_DIFFCUSTGRP => 0,
             );
-        } elseif ($key == self::ENTRY_MODULE) {
-            return array(
-                'ps_customersignin' => array(
-                    'priv' => 1,
-                    'ttl' => '',
-                    'tag' => 'signin',
-                    'events' => 'actionCustomerLogoutAfter, actionAuthentication',
-                ),
-                'ps_shoppingcart' => array(
-                    'priv' => 1,
-                    'ttl' => '',
-                    'tag' => 'cart',
-                    'events' => 'actionAjaxDieCartControllerdisplayAjaxUpdateBefore',
-                ),
-            );
         }
     }
 
     public function getAllConfigValues()
     {
         return array_merge($this->get(self::ENTRY_ALL), $this->get(self::ENTRY_SHOP));
-    }
-
-    public function getModConfigValues()
-    {
-        $data = $this->get(self::ENTRY_MODULE);
-        foreach ($data as $idname => &$conf) {
-            $conf['id'] = $idname;
-            if ($tmp_instance = Module::getInstanceByName($idname)) {
-                $conf['name'] = $tmp_instance->displayName;
-            } else {
-                $conf['name'] = $this->l('Invalid module - should be removed');
-            }
-        }
-        return $data;
     }
 
     // action is add/edit/delete
@@ -191,43 +168,59 @@ class LiteSpeedCacheConfig
             return false;
         }
         $id = $currentEntry['id'];
-        $defaults = $this->getDefaultConfData(self::ENTRY_MODULE);
-        if (isset($defaults[$id])) {
+        $item = $this->getEsiModuleConf($id);
+        if ($item != null && !$item->isCustomized()) {
             // should not come here, do not allow touch default modules
             return false;
         }
-        $old = $this->mod;
-        $oldevents = $this->getModuleEvents($old);
+
+        $oldevents = array_keys($this->esiModConf['purge_events']);
+
         if ($action == 'new' || $action == 'edit') {
-            $this->mod[$id] = array(
-                'priv' => $currentEntry['priv'],
-                'ttl' => $currentEntry['ttl'],
-                'tag' => $currentEntry['tag'],
-                'events' => $currentEntry['events']
-            );
+            $newitem = new EsiConf($id, EsiConf::TYPE_CUSTOMIZED, $currentEntry);
+            $this->esiModConf['mods'][$id] = $newitem;
         } elseif ($action == 'delete') {
-            unset($this->mod[$id]);
+            unset($this->esiModConf['mods'][$id]);
         } else {
             // sth wrong
             return false;
         }
-        $this->updateConfiguration(self::ENTRY_MODULE, $this->mod);
-        $newevents = $this->getModuleEvents($this->mod);
+        $newMod = array();
+        $newevents = array();
+        foreach ($this->esiModConf['mods'] as $mi) {
+            if (($events = $mi->getPurgeEvents()) != null) {
+                $newevents = array_merge($newevents, $events);
+            }
+            if ($mi->isCustomized()) {
+                $newMod[$mi->getModuleName()] = $mi;
+            }
+        }
+        $newevents = array_unique($newevents);
+
+        if (!empty($newMod)) {
+            ksort($newMod);
+        }
+        $newModValue = json_encode($newMod);
+        if ($newModValue != $this->custMod) {
+            $this->updateConfiguration(self::ENTRY_MODULE, $newModValue);
+        }
+
         $builtin = $this->getReservedHooks();
         $added = array_diff($newevents, $oldevents, $builtin);
         $removed = array_diff($oldevents, $newevents, $builtin);
+
         if (!empty($added) || !empty($removed)) {
             $mymod = Module::getInstanceByName(LiteSpeedCache::MODULE_NAME);
             foreach ($added as $a) {
                 $res = Hook::registerHook($mymod, $a);
-                if ($this->isDebug >= DebugLog::LEVEL_UPDCONFIG) {
-                    DebugLog::log('in registerHook ' . $a . '=' . $res, DebugLog::LEVEL_UPDCONFIG);
+                if ($this->isDebug >= LSLog::LEVEL_UPDCONFIG) {
+                    LSLog::log('in registerHook ' . $a . '=' . $res, LSLog::LEVEL_UPDCONFIG);
                 }
             }
             foreach ($removed as $r) {
                 $res = Hook::unregisterHook($mymod, $r);
-                if ($this->isDebug >= DebugLog::LEVEL_UPDCONFIG) {
-                    DebugLog::log('in unregisterHook ' . $r . '=' . $res, DebugLog::LEVEL_UPDCONFIG);
+                if ($this->isDebug >= LSLog::LEVEL_UPDCONFIG) {
+                    LSLog::log('in unregisterHook ' . $r . '=' . $res, LSLog::LEVEL_UPDCONFIG);
                 }
             }
             return 2;
@@ -235,23 +228,11 @@ class LiteSpeedCacheConfig
         return 1;
     }
 
-    private function getModuleEvents($modData)
-    {
-        $events = array();
-        foreach ($modData as $d) {
-            if (!empty($d['events'])) {
-                $de = preg_split("/[\s,]+/", $d['events']);
-                $events = array_merge($events, $de);
-            }
-        }
-        return array_unique($events);
-    }
-
     public function updateConfiguration($key, $values)
     {
-        if ($this->isDebug >= DebugLog::LEVEL_UPDCONFIG) {
-            DebugLog::log('in updateConfiguration context=' . Shop::getContext()
-                    . " key = $key value = " . print_r($values, true), DebugLog::LEVEL_UPDCONFIG);
+        if ($this->isDebug >= LSLog::LEVEL_UPDCONFIG) {
+            LSLog::log('in updateConfiguration context=' . Shop::getContext()
+                    . " key = $key value = " . var_export($values, true), LSLog::LEVEL_UPDCONFIG);
         }
         switch ($key) {
             case self::ENTRY_ALL:
@@ -277,8 +258,8 @@ class LiteSpeedCacheConfig
                 Configuration::updateValue(self::ENTRY_SHOP, json_encode($this->shop));
                 break;
             case self::ENTRY_MODULE:
-                $this->mod = $values;
-                Configuration::updateValue(self::ENTRY_MODULE, json_encode($this->mod));
+                $this->custMod = $values;
+                Configuration::updateValue(self::ENTRY_MODULE, $this->custMod);
                 break;
             default:
                 return false;
@@ -298,7 +279,7 @@ class LiteSpeedCacheConfig
         $this->all = json_decode(Configuration::get(self::ENTRY_ALL), true);
 
         if (!$this->all) { // for config not exist, or decode err
-            DebugLog::log('Config not exist yet or decode err', DebugLog::LEVEL_FORCE);
+            LSLog::log('Config not exist yet or decode err', LSLog::LEVEL_FORCE);
             $this->all = $this->getDefaultConfData(self::ENTRY_ALL);
         }
 
@@ -306,7 +287,10 @@ class LiteSpeedCacheConfig
             $ips = $this->getArray(self::CFG_DEBUG_IPS);
             if (empty($ips) || in_array($_SERVER['REMOTE_ADDR'], $ips)) {
                 $this->isDebug = $this->all[self::CFG_DEBUG_LEVEL];
-                DebugLog::setDebugLevel($this->isDebug);
+                LSLog::setDebugLevel($this->isDebug);
+                if (!defined('_LITESPEED_DEBUG_')) {
+                    define('_LITESPEED_DEBUG_', $this->isDebug);
+                }
             }
         }
 
@@ -315,42 +299,13 @@ class LiteSpeedCacheConfig
             $this->shop = $this->getDefaultConfData(self::ENTRY_SHOP);
         }
 
-        $this->mod = json_decode(Configuration::get(self::ENTRY_MODULE), true);
-        $default_mod = $this->getDefaultConfData(self::ENTRY_MODULE);
-        if (is_array($this->mod)) {
-            $this->mod = array_merge($this->mod, $default_mod);
-        } else {
-            $this->mod = $default_mod;
-        }
-
-        if (!$this->mod ||
-                !isset($this->mod['ps_customersignin']) ||
-                !isset($this->mod['ps_shoppingcart'])) {
-            $this->mod = $this->getDefaultConfData(self::ENTRY_MODULE);
-        }
-
+        $this->custMod = Configuration::get(self::ENTRY_MODULE);
         $this->esiModConf = array('mods' => array(), 'purge_events' =>array());
-        // mods - priv, ttl, tag
-        foreach ($this->mod as $name => $conf) {
-            if (empty($conf['tag'])) {
-                $conf['tag'] = $name;
-            }
-            if ($conf['ttl'] === '') {
-                $conf['ttl'] = ($conf['priv'] == 1) ?
-                    $this->shop[self::CFG_PRIVATE_TTL] : $this->shop[self::CFG_PUBLIC_TTL];
-            }
-            $this->esiModConf['mods'][$name] = $conf;
-            $tag = $conf['tag'];
-            if ($conf['priv'] == 1) {
-                $tag = '!' . $tag;
-            }
-            $events = preg_split("/[\s,]+/", $conf['events'], null, PREG_SPLIT_NO_EMPTY);
-            foreach ($events as $event) {
-                if (!isset($this->esiModConf['purge_events'][$event])) {
-                    $this->esiModConf['purge_events'][$event] = array($tag);
-                } else {
-                    $this->esiModConf['purge_events'][$event][] = $tag;
-                }
+        $custdata = json_decode($this->custMod, true);
+        if ($custdata) {
+            foreach ($custdata as $name => $sdata) {
+                $esiconf = new EsiConf($name, EsiConf::TYPE_CUSTOMIZED, $sdata);
+                $this->registerEsiModule($esiconf);
             }
         }
 
@@ -391,6 +346,26 @@ class LiteSpeedCacheConfig
         return $nocache;
     }
 
+    // if allowed, return conf
+    public function canInjectEsi($name, $params)
+    {
+        $m = &$this->esiModConf['mods'];
+        if (isset($m[$name]) && $m[$name]->canInject($params)) {
+            return $m[$name];
+        } else {
+            return false;
+        }
+    }
+
+    public function esiInjectRenderWidget($mName, $hName)
+    {
+        $m = &$this->esiModConf['mods'];
+        if (isset($m[$mName]) && $m[$mName]->injectRenderWidget($hName)) {
+            return $m[$mName];
+        }
+        return false;
+    }
+
     public function isEsiModule($moduleName)
     {
         return isset($this->esiModConf['mods'][$moduleName]);
@@ -406,17 +381,78 @@ class LiteSpeedCacheConfig
 
     public function getPurgeTagsByEvent($event)
     {
-        $tags = array('priv' => array(), 'pub' => array());
         if (isset($this->esiModConf['purge_events'][$event])) {
-            foreach ($this->esiModConf['purge_events'][$event] as $tag) {
-                if ($tag{0} == '!') {
-                    $tags['priv'][] = ltrim($tag, '!');
-                } else {
-                    $tags['pub'][] = $tag;
+            return $this->esiModConf['purge_events'][$event];
+        }
+        return null;
+    }
+
+    public function registerEsiModule(EsiConf $esiConf)
+    {
+        $modname = $esiConf->getModuleName();
+        $this->esiModConf['mods'][$modname] = $esiConf;
+        $isPriv = $esiConf->isPrivate();
+        $type = $isPriv ? 'priv' : 'pub';
+        $tag = $esiConf->getTag();
+        if ($pc = $esiConf->getPurgeControllers()) {
+            foreach ($pc as $cname => $cparam) {
+                // allow ClassName:param1&param2=value
+                $cname = Tools::strtolower($cname);
+                if (!isset($this->purgeController[$cname])) {
+                    $this->purgeController[$cname] = array();
+                }
+                $detail = &$this->purgeController[$cname];
+                if (!isset($detail[$cparam])) {
+                    $detail[$cparam] = array('priv' => array(), 'pub' => array());
+                }
+                if (!in_array($tag, $detail[$cparam][$type])) {
+                    $detail[$cparam][$type][] = $tag;
                 }
             }
         }
-        return $tags;
+        $events = $esiConf->getPurgeEvents();
+        if (!empty($events)) {
+            foreach ($events as $event) {
+                if (!isset($this->esiModConf['purge_events'][$event])) {
+                    $this->esiModConf['purge_events'][$event] = array('priv' => array(), 'pub' => array());
+                }
+                if (!in_array($tag, $this->esiModConf['purge_events'][$event][$type])) {
+                    $this->esiModConf['purge_events'][$event][$type][] = $tag;
+                }
+            }
+        }
+    }
+
+    public function isPurgeController($controller_class)
+    {
+        $c = Tools::strtolower($controller_class);
+        if (!isset($this->purgeController[$c])) {
+            return false;
+        }
+
+        $conf = array('pub' => array(), 'priv' => array());
+        foreach ($this->purgeController[$c] as $param => $tags) {
+            if ($param !== 0) {
+                //param1&param2
+                $params = explode('&', $param);
+                foreach ($params as $paramName) {
+                    if (Tools::getValue($paramName) == false) {
+                        continue 2;
+                    }
+                }
+            }
+            if (!empty($tags['priv'])) {
+                $conf['priv'] = $tags['priv'];
+            }
+            if (!empty($tags['pub'])) {
+                $conf['pub'] = $tags['pub'];
+            }
+        }
+
+        if (!empty($conf['priv']) || !empty($conf['pub'])) {
+            return $conf;
+        }
+        return false;
     }
 
     public function getDefaultPurgeTagsByProduct()
@@ -466,8 +502,6 @@ class LiteSpeedCacheConfig
         $hooks = array(
             /** global * */
             'actionDispatcher', // check cacheable for route
-            'actionOutputHTMLBefore', // This hook is used to filter the whole HTML page before rendered (only front)
-            'actionAjaxDieCategoryControllerdoProductSearchBefore',
             'displayHeader', // set vary
             'displayFooterAfter', // show debug info
             /** add cache tags * */
@@ -478,11 +512,11 @@ class LiteSpeedCacheConfig
             'filterCmsContent',
             'filterCmsCategoryContent',
             /** private purge * */
-            'actionAjaxDieCartControllerdisplayAjaxUpdateBefore',
             'actionCustomerLogoutAfter',
             'actionAuthentication',
+            'actionCustomerAccountAdd',
             /** public purge * */
-            /*             * *  product ** */
+            /***** product *****/
             'actionProductAdd',
             'actionProductSave',
             'actionProductUpdate', //array('id_product' => (int)$this->id, 'product' => $this)
@@ -490,28 +524,30 @@ class LiteSpeedCacheConfig
             'actionObjectSpecificPriceCoreAddAfter',
             'actionObjectSpecificPriceCoreDeleteAfter',
             'actionWatermark',
-            /*             * * category ** */
+            /***** category *****/
             'categoryUpdate', // array('category' => $category)
             'actionCategoryUpdate',
             'actionCategoryAdd', // here do not purge all, as user can manually do that
             'actionCategoryDelete',
-            /*             * * cms ** */
+            /***** cms *****/
             'actionObjectCmsUpdateAfter',
             'actionObjectCmsDeleteAfter',
             'actionObjectCmsAddAfter',
-            /*             * * supplier ** */
+            /***** supplier *****/
             'actionObjectSupplierUpdateAfter',
             'actionObjectSupplierDeleteAfter',
             'actionObjectSupplierAddAfter',
-            /*             * * manufacturer ** */
+            /***** manufacturer *****/
             'actionObjectManufacturerUpdateAfter',
             'actionObjectManufacturerDeleteAfter',
             'actionObjectManufacturerAddAfter',
-            /*             * * stores ** */
+            /***** stores *****/
             'actionObjectStoreUpdateAfter',
             /** lscache own hooks * */
             'litespeedCachePurge',
-            'litespeedCacheNotCacheable',
+            'litespeedNotCacheable',
+            'litespeedEsiBegin',
+            'litespeedEsiEnd',
         );
 
         return $hooks;
