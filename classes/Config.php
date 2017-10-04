@@ -58,6 +58,7 @@ class LiteSpeedCacheConfig
     const CFG_PRIVATE_TTL = 'privttl';
     const CFG_404_TTL = '404ttl';
     const CFG_HOME_TTL = 'homettl';
+    const CFG_DIFFMOBILE = 'diff_mobile';
     const CFG_DIFFCUSTGRP = 'diff_customergroup';
     const CFG_NOCACHE_VAR = 'nocache_vars';
     const CFG_NOCACHE_URL = 'nocache_urls';
@@ -94,6 +95,7 @@ class LiteSpeedCacheConfig
                 return array_replace($this->getDefaultConfData(self::ENTRY_ALL), $this->all);
             // in global scope
             case self::CFG_ENABLED:
+            case self::CFG_DIFFMOBILE:
             case self::CFG_NOCACHE_VAR:
             case self::CFG_NOCACHE_URL:
             // in global developer form
@@ -138,6 +140,7 @@ class LiteSpeedCacheConfig
         if ($key == self::ENTRY_ALL) {
             return array(
                 self::CFG_ENABLED => 0,
+                self::CFG_DIFFMOBILE => 0,
                 self::CFG_NOCACHE_VAR => '',
                 self::CFG_NOCACHE_URL => '',
                 self::CFG_DEBUG => 0,
@@ -238,6 +241,7 @@ class LiteSpeedCacheConfig
             case self::ENTRY_ALL:
                 $this->all = array(
                     self::CFG_ENABLED => $values[self::CFG_ENABLED],
+                    self::CFG_DIFFMOBILE => $values[self::CFG_DIFFMOBILE],
                     self::CFG_NOCACHE_VAR => $values[self::CFG_NOCACHE_VAR],
                     self::CFG_NOCACHE_URL => $values[self::CFG_NOCACHE_URL],
                     self::CFG_DEBUG => $values[self::CFG_DEBUG],

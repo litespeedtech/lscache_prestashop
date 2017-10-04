@@ -22,6 +22,7 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
+use LiteSpeedCacheConfig as Conf;
 use LiteSpeedCacheLog as LSLog;
 
 class LiteSpeedCacheHelper
@@ -33,6 +34,8 @@ class LiteSpeedCacheHelper
     {
         $ctx = Context::getContext();
         $cookie = $ctx->cookie;
+        $config = Conf::getInstance();
+
         $defaultParam = array('s' => $ctx->shop->id);
         if (isset($cookie->iso_code_country)) {
             $defaultParam['ct'] = $cookie->iso_code_country;
@@ -43,6 +46,9 @@ class LiteSpeedCacheHelper
         if (isset($cookie->id_lang)) {
             $defaultParam['l'] = $cookie->id_lang;
         }
+        if ($config->get(Conf::CFG_DIFFMOBILE)) {
+            $defaultParam['mobi'] = $ctx->getMobileDevice() ? 1:0;
+        }
         $esiurl = $ctx->link->getModuleLink(LiteSpeedCache::MODULE_NAME, 'esi', $defaultParam);
         $esiurl0 = $ctx->link->getModuleLink(LiteSpeedCache::MODULE_NAME, 'esi');
         $baselink = $ctx->link->getBaseLink();
@@ -51,9 +57,8 @@ class LiteSpeedCacheHelper
         self::$internal['esi_base_url'] = $baseuri . str_replace($baselink, '', $esiurl);
         self::$internal['esi_base_url_raw'] = $baseuri . str_replace($baselink, '', $esiurl0);
 
-        $config = LiteSpeedCacheConfig::getInstance();
-        self::$internal['pub_ttl'] = $config->get(LiteSpeedCacheConfig::CFG_PUBLIC_TTL);
-        self::$internal['priv_ttl'] = $config->get(LiteSpeedCacheConfig::CFG_PRIVATE_TTL);
+        self::$internal['pub_ttl'] = $config->get(Conf::CFG_PUBLIC_TTL);
+        self::$internal['priv_ttl'] = $config->get(Conf::CFG_PRIVATE_TTL);
 
         $unique = str_split(md5(_PS_ROOT_DIR_));
         $prefix = 'PS' . implode('', array_slice($unique, 0, 5)); // take 5 char
@@ -62,7 +67,7 @@ class LiteSpeedCacheHelper
         self::$internal['cache_dir'] = _PS_CACHE_DIR_ . '/' . LiteSpeedCache::MODULE_NAME;
 
         $tag0 = $prefix; // for purge all PS cache
-        $tag1 = $prefix . '_' . LiteSpeedCacheConfig::TAG_PREFIX_SHOP . $defaultParam['s']; // for purge one shop
+        $tag1 = $prefix . '_' . Conf::TAG_PREFIX_SHOP . $defaultParam['s']; // for purge one shop
         self::$internal['tag_shared_pub'] = $tag0 . ',' . $tag1;
         self::$internal['tag_shared_priv'] = 'public:' . $prefix . '_PRIV'; // in private cache, use public:prefix_PRIV
     }
@@ -90,7 +95,9 @@ class LiteSpeedCacheHelper
                 $count ++;
             }
         }
-        LSLog::log(__FUNCTION__ . "=$count", LSLog::LEVEL_PURGE_EVENT);
+        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
+            LSLog::log(__FUNCTION__ . "=$count", LSLog::LEVEL_PURGE_EVENT);
+        }
     }
 
     public static function genEsiElements(LiteSpeedCacheEsiItem $item)
@@ -106,7 +113,7 @@ class LiteSpeedCacheHelper
         //   cache-tag='E.footer' as-var='1' cache-control='no-vary,public'/>
 
         // id is base64_encode(json_encode($params))
-        $url = self::$internal['esi_base_url'] . '&pd=' . urlencode($item->getId()); // todo check later if need ?
+        $url = self::$internal['esi_base_url'] . '&pd=' . urlencode($item->getId());
 
         $tagInline = '';
         $tagInclude = '';
@@ -200,7 +207,7 @@ class LiteSpeedCacheHelper
         $cacheFile = self::getCacheFilePath($dir);
         $snapshot = self::getFileContent($cacheFile);
         $saved = json_decode($snapshot, true);
-        //LSLog::log('temp data' . var_export($saved, 1), LSLog::LEVEL_TEMPORARY);
+
         if (!is_array($saved) || json_last_error() !== JSON_ERROR_NONE) {
             $saved = array('data' => array(), 'tags' => array(), 'first' => array());
         }
@@ -227,7 +234,9 @@ class LiteSpeedCacheHelper
         ksort($saved['first']);
         $newsnapshot = json_encode($saved, JSON_UNESCAPED_SLASHES);
         if ($snapshot != $newsnapshot) {
-            LSLog::log('Esi data cache refreshed', LSLog::LEVEL_ESI_INCLUDE);
+            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_SAVED_DATA) {
+                LSLog::log(__FUNCTION__ . ' updated data ' . var_export($saved, true), LSLog::LEVEL_SAVED_DATA);
+            }
             file_put_contents($cacheFile, $newsnapshot);
         }
     }

@@ -65,7 +65,7 @@ class LiteSpeedCache extends Module
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
         $this->ps_versions_compliancy = array(
-            'min' => '1.6', //'1.7.1.0',
+            'min' => '1.6', // support both 1.6 and 1.7
             'max' => _PS_VERSION_,
         );
 
@@ -86,6 +86,9 @@ class LiteSpeedCache extends Module
         self::$ccflag |= $this->config->moduleEnabled();
         if (!defined('_LITESPEED_CACHE_')) {
             define('_LITESPEED_CACHE_', 1);
+        }
+        if (!defined('_LITESPEED_DEBUG_')) {
+            define('_LITESPEED_DEBUG_', 0);
         }
     }
 
@@ -193,8 +196,10 @@ class LiteSpeedCache extends Module
     {
         $ctype = $params['controller_type'];
         $cclass = $params['controller_class'];
-        LiteSpeedCacheLog::log(__FUNCTION__ . ' type=' . $ctype
-            . ' controller=' . $cclass . ' req=' . $_SERVER['REQUEST_URI'], LiteSpeedCacheLog::LEVEL_CACHE_ROUTE);
+        if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_CACHE_ROUTE) {
+            LiteSpeedCacheLog::log(__FUNCTION__ . ' type=' . $ctype . ' controller=' . $cclass
+                . ' req=' . $_SERVER['REQUEST_URI'], LiteSpeedCacheLog::LEVEL_CACHE_ROUTE);
+        }
         if (!self::isActiveForUser()) { // check for ip restriction
             return;
         }
@@ -358,7 +363,12 @@ class LiteSpeedCache extends Module
     {
         if (self::isCacheable() && _LITESPEED_DEBUG_) {
             $comment = '<!-- LiteSpeed Cache snapshot generated at ' . gmdate("Y/m/d H:i:s") . ' GMT -->';
-            LiteSpeedCacheLog::log('Add html comments in footer ' . $comment, LiteSpeedCacheLog::LEVEL_FOOTER_COMMENT);
+            if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_FOOTER_COMMENT) {
+                LiteSpeedCacheLog::log(
+                    'Add html comments in footer ' . $comment,
+                    LiteSpeedCacheLog::LEVEL_FOOTER_COMMENT
+                );
+            }
             return $comment;
         }
     }
@@ -405,14 +415,19 @@ class LiteSpeedCache extends Module
         if ($code == 404) {
             if (LiteSpeedCacheHelper::isStaticResource($_SERVER['REQUEST_URI'])) {
                 $buf = '<!-- 404 not found -->';
-                LiteSpeedCacheLog::log('404 for static asset, filter out all', LiteSpeedCacheLog::LEVEL_NOCACHE_REASON);
+                if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_NOCACHE_REASON) {
+                    LiteSpeedCacheLog::log(__FUNCTION__ . '404, filter all', LiteSpeedCacheLog::LEVEL_NOCACHE_REASON);
+                }
                 return $buf;
             }
         } elseif ($code != 200) {
             self::$ccflag |= self::CCBM_ERROR_CODE;
             $this->setNotCacheable('Response code is ' . $code);
         } elseif ((self::$ccflag & self::CCBM_DISPLAY_INIT) == 0) {
-            $this->setNotCacheable('Not proper initialized');
+            if (LiteSpeedCacheVaryCookie::setCookieVary()) {
+                $this->setNotCacheable('Env cookie change');
+                $this->cache->purgeByTags('*', true, 'Env cookie change');
+            }
         }
 
         if (count($this->esiInjection['marker'])) {
@@ -428,7 +443,9 @@ class LiteSpeedCache extends Module
                     $lsc = self::myInstance();
                     if (!isset($lsc->esiInjection['marker'][$id])) {
                         // should not happen
-                        LiteSpeedCacheLog::log('Lost Injection ' . $id, LiteSpeedCacheLog::LEVEL_UNEXPECTED);
+                        if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_UNEXPECTED) {
+                            LiteSpeedCacheLog::log('Lost Injection ' . $id, LiteSpeedCacheLog::LEVEL_UNEXPECTED);
+                        }
                         return '';
                     }
                     $item = $lsc->esiInjection['marker'][$id];
@@ -484,8 +501,11 @@ class LiteSpeedCache extends Module
                 if ($item->getConf()->isPrivate()) {
                     $allPrivateItems[] = $item;
                 }
-            } else {
-                // todo log err
+            } elseif (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_UNEXPECTED) {
+                LiteSpeedCacheLog::log(
+                    __FUNCTION__ . ' inline missing ' . $item->getInfoLog(true),
+                    LiteSpeedCacheLog::LEVEL_UNEXPECTED
+                );
             }
         }
         if ($bufInline) {

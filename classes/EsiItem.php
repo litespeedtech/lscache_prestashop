@@ -22,7 +22,6 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-use LiteSpeedCacheLog as LSLog;
 use LiteSpeedCacheHelper as LSHelper;
 
 class LiteSpeedCacheEsiItem implements JsonSerializable

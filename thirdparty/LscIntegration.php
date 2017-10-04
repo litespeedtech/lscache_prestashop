@@ -63,11 +63,13 @@ abstract class LscIntegration
 
     protected function registerEsiModule()
     {
-        if ($this->esiConf &&  ($this->esiConf instanceof LiteSpeedCacheEsiModConf)) {
+        if ($this->esiConf && ($this->esiConf instanceof LiteSpeedCacheEsiModConf)) {
             LiteSpeedCacheConfig::getInstance()->registerEsiModule($this->esiConf);
             return true;
         } else {
-            LSLog::log('something wrong ', 3);
+            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_NOTICE) {
+                LSLog::log(__FUNCTION__ . 'something wrong', LSLog::LEVEL_NOTICE);
+            }
             return false;
         }
     }
@@ -103,7 +105,7 @@ abstract class LscIntegration
                 $replaced = true;
             }
         }
-        if ($log) {
+        if ($log && _LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
             LSLog::log("filter JSDef = " . $log, LSLog::LEVEL_ESI_INCLUDE);
         }
         return $replaced;

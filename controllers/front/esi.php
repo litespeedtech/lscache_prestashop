@@ -44,7 +44,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         }
         $item = EsiItem::decodeEsiUrl();
 
-        if (is_string($item)) {
+        if (is_string($item) && _LITESPEED_DEBUG_ >= LSLog::LEVEL_EXCEPTION) {
             LSLog::log('Invalid ESI url ' . $item, LSLog::LEVEL_EXCEPTION);
             return;
         }
@@ -53,7 +53,9 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         $html = $item->getContent();
 
         if ($html == EsiItem::RES_FAILED) {
-            LSLog::log('Invalid ESI url - module not found ', LSLog::LEVEL_EXCEPTION);
+            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_EXCEPTION) {
+                LSLog::log('Invalid ESI url - module not found ', LSLog::LEVEL_EXCEPTION);
+            }
             return;
         }
 
@@ -68,7 +70,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         $lsc->addCacheControlByEsiModule($item->getParam('m'), ($inline != ''));
 
         if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_OUTPUT) {
-            LSLog::log('In ESI controller output ' . $inline . $html, LSLog::LEVEL_ESI_OUTPUT);
+            LSLog::log('ESI controller output ' . $inline . $html, LSLog::LEVEL_ESI_OUTPUT);
         }
         echo $inline . $html;
     }

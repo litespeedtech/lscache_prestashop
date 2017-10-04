@@ -91,13 +91,12 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
                 'href' => self::$currentIndex . '&purge_shops&token=' . $this->token,
                 'desc' => $this->l('Flush All PrestaShop Pages'),
                 'icon' => 'process-icon-delete',
-                'class' => 'btn-warning'
             );
             $this->page_header_toolbar_btn['purge_all'] = array(
                 'href' => self::$currentIndex . '&purge_all&token=' . $this->token,
                 'desc' => $this->l('Flush Entire Cache Storage'),
                 'icon' => 'process-icon-delete',
-                'class' => 'btn-danger'
+                'class' => 'btn-warning'
             );
         }
         parent::initPageHeaderToolbar();
@@ -181,21 +180,6 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             }
         } else {
             $this->warnings[] = $this->l('Nothing selected. No action taken.');
-        }
-    }
-
-    protected function clearMenuCache() // check later todo
-    {
-        $dir = $this->getCacheDirectory();
-
-        if (!is_dir($dir)) {
-            return;
-        }
-
-        foreach (scandir($dir) as $entry) {
-            if (preg_match('/\.json$/', $entry)) {
-                unlink($dir . DIRECTORY_SEPARATOR . $entry);
-            }
         }
     }
 

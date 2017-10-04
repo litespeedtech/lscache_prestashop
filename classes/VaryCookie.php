@@ -29,6 +29,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
     private $defaultEnvVaryCookie = '_lscache_vary'; // system default
     private $cacheVary;
     private $diffCustomerGroup; // 0: No; 1: Yes; 2: login_out
+    private $diffMobile; // 0: no; 1: yes
 
     // to extend CookieCore is to retrieve the internal variables.
 
@@ -43,6 +44,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         $this->cacheVary = array($name => array());
         $conf = LiteSpeedCacheConfig::getInstance();
         $this->diffCustomerGroup = $conf->get(LiteSpeedCacheConfig::CFG_DIFFCUSTGRP);
+        $this->diffMobile = $conf->get(LiteSpeedCacheConfig::CFG_DIFFMOBILE);
     }
 
     // can split to 2 functions later
@@ -94,6 +96,9 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             if ($myCookie->id_lang != $configuration_id_lang) {
                 $data['lang'] = $myCookie->id_lang;
             }
+        }
+        if ($this->diffMobile) {
+            $data['mobile'] = $context->getMobileDevice();
         }
         if ($this->diffCustomerGroup != 0 && $context->customer->isLogged()) {
             // 1: every group, 2: inout

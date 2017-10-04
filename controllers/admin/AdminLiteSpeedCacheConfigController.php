@@ -22,7 +22,6 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-use LiteSpeedCacheLog as LSLog;
 use LiteSpeedCacheConfig as Conf;
 
 class AdminLiteSpeedCacheConfigController extends ModuleAdminController
@@ -83,6 +82,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             Conf::CFG_PRIVATE_TTL => $this->l('Default Private Cache TTL'),
             Conf::CFG_HOME_TTL => $this->l('Home Page TTL'),
             Conf::CFG_404_TTL => $this->l('404 Pages TTL'),
+            Conf::CFG_DIFFMOBILE => $this->l('Separate Mobile View'),
             Conf::CFG_DIFFCUSTGRP => $this->l('Separate Cache Copy per Customer Group'),
             Conf::CFG_NOCACHE_VAR => $this->l('Do-Not-Cache GET Parameters'),
             Conf::CFG_NOCACHE_URL => $this->l('URL Blacklist'),
@@ -130,6 +130,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         if ($this->is_shop_level != 1) {
             $all = array(
                 Conf::CFG_ENABLED,
+                Conf::CFG_DIFFMOBILE,
                 Conf::CFG_NOCACHE_VAR,
                 Conf::CFG_NOCACHE_URL,
                 Conf::CFG_DEBUG,
@@ -240,6 +241,12 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                         $this->changed |= self::BMC_SHOP;
                         $this->changed |= ($postVal < $origVal) ? self::BMC_MUST_PURGE : self::BMC_MAY_PURGE;
                     }
+                }
+                break;
+
+            case Conf::CFG_DIFFMOBILE:
+                if ($postVal != $origVal) {
+                    $this->changed |= self::BMC_ALL | self::BMC_MUST_PURGE;
                 }
                 break;
 
@@ -361,16 +368,23 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         $fg['input'][] = $this->addInputText(
             Conf::CFG_HOME_TTL,
             $this->labels[Conf::CFG_HOME_TTL],
-            $this->l('Specify a different TTL for the home page.') . ' '
+            $this->l('Default timeout for the home page.') . ' '
             . $this->l('If you have random displayed items, you can have shorter TTL to make it refresh more often.'),
             $secs
         );
         $fg['input'][] = $this->addInputText(
             Conf::CFG_404_TTL,
             $this->labels[Conf::CFG_404_TTL],
-            $this->l('Specify a different TTL for all 404 (Not found) pages. 0 will disable caching for 404 pages.'),
+            $this->l('Default timeout for all 404 (Not found) pages. 0 will disable caching for 404 pages.'),
             $secs
         );
+        $fg['input'][] = $this->addInputSwitch(
+            Conf::CFG_DIFFMOBILE,
+            $this->labels[Conf::CFG_DIFFMOBILE],
+            $this->l('Enable this if you have a separate mobile theme.'),
+            $disabled
+        );
+
         $custgrpOptions = array(
             array('id' => 0, 'name' => $this->l('No') . $s . $this->l('Everyone shares the same view')),
             array('id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Each group has its own view')),

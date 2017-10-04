@@ -199,7 +199,9 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     public function canInject($params)
     {
         if (empty($params['pt'])) {
-            //todo error log
+            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED) {
+                LSLog::log(__FUNCTION__ . ' missing pt', LSLog::LEVEL_UNEXPECTED);
+            }
             return false;
         }
         switch ($params['pt']) {

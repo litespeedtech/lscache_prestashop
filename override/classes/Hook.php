@@ -49,7 +49,7 @@ class Hook extends HookCore
         return $html;
     }
 
-    // only avail for PS 1.7
+    /* only avail for PS 1.7 */
     public static function coreRenderWidget($module, $hook_name, $params)
     {
         if (defined('_LITESPEED_DEBUG_')

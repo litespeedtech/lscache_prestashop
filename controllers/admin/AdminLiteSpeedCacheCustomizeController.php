@@ -22,7 +22,6 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-use LiteSpeedCacheLog as LSLog;
 use LiteSpeedCacheConfig as Conf;
 use LiteSpeedCacheEsiModConf as EsiConf;
 
@@ -74,6 +73,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             $this->errors[] = $this->l('LiteSpeed Server with LSCache module is required.') . ' '
                     . $this->l('Please contact your sysadmin or your host to get a valid LiteSpeed license.');
         }
+        include_once(_PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php');
 
         $this->initDisplayValues();
         $this->labels = array(
@@ -137,8 +137,8 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                         $this->l('Built-in') : $this->l('Integrated');
             }
             if ($idata['tipurl']) {
-                $this->warnings[] = $idata['name'] . ': <a href="'. $idata['tipurl'] . '">'
-                    . $this->l('See online tips') . '</a>';
+                $this->warnings[] = $idata['name'] . ': <a href="'. $idata['tipurl']
+                    . '" target="_blank" rel="noopener noreferrer">' . $this->l('See online tips') . '</a>';
                 $idata['name'] .= ' (*)';
             }
             $this->config_values[$id] = $idata;
@@ -236,7 +236,8 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             $this->informations[] = $this->l('You can make an ESI block for a widget, also known as Hole-Punching.').$s
                 . $this->l('Built-in and integrated modules cannot be changed.') . $s
                 . $this->l('These are advanced settings for third-party modules.') . $s
-                . '<a href="https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps">'
+                . '<a href="https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps" '
+                . 'target="_blank" rel="noopener noreferrer">'
                 . $this->l('Wiki Help') . '</a>';
             $this->content = $this->renderList();
         }
@@ -439,6 +440,107 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         $s = ' ';
         // for new & edit & view
         $disabled = ($this->display == 'view');
+        $input = array(
+            array(
+                'type' => 'select',
+                'label' => $this->labels['id'],
+                'name' => 'id',
+                'hint' => $this->l('This will only be effective if this widget is showing on a cacheable page.'),
+                'options' => array('query' => $this->module_options, 'id' => 'id', 'name' => 'name'),
+                'desc' => $this->l('Please select a front-end widget module only.'),
+            ),
+            array(
+                'type' => 'switch',
+                'label' => $this->labels['priv'],
+                'desc' => $this->l('A public block will only have one cached copy which is shared by everyone.')
+                . $s . $this->l('A private block will be cached individually for each user.'),
+                'name' => 'priv',
+                'disabled' => $disabled,
+                'is_bool' => true,
+                'values' => array(array('value' => 1), array('value' => 0)),
+            ),
+            array(
+                'type' => 'text',
+                'label' => $this->labels['ttl'],
+                'name' => 'ttl',
+                'readonly' => $disabled,
+                'desc' => $this->l('Leave this blank if you want to use the default setting.'),
+                'suffix' => $this->l('seconds'),
+            ),
+            array(
+                'type' => 'text',
+                'label' => $this->labels['tag'],
+                'name' => 'tag',
+                'readonly' => $disabled,
+                'desc' => $this->l('Only allow one tag per module.') . $s
+                . $this->l('Same tag can be used for multiple modules.') . $s
+                . $this->l('Leave blank to use the module name as the default value.'),
+            ),
+            array(
+                'type' => 'textarea',
+                'label' => $this->labels['events'],
+                'name' => 'events',
+                'hint' => $this->l('No need to add login/logout events.') . $s
+                . $this->l('Those are included by default for all private blocks.'),
+                'readonly' => $disabled,
+                'desc' => $this->l('You can automatically purge the cached ESI blocks by events.') . $s .
+                $this->l('Specify a comma-delimited list of events.'),
+            ),
+            array(
+                'type' => 'textarea',
+                'label' => $this->labels['ctrl'],
+                'name' => 'ctrl',
+                'hint' => $this->l('For example, cart block is set to be purged by this setting:')
+                . $s . '"CartController:id_product"',
+                'readonly' => $disabled, // allow ClassName?param1&param2
+                'desc' => $this->l('You can automatically purge the cached ESI blocks by dispatched controllers.')
+                . $s . $this->l('Specify a comma-delimited list of controller class names.') . $s
+                . $this->l('If you add ":param" after the name, purge will be triggered only if that param is set.')
+                . $s . $this->l('You can add multiple parameters, like "className:param1&param2".'),
+            ),
+            array(
+                'type' => 'textarea',
+                'label' => $this->labels['methods'],
+                'name' => 'methods',
+                'hint' => $this->l('Instead of listing all possible ones, you can simply define an exlusion list.'),
+                'readonly' => $disabled,
+                'desc' => $this->l('Hooked methods that will trigger ESI injection.') . $s
+                . $this->l('Specify a comma-delimited list of methods (prefix with "!" to exclude one).') . $s
+                . $this->l('Leave blank to disable injection on CallHook method.'),
+            ),
+            array(
+                'type' => 'textarea',
+                'label' => $this->labels['render'],
+                'name' => 'render',
+                'hint' => $this->l('This is only available for PS1.7.'),
+                'readonly' => $disabled,
+                'desc' => $this->l('You can further tune ESI injection for widget rendering by invoking hooks.')
+                . '<br> ' . $this->l('Specify a comma-delimited list of allowed hooks;')
+                . $s . $this->l('Or a list of not-allowed hooks by prefixing with "!".')
+                . $s . $this->l('Use "*" for all hooks allowed; leave blank to disable renderWidget injection.'),
+            ),
+            array(
+                'type' => 'switch',
+                'label' => $this->labels['asvar'],
+                'desc' => $this->l('Enable if the rendered content is used as a variable, such as a token,')
+                . $s . $this->l('or if it is small enough (e.g. less than 256 bytes).'),
+                'name' => 'asvar',
+                'disabled' => $disabled,
+                'is_bool' => true,
+                'values' => array(array('value' => 1), array('value' => 0)),
+            ),
+            array(
+                'type' => 'switch',
+                'label' => $this->labels['ie'],
+                'desc' => $this->l('Enable to avoid punching a hole for an ESI block whose rendered content is empty.'),
+                'name' => 'ie',
+                'hint' => $this->l('No need to hole-punch if the overridden template intentionally blank it out.'),
+                'disabled' => $disabled,
+                'is_bool' => true,
+                'values' => array(array('value' => 1), array('value' => 0)),
+            ),
+        );
+
         $form = array(
             'legend' => array(
                 'title' => $this->l('Convert Widget to ESI Block'),
@@ -446,111 +548,10 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             ),
             'description' => $this->l('You can hole punch a widget as an ESI block.') . $s
                 . $this->l('Each ESI block can have its own TTL and purge events.') . $s
-                . $this->l('For more complicated cases, third-party integration class is required.') . $s
+                . $this->l('For more complicated cases, a third-party integration class is required.') . $s
                 . $this->l('This requires a deep understanding of the internals of Prestashop.') . $s
                 . $this->l('If you need help, you can order Support service from LiteSpeed Tech.'),
-            'input' => array(
-                array(
-                    'type'    => 'select',
-                    'label'   => $this->labels['id'],
-                    'name'    => 'id',
-                    'hint'  => $this->l('This will only be effective if this widget is showing on a cacheable page.'),
-                    'options' => array('query' => $this->module_options,
-                        'id'    => 'id', 'name'  => 'name'),
-                    'desc'    => $this->l('Please select a front-end widget module only.'),
-                ),
-                array(
-                    'type' => 'switch',
-                    'label' => $this->labels['priv'],
-                    'desc' => $this->l('A public block will only have one cached copy which is shared by everyone.')
-                        . $s . $this->l('A private block will be cached individually for each user.'),
-                    'name' => 'priv',
-                    'disabled'=> $disabled,
-                    'is_bool' => true,
-                    'values' => array(array('value' => 1), array('value' => 0)),
-                ),
-                array(
-                    'type' => 'text',
-                    'label' => $this->labels['ttl'],
-                    'name' => 'ttl',
-                    'readonly'=> $disabled,
-                    'desc' => $this->l('Leave this blank if you want to use the default setting.'),
-                    'suffix' => $this->l('seconds'),
-                ),
-                array(
-                    'type' => 'text',
-                    'label' => $this->labels['tag'],
-                    'name' => 'tag',
-                    'readonly'=> $disabled,
-                    'desc' => $this->l('Only allow one tag per module.') . $s
-                        . $this->l('Same tag can be used for multiple modules.') . $s
-                        . $this->l('Leave blank to use the module name as the default value.'),
-                ),
-                array(
-                    'type' => 'textarea',
-                    'label' => $this->labels['events'],
-                    'name' => 'events',
-                    'hint' => $this->l('No need to add login/logout events.') . $s
-                    . $this->l('Those are included by default for all private blocks.'),
-                    'readonly'=> $disabled,
-                    'desc' => $this->l('You can automatically purge the cached ESI blocks by events.') . $s .
-                    $this->l('Specify a comma-delimited list of events.'),
-                ),
-                array(
-                    'type' => 'textarea',
-                    'label' => $this->labels['ctrl'],
-                    'name' => 'ctrl',
-                    'hint' => $this->l('For example, cart block is set to be purged by this setting:')
-                    . $s . '"CartController:id_product"',
-                    'readonly'=> $disabled, // allow ClassName?param1&param2
-                    'desc' => $this->l('You can automatically purge the cached ESI blocks by dispatched controllers.')
-                    . $s .  $this->l('Specify a comma-delimited list of controller class names.') . $s
-                    . $this->l('If you add ":param" after the name, only if that param is set will trigger the purge.')
-                    . $s . $this->l('You can add multiple parameters, like "className:param1&param2".'),
-                ),
-                array(
-                    'type' => 'textarea',
-                    'label' => $this->labels['methods'],
-                    'name' => 'methods',
-                    'hint' => $this->l('Instead of listing all possible ones, you can simply define an exlusion list.'),
-                    'readonly'=> $disabled,
-                    'desc' => $this->l('Hooked methods that will trigger ESI injection.') . $s
-                    . $this->l('Specify a comma-delimited list of methods (prefix with "!" to exclude one).') . $s
-                    . $this->l('Leave blank will disable injection on CallHook method.'),
-                ),
-                array(
-                    'type' => 'textarea',
-                    'label' => $this->labels['render'],
-                    'name' => 'render',
-                    'hint' => $this->l('This is only available for PS1.7.'),
-                    'readonly'=> $disabled,
-                    'desc' => $this->l('You can further tune ESI injection for widget rendering by invoking hooks.')
-                    . '<br> '
-                    . $this->l('Use "*" for all hooks allowed, leave blank will disable renderWidget injection;')
-                    . $s . $this->l('Or specify a comma-delimited list of allowed hooks;')
-                    . $s . $this->l('Or a list of not-allowed hooks by prefixing with "!".'),
-                ),
-                array(
-                    'type' => 'switch',
-                    'label' => $this->labels['asvar'],
-                    'desc' => $this->l('If the rendered content is used as a variable such as token.')
-                    . $s . $this->l('Or it is small enough like less than 256 bytes.'),
-                    'name' => 'asvar',
-                    'disabled'=> $disabled,
-                    'is_bool' => true,
-                    'values' => array(array('value' => 1), array('value' => 0)),
-                ),
-                array(
-                    'type' => 'switch',
-                    'label' => $this->labels['ie'],
-                    'desc' => $this->l('Do not hole hunch an ESI block if current rendered content is empty.'),
-                    'name' => 'ie',
-                    'hint' => $this->l('No need to hole-punch if the overridden template intentionally blank it out.'),
-                    'disabled'=> $disabled,
-                    'is_bool' => true,
-                    'values' => array(array('value' => 1), array('value' => 0)),
-                ),
-            ),
+            'input' => $input,
         );
         if (!$disabled) {
             $form['submit'] = array('title' => $this->l('Save'));
