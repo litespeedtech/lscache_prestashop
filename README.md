@@ -18,7 +18,9 @@ Enable the module by navigating to **LiteSpeed Cache > Settings** and setting **
 ### Notes For Litespeed Web Server Enterprise (LSWS)
 
 Make sure that your license includes the LSCache module enabled. A 2-CPU trial license with LSCache module is available for free for 15 days.
-The server must be configured to have caching enabled. If you are the server admin, click here. Otherwise request that the server admin configure the cache root for the server.
+The server must be configured to have caching enabled. If you are the server admin, 
+click [here](https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps:installation). 
+Otherwise request that the server admin configure the cache root for the server.
 
 ### Module Features
 
