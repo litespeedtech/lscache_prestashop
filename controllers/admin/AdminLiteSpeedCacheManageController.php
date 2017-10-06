@@ -121,7 +121,6 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         if ($this->doPurge(1, 'ALL')) {
             $this->confirmations[] = $this->l('Notified LiteSpeed Server to flush the entire cache storage.');
         }
-        LiteSpeedCacheHelper::clearInternalCache();
     }
 
     private function processPurgeShops()
@@ -129,7 +128,6 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         if ($this->doPurge('*')) {
             $this->confirmations[] = $this->l('Notified LiteSpeed Server to flush all pages of this PrestaShop.');
         }
-        LiteSpeedCacheHelper::clearInternalCache();
     }
 
     private function processPurgeSelection()

@@ -51,11 +51,8 @@ class LiteSpeedCacheHelper
         }
         $esiurl = $ctx->link->getModuleLink(LiteSpeedCache::MODULE_NAME, 'esi', $defaultParam);
         $esiurl0 = $ctx->link->getModuleLink(LiteSpeedCache::MODULE_NAME, 'esi');
-        $baselink = $ctx->link->getBaseLink();
-        $baseuri = $ctx->shop->getBaseURI();
-
-        self::$internal['esi_base_url'] = $baseuri . str_replace($baselink, '', $esiurl);
-        self::$internal['esi_base_url_raw'] = $baseuri . str_replace($baselink, '', $esiurl0);
+        self::$internal['esi_base_url'] = self::getRelativeUri($esiurl);
+        self::$internal['esi_base_url_raw'] = self::getRelativeUri($esiurl0);
 
         self::$internal['pub_ttl'] = $config->get(Conf::CFG_PUBLIC_TTL);
         self::$internal['priv_ttl'] = $config->get(Conf::CFG_PRIVATE_TTL);
@@ -64,12 +61,24 @@ class LiteSpeedCacheHelper
         $prefix = 'PS' . implode('', array_slice($unique, 0, 5)); // take 5 char
         self::$internal['tag_prefix'] = $prefix;
         self::$internal['cache_entry'] = $prefix . md5(self::$internal['esi_base_url']) . '.data';
-        self::$internal['cache_dir'] = _PS_CACHE_DIR_ . '/' . LiteSpeedCache::MODULE_NAME;
+        self::$internal['cache_dir'] = _PS_CACHE_DIR_ . LiteSpeedCache::MODULE_NAME;
 
         $tag0 = $prefix; // for purge all PS cache
         $tag1 = $prefix . '_' . Conf::TAG_PREFIX_SHOP . $defaultParam['s']; // for purge one shop
         self::$internal['tag_shared_pub'] = $tag0 . ',' . $tag1;
         self::$internal['tag_shared_priv'] = 'public:' . $prefix . '_PRIV'; // in private cache, use public:prefix_PRIV
+    }
+
+    public static function getRelativeUri($url)
+    {
+        if (($pos0 = strpos($url, '://')) !== false) {
+            $pos0 += 4;
+            if ($pos1 = strpos($url, '/', $pos0)) {
+                $newurl = Tools::substr($url, $pos1);
+                return $newurl;
+            }
+        }
+        return false;
     }
 
     public static function getCacheFilePath(&$dir)

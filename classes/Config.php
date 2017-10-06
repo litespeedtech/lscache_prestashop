@@ -291,10 +291,6 @@ class LiteSpeedCacheConfig
             $ips = $this->getArray(self::CFG_DEBUG_IPS);
             if (empty($ips) || in_array($_SERVER['REMOTE_ADDR'], $ips)) {
                 $this->isDebug = $this->all[self::CFG_DEBUG_LEVEL];
-                LSLog::setDebugLevel($this->isDebug);
-                if (!defined('_LITESPEED_DEBUG_')) {
-                    define('_LITESPEED_DEBUG_', $this->isDebug);
-                }
             }
         }
 
@@ -328,6 +324,11 @@ class LiteSpeedCacheConfig
             'StoresController' => self::TAG_STORES,
             'PageNotFoundController' => self::TAG_404,
         );
+
+        LSLog::setDebugLevel($this->isDebug);
+        if (!defined('_LITESPEED_DEBUG_')) {
+            define('_LITESPEED_DEBUG_', $this->isDebug);
+        }
     }
 
     public function isControllerCacheable($controllerClass)

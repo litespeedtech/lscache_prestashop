@@ -162,8 +162,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         $this->confirmations[] = $this->l('Settings updated successfully.');
         if ($this->changed & self::BMC_DONE_PURGE) {
             $this->processPurgeShops();
-            $this->confirmations[] = $this->l('Disabled LiteSpeed Cache.') . ' '
-                . $this->l('Notified LiteSpeed Server to flush all pages of this PrestaShop.');
+            $this->confirmations[] = $this->l('Disabled LiteSpeed Cache.');
         } elseif ($this->changed & self::BMC_MUST_PURGE) {
             $this->confirmations[] = $this->l('Please navigate to LiteSpeed Cache - Manage to purge related contents!');
         } elseif ($this->changed & self::BMC_MAY_PURGE) {

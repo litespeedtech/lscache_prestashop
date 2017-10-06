@@ -60,7 +60,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache'; // self::MODULE_NAME was rejected by validator
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '1.1.0'; // validator does not allow const here
+        $this->version = '1.1.1'; // validator does not allow const here
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 

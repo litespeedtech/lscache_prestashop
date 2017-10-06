@@ -70,7 +70,7 @@ class LiteSpeedCacheCore
         }
         if ($reason) {
             $reason = 'Route not cacheable: ' . $controllerClass . ' - ' . $reason;
-        } elseif (_LITESPEED_DEBUG_ >= LSLog::LEVEL_CACHE_ROUTE) {
+        } elseif (defined('_LITESPEED_DEBUG_') && _LITESPEED_DEBUG_ >= LSLog::LEVEL_CACHE_ROUTE) {
             LSLog::log('route in defined cacheable controllers ' . $controllerClass, LSLog::LEVEL_CACHE_ROUTE);
         }
 
@@ -402,10 +402,12 @@ class LiteSpeedCacheCore
         }
         $purgeHeader = '';
         $pre = 'tag=' . LiteSpeedCacheHelper::getTagPrefix();
+        $clearInternal = false;
 
         if (in_array('*', $this->purgeTags['pub'])) {
             // when purge all public, also purge all private block
             $purgeHeader .= $pre . ',' . $pre . '_PRIV';
+            $clearInternal = true;
         } else {
             $pre .= '_';
             if (count($this->purgeTags['pub'])) {
@@ -430,6 +432,9 @@ class LiteSpeedCacheCore
             $this->curHeaders[self::LSHEADER_PURGE] = $purgeHeader;
             $purgeHeader = self::LSHEADER_PURGE . ': ' . $purgeHeader;
             header($purgeHeader);   // due to ajax call, always set header on the event
+            if ($clearInternal) {
+                LiteSpeedCacheHelper::clearInternalCache();
+            }
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_SETHEADER) {
                 LSLog::log('Set header ' . $purgeHeader, LSLog::LEVEL_SETHEADER);
             }
@@ -498,7 +503,7 @@ class LiteSpeedCacheCore
             header($cacheControlHeader);
             $dbgMesg .= 'Set header ' . $cacheControlHeader;
         }
-        if ($dbgMesg && _LITESPEED_DEBUG_ >= LSLog::LEVEL_SETHEADER) {
+        if ($dbgMesg && defined('_LITESPEED_DEBUG_') && _LITESPEED_DEBUG_ >= LSLog::LEVEL_SETHEADER) {
             LSLog::log($dbgMesg . ' from ' . $from, LSLog::LEVEL_SETHEADER);
         }
     }
