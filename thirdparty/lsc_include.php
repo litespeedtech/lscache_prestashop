@@ -27,6 +27,7 @@ include 'LscIntegration.php';
 
 // share for all PS versions
 include 'shared/LscToken.php';
+include 'shared/LscEnv.php';
 
 // third-party theme integration
 if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) { // for PS 1.7 only

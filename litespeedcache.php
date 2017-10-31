@@ -47,11 +47,14 @@ class LiteSpeedCache extends Module
     const CCBM_CAN_INJECT_ESI = 4;
     const CCBM_ESI_ON = 8;
     const CCBM_ESI_REQ = 16;
-    const CCBM_DISPLAY_INIT = 32; // properly initiliazed, displayheader hook called
+    const CCBM_GUEST = 32;
     const CCBM_ERROR_CODE = 64; // response code is not 200
     const CCBM_NOT_CACHEABLE = 128; // for redirect, as first bit is not set, may mean don't know cacheable or not
-    const CCBM_MOD_ACTIVE = 256; // module is enabled
-    const CCBM_MOD_ALLOWIP = 512; // allow cache for listed IP
+    const CCBM_VARY_CHECKED = 256;
+    const CCBM_VARY_CHANGED = 512;
+    const CCBM_FRONT_CONTROLLER = 1024;
+    const CCBM_MOD_ACTIVE = 2048; // module is enabled
+    const CCBM_MOD_ALLOWIP = 4096; // allow cache for listed IP
     // ESI MARKER
     const ESI_MARKER_END = '_LSCESIEND_';
 
@@ -60,7 +63,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache'; // self::MODULE_NAME was rejected by validator
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '1.1.1'; // validator does not allow const here
+        $this->version = '1.2.0'; // validator does not allow const here
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
@@ -90,17 +93,6 @@ class LiteSpeedCache extends Module
         if (!defined('_LITESPEED_DEBUG_')) {
             define('_LITESPEED_DEBUG_', 0);
         }
-    }
-
-    private function installHooks()
-    {
-        $hooks = $this->config->getReservedHooks();
-        foreach ($hooks as $hook) {
-            if (!$this->registerHook($hook)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     public static function isActive()
@@ -133,116 +125,25 @@ class LiteSpeedCache extends Module
         return self::$ccflag;
     }
 
-    // allow other plugins to set current response not cacheable
-    private function setNotCacheable($reason = '')
+    public function setEsiOn()
     {
-        if (!self::isActive()) { // not check ip for force nocache
-            return;
-        }
-        self::$ccflag |= self::CCBM_NOT_CACHEABLE;
-        if ($reason && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_NOCACHE_REASON) {
-            LiteSpeedCacheLog::log(__FUNCTION__ . ' - ' . $reason, LiteSpeedCacheLog::LEVEL_NOCACHE_REASON);
-        }
+        self::$ccflag |= self::CCBM_ESI_ON;
     }
 
-    public function addCacheControlByEsiModule($moduleName, $hasInline)
+    private static function myInstance()
     {
-        if (!self::isActive()) {
-            return;
-        }
-        $msg = '';
-        $conf = $this->config->getEsiModuleConf($moduleName);
-        if ($conf != null) {
-            $ttl = $conf->getTTL();
-            if ($ttl === 0 || $ttl === '0') {
-                self::$ccflag |= self::CCBM_NOT_CACHEABLE;
-                $msg .= 'ttl is 0, no cache';
-            } else {
-                $this->cache->addCacheTags($conf->getTag());
-                self::$ccflag |= self::CCBM_CACHEABLE;
-                $isPrivate = $conf->isPrivate();
-                if ($isPrivate) {
-                    self::$ccflag |= self::CCBM_PRIVATE;
-                }
-                if ($ttl === '') {
-                    $ttl = $isPrivate ?
-                        $this->config->get(LiteSpeedCacheConfig::CFG_PRIVATE_TTL) :
-                        $this->config->get(LiteSpeedCacheConfig::CFG_PUBLIC_TTL);
-                }
-                $msg .= 'ttl is ' . $ttl;
-                $this->cache->setEsiTtl($ttl);
-            }
-            if ($hasInline) {
-                self::$ccflag |= self::CCBM_ESI_ON;
-                $msg .= ' has inline';
-            }
-            $this->cache->setCacheControlHeader(__FUNCTION__);
-        } else {
-            $msg .= $moduleName . ' conf not found';
-        }
-        if ($msg && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_OUTPUT) {
-            LiteSpeedCacheLog::log(__FUNCTION__ . ' - ' . $msg, LiteSpeedCacheLog::LEVEL_ESI_OUTPUT);
-        }
-    }
-
-    public function addPurgeTags($tag, $isPrivate = false)
-    {
-        if (self::isActive()) {
-            $this->cache->addPurgeTags($tag, $isPrivate);
-        }
+        return Module::getInstanceByName(self::MODULE_NAME);
     }
 
     public function hookActionDispatcher($params)
     {
-        $ctype = $params['controller_type'];
-        $cclass = $params['controller_class'];
+        $controllerType = $params['controller_type'];
+        $controllerClass = $params['controller_class'];
+        $status = $this->checkDispatcher($controllerType, $controllerClass);
+
         if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_CACHE_ROUTE) {
-            LiteSpeedCacheLog::log(__FUNCTION__ . ' type=' . $ctype . ' controller=' . $cclass
-                . ' req=' . $_SERVER['REQUEST_URI'], LiteSpeedCacheLog::LEVEL_CACHE_ROUTE);
-        }
-        if (!self::isActiveForUser()) { // check for ip restriction
-            return;
-        }
-
-        ob_start('LiteSpeedCache::callbackOutputFilter');
-
-        // 3rd party integration init needs to be before checkRoute
-        include_once(_PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php');
-
-        // here also check purge controller
-        $reason = $this->cache->isCacheableRoute($ctype, $cclass);
-        if ($reason) {
-            if ($cclass == 'litespeedcacheesiModuleFrontController') {
-                self::$ccflag |= self::CCBM_ESI_REQ;
-            } else {
-                $this->setNotCacheable($reason);
-            }
-        } else {
-            self::$ccflag |= (self::CCBM_CACHEABLE | self::CCBM_CAN_INJECT_ESI);
-        }
-    }
-
-    public static function callbackOutputFilter($buffer)
-    {
-        $lsc = self::myInstance();
-
-        if (count($lsc->esiInjection['marker']) || self::isCacheable()) {
-            // if no injection, but cacheable, still need to check token
-            $buffer = $lsc->replaceEsiMarker($buffer);
-        }
-        // need to set header after replace, as flag may change
-        $lsc->cache->setCacheControlHeader(__FUNCTION__);
-        return $buffer;
-    }
-
-    public function hookDisplayHeader($params)
-    {
-        if (self::isActiveForUser()) { // check for ip restriction
-            self::$ccflag |= self::CCBM_DISPLAY_INIT;
-            if (LiteSpeedCacheVaryCookie::setCookieVary()) {
-                $this->setNotCacheable('Env cookie change');
-                $this->cache->purgeByTags('*', true, 'Env cookie change');
-            }
+            LiteSpeedCacheLog::log(__FUNCTION__ . ' type=' . $controllerType . ' controller=' . $controllerClass
+                . ' req=' . $_SERVER['REQUEST_URI'] . ' :' . $status, LiteSpeedCacheLog::LEVEL_CACHE_ROUTE);
         }
     }
 
@@ -297,20 +198,20 @@ class LiteSpeedCache extends Module
             $this->cache->addCacheTags(LiteSpeedCacheConfig::TAG_PREFIX_CMS . $params['object']['id']);
         }
     }
-    /* this is catchall function for purge events */
 
+    /* this is catchall function for purge events */
     public function __call($method, $args)
     {
         if (self::isActive()) {
             $this->cache->purgeByCatchAllMethod($method, $args);
         }
     }
+
     /* our own hook
      * Required field $params['from']
      * $params['public'] & $params['private'] one has to exist, array of tags
      * $params['ALL'] - entire cache storage
      */
-
     public function hookLitespeedCachePurge($params)
     {
         $msg = __FUNCTION__ . ' ';
@@ -373,11 +274,6 @@ class LiteSpeedCache extends Module
         }
     }
 
-    private static function myInstance()
-    {
-        return Module::getInstanceByName(self::MODULE_NAME);
-    }
-
     // called by Media override addJsDef
     public static function filterJsDef(&$jsDef)
     {
@@ -395,6 +291,105 @@ class LiteSpeedCache extends Module
         }
     }
 
+    /* return status */
+    private function checkDispatcher($controllerType, $controllerClass)
+    {
+        if (!self::isActiveForUser()) { // check for ip restriction
+            return 'not active';
+        }
+
+        ob_start('LiteSpeedCache::callbackOutputFilter');
+
+        // 3rd party integration init needs to be before checkRoute
+        include_once(_PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php');
+
+        if ($controllerType == DispatcherCore::FC_FRONT) {
+            self::$ccflag |= self::CCBM_FRONT_CONTROLLER;
+        }
+        if ($controllerClass == 'litespeedcacheesiModuleFrontController') {
+            self::$ccflag |= self::CCBM_ESI_REQ;
+            return 'esi request';
+        }
+
+        // here also check purge controller
+        if (($reason = $this->cache->isCacheableRoute($controllerType, $controllerClass)) != '') {
+            $this->setNotCacheable($reason);
+            return $reason;
+        }
+
+        if (isset($_SERVER['LSCACHE_VARY_VALUE'])
+            && ($_SERVER['LSCACHE_VARY_VALUE'] == 'guest' || $_SERVER['LSCACHE_VARY_VALUE'] == 'guestm')) {
+            self::$ccflag |= self::CCBM_CACHEABLE | self::CCBM_GUEST; // no ESI allowed
+            return 'cacheable guest';
+        }
+
+        self::$ccflag |= (self::CCBM_CACHEABLE | self::CCBM_CAN_INJECT_ESI);
+        return 'cacheable & allow esiInject';
+    }
+
+
+    public function addCacheControlByEsiModule($moduleConf)
+    {
+        if (!self::isActive()) {
+            $this->cache->purgeByTags('*', false, 'request esi while module is not active');
+            return;
+        }
+
+        $ttl = $moduleConf->getTTL();
+        if ($ttl === 0 || $ttl === '0') {
+            self::$ccflag |= self::CCBM_NOT_CACHEABLE;
+        } else {
+            $this->cache->addCacheTags($moduleConf->getTag());
+            self::$ccflag |= self::CCBM_CACHEABLE;
+            if ($moduleConf->isPrivate()) {
+                self::$ccflag |= self::CCBM_PRIVATE;
+            }
+            $this->cache->setEsiTtl($ttl);
+        }
+    }
+
+    // return changed
+    public static function setVaryCookie()
+    {
+        if ((self::$ccflag & self::CCBM_VARY_CHECKED) == 0) {
+            if (LiteSpeedCacheVaryCookie::setVary()) {
+                self::$ccflag |= self::CCBM_VARY_CHANGED;
+            }
+            self::$ccflag |= self::CCBM_VARY_CHECKED;
+        }
+        return ((self::$ccflag & self::CCBM_VARY_CHANGED) != 0);
+    }
+
+    public static function callbackOutputFilter($buffer)
+    {
+        $lsc = self::myInstance();
+        if ((self::$ccflag & self::CCBM_FRONT_CONTROLLER) > 0 && self::setVaryCookie() && self::isCacheable()) {
+            //condition order is fixed
+            $lsc->setNotCacheable('Env change');
+        }
+
+        $code = http_response_code();
+        if ($code == 404) {
+            self::$ccflag |= self::CCBM_ERROR_CODE;
+            if (LiteSpeedCacheHelper::isStaticResource($_SERVER['REQUEST_URI'])) {
+                $buffer = '<!-- 404 not found -->';
+                self::$ccflag &=  ~self::CCBM_CAN_INJECT_ESI;
+            }
+        } elseif ($code != 200) {
+            self::$ccflag |= self::CCBM_ERROR_CODE;
+            $lsc->setNotCacheable('Response code is ' . $code);
+        }
+
+        if (self::canInjectEsi()
+            && (count($lsc->esiInjection['marker']) || self::isCacheable())) {
+            // if no injection, but cacheable, still need to check token
+            $buffer = $lsc->replaceEsiMarker($buffer);
+        }
+
+        $lsc->cache->setCacheControlHeader();
+        return $buffer;
+    }
+
     private function registerEsiMarker($params, $conf)
     {
         $item = new LiteSpeedCacheEsiItem($params, $conf);
@@ -407,38 +402,13 @@ class LiteSpeedCache extends Module
 
     private function replaceEsiMarker($buf)
     {
-        if (!self::canInjectEsi()) {
-            return $buf;
-        }
-
-        $code = http_response_code();
-        if ($code == 404) {
-            if (LiteSpeedCacheHelper::isStaticResource($_SERVER['REQUEST_URI'])) {
-                $buf = '<!-- 404 not found -->';
-                if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_NOCACHE_REASON) {
-                    LiteSpeedCacheLog::log(__FUNCTION__ . '404, filter all', LiteSpeedCacheLog::LEVEL_NOCACHE_REASON);
-                }
-                return $buf;
-            }
-        } elseif ($code != 200) {
-            self::$ccflag |= self::CCBM_ERROR_CODE;
-            $this->setNotCacheable('Response code is ' . $code);
-        } elseif ((self::$ccflag & self::CCBM_DISPLAY_INIT) == 0) {
-            if (LiteSpeedCacheVaryCookie::setCookieVary()) {
-                $this->setNotCacheable('Env cookie change');
-                $this->cache->purgeByTags('*', true, 'Env cookie change');
-            }
-        }
-
         if (count($this->esiInjection['marker'])) {
             // U :ungreedy s: dotall m: multiline
             $nb = preg_replace_callback(
                 array('/_LSC(ESI)-(.+)-START_(.*)_LSCESIEND_/Usm',
                 '/(\'|\")_LSCESIJS-(.+)-START__LSCESIEND_(\'|\")/Usm'),
                 function ($m) {
-                    if (!self::isCacheable()) {
-                        return '';
-                    }
+                    // inject ESI even it's not cacheable
                     $id = $m[2];
                     $lsc = self::myInstance();
                     if (!isset($lsc->esiInjection['marker'][$id])) {
@@ -469,27 +439,27 @@ class LiteSpeedCache extends Module
             $nb = $buf;
         }
 
-        if (!self::isCacheable()) {
-            // if error, all markers removed and not cacheable
-            return $nb;
-        }
-
         $bufInline = '';
-        // do token replace,
         // Tools::getToken() is not really used for cacheable pages
         // Tools::getToken(false) is used -------------- caninject
         $static_token = Tools::getToken(false);
-        if (strpos($nb, $static_token)) {
-            $tkconf = $this->config->getEsiModuleConf(LscToken::NAME);
-            $tkparam = array('pt' => LiteSpeedCacheEsiItem::ESI_TOKEN,
-                'm' => LscToken::NAME,
-                'd' => 'static');
-            $item = new LiteSpeedCacheEsiItem($tkparam, $tkconf);
-            $item->setContent($static_token);
-            $tokenInc = $item->getInclude();
-            // global replacement
-            $nb = str_replace($static_token, $tokenInc, $nb);
-            $this->esiInjection['marker'][$item->getId()] = $item;
+        $tkparam = array('pt' => LiteSpeedCacheEsiItem::ESI_TOKEN, 'm' => LscToken::NAME, 'd' => 'static');
+        $tkitem = new LiteSpeedCacheEsiItem($tkparam, $this->config->getEsiModuleConf(LscToken::NAME));
+        $tkitem->setContent($static_token);
+        // we always add to inline
+        $this->esiInjection['marker'][$tkitem->getId()] = $tkitem;
+
+        $envparam = array('pt' => LiteSpeedCacheEsiItem::ESI_ENV, 'm' => LscEnv::NAME);
+        $envitem = new LiteSpeedCacheEsiItem($envparam, $this->config->getEsiModuleConf(LscEnv::NAME));
+        $envitem->setContent('');
+        $this->esiInjection['marker'][$envitem->getId()] = $envitem;
+
+        if (self::isCacheable()) { // only if cacheable, do global replacement
+            if (strpos($nb, $static_token)) {
+                $tokenInc = $tkitem->getInclude();
+                $nb = str_replace($static_token, $tokenInc, $nb);
+            }
+            $nb = $envitem->getInclude() . $nb; // must be first one
         }
 
         $allPrivateItems = array();
@@ -648,6 +618,23 @@ class LiteSpeedCache extends Module
         return $lsc->registerEsiMarker($esiParam, $conf);
     }
 
+    // allow other plugins to set current response not cacheable
+    private function setNotCacheable($reason = '')
+    {
+        if (!self::isActive()) { // not check ip for force nocache
+            return;
+        }
+        self::$ccflag |= self::CCBM_NOT_CACHEABLE;
+        if ($reason && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_NOCACHE_REASON) {
+            LiteSpeedCacheLog::log(__FUNCTION__ . ' - ' . $reason, LiteSpeedCacheLog::LEVEL_NOCACHE_REASON);
+        }
+    }
+
+    public function getContent()
+    {
+        Tools::redirectAdmin($this->context->link->getAdminLink('AdminLiteSpeedCacheConfig'));
+    }
+
     public function install()
     {
         $this->installTab();
@@ -662,6 +649,7 @@ class LiteSpeedCache extends Module
             Configuration::updateValue(LiteSpeedCacheConfig::ENTRY_ALL, $all);
             Configuration::updateValue(LiteSpeedCacheConfig::ENTRY_SHOP, $shop);
             Configuration::updateValue(LiteSpeedCacheConfig::ENTRY_MODULE, $mod);
+            LiteSpeedCacheHelper::htAccessBackup('b4lsc');
             return $this->installHooks();
         } else {
             return false;
@@ -671,6 +659,7 @@ class LiteSpeedCache extends Module
     public function uninstall()
     {
         $this->uninstallTab();
+        LiteSpeedCacheHelper::htAccessUpdate(0, 0, 0);
         $this->cache->purgeByTags('*', false, 'from uninstall');
         Configuration::deleteByName(LiteSpeedCacheConfig::ENTRY_ALL);
         Configuration::deleteByName(LiteSpeedCacheConfig::ENTRY_SHOP);
@@ -679,9 +668,31 @@ class LiteSpeedCache extends Module
         return parent::uninstall();
     }
 
-    public function getContent()
+    private function installHooks()
     {
-        Tools::redirectAdmin($this->context->link->getAdminLink('AdminLiteSpeedCacheConfig'));
+        $hooks = $this->config->getReservedHooks();
+        foreach ($hooks as $hook) {
+            if (!$this->registerHook($hook)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private function uninstallTab()
+    {
+        $definedtabs = $this->initTabs();
+        if (version_compare(_PS_VERSION_, '1.7.1.0', '>=')) {
+            $this->tabs = $definedtabs;
+            return null;
+        }
+        foreach ($definedtabs as $t) {
+            if ($id_tab = (int) Tab::getIdFromClassName($t['class_name'])) {
+                $tab = new Tab($id_tab);
+                $tab->delete();
+            }
+        }
+        return $definedtabs;
     }
 
     private function installTab()
@@ -706,48 +717,32 @@ class LiteSpeedCache extends Module
         }
     }
 
-    private function uninstallTab()
-    {
-        $definedtabs = $this->initTabs();
-        if (version_compare(_PS_VERSION_, '1.7.1.0', '>=')) {
-            $this->tabs = $definedtabs;
-            return null;
-        }
-        foreach ($definedtabs as $t) {
-            if ($id_tab = (int) Tab::getIdFromClassName($t['class_name'])) {
-                $tab = new Tab($id_tab);
-                $tab->delete();
-            }
-        }
-        return $definedtabs;
-    }
-
     private function initTabs()
     {
         $root_node = version_compare(_PS_VERSION_, '1.7.1.0', '>=') ? 'AdminAdvancedParameters' : 0;
         $definedtabs = array(
             array(
                 'class_name' => 'AdminLiteSpeedCache',
-                'name' => 'LiteSpeed Cache',
+                'name' => $this->l('LiteSpeed Cache'), // this will use the default admin lang
                 'visible' => 1,
                 'icon' => 'flash_on',
                 'ParentClassName' => $root_node,
             ),
             array(
                 'class_name' => 'AdminLiteSpeedCacheManage',
-                'name' => 'Manage',
+                'name' => $this->l('Manage'),
                 'visible' => 1,
                 'ParentClassName' => 'AdminLiteSpeedCache',
             ),
             array(
                 'class_name' => 'AdminLiteSpeedCacheConfig',
-                'name' => 'Configuration',
+                'name' => $this->l('Configuration'),
                 'visible' => 1,
                 'ParentClassName' => 'AdminLiteSpeedCache',
             ),
             array(
                 'class_name' => 'AdminLiteSpeedCacheCustomize',
-                'name' => 'Customization',
+                'name' => $this->l('Customization'),
                 'visible' => 1,
                 'ParentClassName' => 'AdminLiteSpeedCache',
             ),

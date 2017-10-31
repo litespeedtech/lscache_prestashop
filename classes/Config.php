@@ -46,6 +46,7 @@ class LiteSpeedCacheConfig
     /* common private tags */
     const TAG_CART = 'cart';
     const TAG_SIGNIN = 'signin';
+    const TAG_ENV = 'env';
 
     /* config entry */
     const ENTRY_ALL = 'LITESPEED_CACHE_GLOBAL';
@@ -60,6 +61,7 @@ class LiteSpeedCacheConfig
     const CFG_HOME_TTL = 'homettl';
     const CFG_DIFFMOBILE = 'diff_mobile';
     const CFG_DIFFCUSTGRP = 'diff_customergroup';
+    const CFG_GUESTMODE = 'guestmode';
     const CFG_NOCACHE_VAR = 'nocache_vars';
     const CFG_NOCACHE_URL = 'nocache_urls';
     const CFG_DEBUG = 'debug';
@@ -96,6 +98,7 @@ class LiteSpeedCacheConfig
             // in global scope
             case self::CFG_ENABLED:
             case self::CFG_DIFFMOBILE:
+            case self::CFG_GUESTMODE:
             case self::CFG_NOCACHE_VAR:
             case self::CFG_NOCACHE_URL:
             // in global developer form
@@ -141,6 +144,7 @@ class LiteSpeedCacheConfig
             return array(
                 self::CFG_ENABLED => 0,
                 self::CFG_DIFFMOBILE => 0,
+                self::CFG_GUESTMODE => 1,
                 self::CFG_NOCACHE_VAR => '',
                 self::CFG_NOCACHE_URL => '',
                 self::CFG_DEBUG => 0,
@@ -242,6 +246,7 @@ class LiteSpeedCacheConfig
                 $this->all = array(
                     self::CFG_ENABLED => $values[self::CFG_ENABLED],
                     self::CFG_DIFFMOBILE => $values[self::CFG_DIFFMOBILE],
+                    self::CFG_GUESTMODE => $values[self::CFG_GUESTMODE],
                     self::CFG_NOCACHE_VAR => $values[self::CFG_NOCACHE_VAR],
                     self::CFG_NOCACHE_URL => $values[self::CFG_NOCACHE_URL],
                     self::CFG_DEBUG => $values[self::CFG_DEBUG],
@@ -507,7 +512,6 @@ class LiteSpeedCacheConfig
         $hooks = array(
             /** global * */
             'actionDispatcher', // check cacheable for route
-            'displayHeader', // set vary
             'displayFooterAfter', // show debug info
             /** add cache tags * */
             'overrideLayoutTemplate',

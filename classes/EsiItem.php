@@ -31,6 +31,7 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
     const ESI_JSDEF = 'js';
     const ESI_SMARTYFIELD = 'mf';
     const ESI_TOKEN = 'tk';
+    const ESI_ENV = 'env';
     const RES_FAILED = '__LSC_RES_FAILED__';
 
     private $sdata;
@@ -164,6 +165,9 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
             $err = $param['m'] . ' is not found';
         } else {
             switch ($param['pt']) {
+                case self::ESI_TOKEN:
+                case self::ESI_ENV:
+                    break;
                 case self::ESI_JSDEF:
                     if (!isset($param['jsk'])) {
                         $err = 'missing jsk';
@@ -178,8 +182,6 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
                     if (!isset($param['mt'])) {
                         $err = 'missing mt';
                     }
-                    break;
-                case self::ESI_TOKEN:
                     break;
                 case self::ESI_SMARTYFIELD:
                     if (!isset($param['f']) || $param['f'] == '') {

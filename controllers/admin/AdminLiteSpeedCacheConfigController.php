@@ -39,6 +39,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
     const BMC_MAY_PURGE = 8; // purge to be effective, but don't have to
     const BMC_MUST_PURGE = 16;
     const BMC_DONE_PURGE = 32; // already purged
+    const BMC_HTACCESS_UPDATE = 64;
 
     private $original_values;
     private $changed = 0;
@@ -84,6 +85,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             Conf::CFG_404_TTL => $this->l('404 Pages TTL'),
             Conf::CFG_DIFFMOBILE => $this->l('Separate Mobile View'),
             Conf::CFG_DIFFCUSTGRP => $this->l('Separate Cache Copy per Customer Group'),
+            Conf::CFG_GUESTMODE => $this->l('Enable Guest Mode'),
             Conf::CFG_NOCACHE_VAR => $this->l('Do-Not-Cache GET Parameters'),
             Conf::CFG_NOCACHE_URL => $this->l('URL Blacklist'),
             Conf::CFG_ALLOW_IPS => $this->l('Enable Cache Only for Listed IPs'),
@@ -131,6 +133,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             $all = array(
                 Conf::CFG_ENABLED,
                 Conf::CFG_DIFFMOBILE,
+                Conf::CFG_GUESTMODE,
                 Conf::CFG_NOCACHE_VAR,
                 Conf::CFG_NOCACHE_URL,
                 Conf::CFG_DEBUG,
@@ -153,6 +156,11 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             return;
         }
 
+        $guest = ($this->current_values[Conf::CFG_GUESTMODE] == 1);
+        $mobile = $this->current_values[Conf::CFG_DIFFMOBILE];
+        if ($guest && ($this->original_values[Conf::CFG_DIFFMOBILE] != $mobile)) {
+            $this->changed |= self::BMC_HTACCESS_UPDATE;
+        }
         if ($this->changed & self::BMC_SHOP) {
             $this->config->updateConfiguration(Conf::ENTRY_SHOP, $this->current_values);
         }
@@ -160,15 +168,27 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             $this->config->updateConfiguration(Conf::ENTRY_ALL, $this->current_values);
         }
         $this->confirmations[] = $this->l('Settings updated successfully.');
+        //please manually fix .htaccess, may due to permission
         if ($this->changed & self::BMC_DONE_PURGE) {
             $this->processPurgeShops();
             $this->confirmations[] = $this->l('Disabled LiteSpeed Cache.');
         } elseif ($this->changed & self::BMC_MUST_PURGE) {
-            $this->confirmations[] = $this->l('Please navigate to LiteSpeed Cache - Manage to purge related contents!');
+            $this->confirmations[] = $this->l('You must flush all pages to make this change effective.');
         } elseif ($this->changed & self::BMC_MAY_PURGE) {
             $this->confirmations[] = $this->l('You may want to purge related contents to make this change effective.');
         } elseif ($this->changed & self::BMC_NONEED_PURGE) {
             $this->confirmations[] = $this->l('Changes will be effective immediately. No need to purge.');
+        }
+        if ($this->changed & self::BMC_HTACCESS_UPDATE) {
+            $res = LiteSpeedCacheHelper::htAccessUpdate($this->current_values[Conf::CFG_ENABLED], $guest, $mobile);
+            if ($res) {
+                $this->confirmations[] = $this->l('.htaccess file updated accordingly.');
+            } else {
+                $url = 'https://www.litespeedtech.com/support/wiki/doku.php/'
+                    . 'litespeed_wiki:cache:lscps:installation#htaccess_update';
+                $this->warnings[] = $this->l('Failed to update .htaccess due to permission.') . ' ' . '<a href="' . $url
+                    . '"  target="_blank" rel="noopener noreferrer">' . $this->l('Please manually update.') . '</a>';
+            }
         }
     }
 
@@ -190,72 +210,99 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
         switch ($name) {
             case Conf::CFG_ENABLED:
+                $postVal = (int)$postVal;
                 if ($postVal != $origVal) {
                     // if disable, purge all
-                    $this->changed |= self::BMC_ALL | (($postVal == 0) ? self::BMC_DONE_PURGE : self::BMC_NONEED_PURGE);
+                    $this->changed |= self::BMC_ALL | self::BMC_HTACCESS_UPDATE
+                        | (($postVal == 0) ? self::BMC_DONE_PURGE : self::BMC_NONEED_PURGE);
                 }
                 break;
 
             case Conf::CFG_PUBLIC_TTL:
                 if (!Validate::isUnsignedInt($postVal)) {
                     $this->errors[] = $invalid;
-                } elseif ($postVal < 300) {
-                    $this->errors[] = $invalid . $s . $this->l('Must be greater than 300 seconds');
-                } elseif ($postVal != $origVal) {
-                    $this->changed |= self::BMC_SHOP;
-                    $this->changed |= ($postVal < $origVal) ? self::BMC_MUST_PURGE : self::BMC_MAY_PURGE;
-                }
-                break;
-
-            case Conf::CFG_PRIVATE_TTL:
-                if (!Validate::isUnsignedInt($postVal)) {
-                    $this->errors[] = $invalid;
-                } elseif ($postVal < 180 || $postVal > 7200) {
-                    $this->errors[] = $invalid . $s . $this->l('Must be within the 180 to 7200 range.');
-                } elseif ($postVal != $origVal) {
-                    $this->changed |= self::BMC_SHOP | self::BMC_NONEED_PURGE;
-                }
-                break;
-
-            case Conf::CFG_HOME_TTL:
-                if (!Validate::isUnsignedInt($postVal)) {
-                    $this->errors[] = $invalid;
-                } elseif ($postVal < 60) {
-                    $this->errors[] = $invalid . $s . $this->l('Must be greater than 60 seconds.');
-                } elseif ($postVal != $origVal) {
-                    $this->changed |= self::BMC_SHOP;
-                    $this->changed |= ($postVal < $origVal) ? self::BMC_MUST_PURGE : self::BMC_MAY_PURGE;
-                }
-                break;
-
-            case Conf::CFG_404_TTL:
-                if (!Validate::isUnsignedInt($postVal)) {
-                    $this->errors[] = $invalid;
-                } elseif ($postVal > 0 && $postVal < 300) {
-                    $this->errors[] = $invalid . $s . $this->l('Must be greater than 300 seconds.');
-                } elseif ($postVal != $origVal) {
-                    if ($postVal == 0) {
-                        $this->changed |= self::BMC_SHOP | self::BMC_MUST_PURGE;
-                    } else {
+                } else {
+                    $postVal = (int)$postVal;
+                    if ($postVal < 300) {
+                        $this->errors[] = $invalid . $s . $this->l('Must be greater than 300 seconds');
+                    } elseif ($postVal != $origVal) {
                         $this->changed |= self::BMC_SHOP;
                         $this->changed |= ($postVal < $origVal) ? self::BMC_MUST_PURGE : self::BMC_MAY_PURGE;
                     }
                 }
                 break;
 
+            case Conf::CFG_PRIVATE_TTL:
+                if (!Validate::isUnsignedInt($postVal)) {
+                    $this->errors[] = $invalid;
+                } else {
+                    $postVal = (int)$postVal;
+                    if ($postVal < 180 || $postVal > 7200) {
+                        $this->errors[] = $invalid . $s . $this->l('Must be within the 180 to 7200 range.');
+                    } elseif ($postVal != $origVal) {
+                        $this->changed |= self::BMC_SHOP | self::BMC_NONEED_PURGE;
+                    }
+                }
+                break;
+
+            case Conf::CFG_HOME_TTL:
+                if (!Validate::isUnsignedInt($postVal)) {
+                    $this->errors[] = $invalid;
+                } else {
+                    $postVal = (int)$postVal;
+                    if ($postVal < 60) {
+                        $this->errors[] = $invalid . $s . $this->l('Must be greater than 60 seconds.');
+                    } elseif ($postVal != $origVal) {
+                        $this->changed |= self::BMC_SHOP;
+                        $this->changed |= ($postVal < $origVal) ? self::BMC_MUST_PURGE : self::BMC_MAY_PURGE;
+                    }
+                }
+                break;
+
+            case Conf::CFG_404_TTL:
+                if (!Validate::isUnsignedInt($postVal)) {
+                    $this->errors[] = $invalid;
+                } else {
+                    $postVal = (int)$postVal;
+                    if ($postVal > 0 && $postVal < 300) {
+                        $this->errors[] = $invalid . $s . $this->l('Must be greater than 300 seconds.');
+                    } elseif ($postVal != $origVal) {
+                        if ($postVal == 0) {
+                            $this->changed |= self::BMC_SHOP | self::BMC_MUST_PURGE;
+                        } else {
+                            $this->changed |= self::BMC_SHOP;
+                            $this->changed |= ($postVal < $origVal) ? self::BMC_MUST_PURGE : self::BMC_MAY_PURGE;
+                        }
+                    }
+                }
+                break;
+
             case Conf::CFG_DIFFMOBILE:
+                $postVal = (int)$postVal;
+                if ($postVal != 0 && $postVal != 1 && $postVal != 2) {
+                    // should not happen in drop down
+                    $postVal = 0;
+                }
                 if ($postVal != $origVal) {
                     $this->changed |= self::BMC_ALL | self::BMC_MUST_PURGE;
                 }
                 break;
 
             case Conf::CFG_DIFFCUSTGRP:
+                $postVal = (int)$postVal;
                 if ($postVal != 0 && $postVal != 1 && $postVal != 2) {
                     // should not happen in drop down
                     $postVal = 0;
                 }
                 if ($postVal != $origVal) {
                     $this->changed |= self::BMC_SHOP | self::BMC_MUST_PURGE;
+                }
+                break;
+
+            case Conf::CFG_GUESTMODE:
+                $postVal = (int)$postVal;
+                if ($postVal != $origVal) {
+                    $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE | self::BMC_HTACCESS_UPDATE;
                 }
                 break;
 
@@ -292,6 +339,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 break;
 
             case Conf::CFG_DEBUG:
+                $postVal = (int)$postVal;
                 if ($postVal != $origVal) {
                     $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE;
                 }
@@ -300,8 +348,11 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             case Conf::CFG_DEBUG_LEVEL:
                 if (!Validate::isUnsignedInt($postVal) || $postVal < 1 || $postVal > 10) {
                     $this->errors[] = $invalid . $s . $this->l('Valid range is 1 to 10.');
-                } elseif ($postVal != $origVal) {
-                    $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE;
+                } else {
+                    $postVal = (int)$postVal;
+                    if ($postVal != $origVal) {
+                        $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE;
+                    }
                 }
                 break;
             case Conf::CFG_ALLOW_IPS:
@@ -314,7 +365,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                             $this->errors[] = $invalid;
                         }
                     }
-                    $postVal = implode(", ", $clean);
+                    $postVal = implode(', ', $clean);
                 }
                 if ($postVal != $origVal) {
                     $this->changed |= self::BMC_ALL | self::BMC_MUST_PURGE;
@@ -330,7 +381,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                             $this->errors[] = $invalid;
                         }
                     }
-                    $postVal = implode(", ", $clean);
+                    $postVal = implode(', ', $clean);
                 }
                 if ($postVal != $origVal) {
                     $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE;
@@ -397,6 +448,23 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             $this->l('Enable this option if there is different pricing based on customer groups.')
         );
 
+        $guestOptions = array(
+            array('id' => 0, 'name' => $this->l('No') . $s . $this->l('No default guest view')),
+            array('id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Has default guest view')),
+            array('id' => 2, 'name' => $this->l('First Page Only') . $s .
+                $this->l('Only first page will show the default guest view')),
+        );
+        $fg['input'][] = $this->addInputSelect(
+            Conf::CFG_GUESTMODE,
+            $this->labels[Conf::CFG_GUESTMODE],
+            $guestOptions,
+            $this->l('This will speed up the first page view for new visitors by serving the default view.') . ' '
+            . $this->l('Robots will get an instant response without hitting the backend.') . ' '
+            . $this->l('If you have different views based on GeoIP,') . ' '
+            . $this->l('select "First Page Only" to make sure the second page will have the correct view.'),
+            $disabled
+        );
+
         $formUser = $this->newFieldForm(
             $this->l('User-Defined Cache Rules'),
             'cogs',
@@ -430,7 +498,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         $formDev['input'][] = $this->addInputSwitch(
             Conf::CFG_DEBUG,
             $this->labels[Conf::CFG_DEBUG],
-            $this->l('Prints additional information to "app/logs/lscache.log." Turn off for production use.'),
+            $this->l('Prints additional information to "lscache.log." Turn off for production use.'),
             $disabled
         );
         $formDev['input'][] = $this->addInputTextArea(

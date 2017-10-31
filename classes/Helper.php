@@ -60,7 +60,7 @@ class LiteSpeedCacheHelper
         $unique = str_split(md5(_PS_ROOT_DIR_));
         $prefix = 'PS' . implode('', array_slice($unique, 0, 5)); // take 5 char
         self::$internal['tag_prefix'] = $prefix;
-        self::$internal['cache_entry'] = $prefix . md5(self::$internal['esi_base_url']) . '.data';
+        self::$internal['cache_entry'] = $prefix . md5(self::$internal['esi_base_url']);
         self::$internal['cache_dir'] = _PS_CACHE_DIR_ . LiteSpeedCache::MODULE_NAME;
 
         $tag0 = $prefix; // for purge all PS cache
@@ -90,7 +90,7 @@ class LiteSpeedCacheHelper
         if (!is_dir($dir)) {
             mkdir($dir);
         }
-        return $dir . '/' . self::$internal['cache_entry'];
+        return $dir . '/' . self::$internal['cache_entry'] . '.data';
     }
 
     public static function clearInternalCache()
@@ -159,12 +159,23 @@ class LiteSpeedCacheHelper
 
     public static function getTagPrefix()
     {
-        if (!isset(self::$internal['tag_prefix'])) {
-            self::initInternals();
-        }
-        return self::$internal['tag_prefix'];
+        return self::getInternalValue('tag_prefix');
     }
 
+    public static function getCacheEntry()
+    {
+        return self::getInternalValue('cache_entry');
+    }
+
+    private static function getInternalValue($field)
+    {
+        if (!isset(self::$internal[$field])) {
+            self::initInternals();
+        }
+        return self::$internal[$field];
+    }
+
+    // validator does not allow to use file_get_contents, so use this workaround.
     protected static function getFileContent($filepath)
     {
         $contents = '';
@@ -177,6 +188,97 @@ class LiteSpeedCacheHelper
         return $contents;
     }
 
+    private static function genHtAccessContent($guestMode, $mobileView)
+    {
+        $ls = array();
+        $ls[] = '### LITESPEED_CACHE_START - Do not remove this line, LSCache plugin will automatically update it';
+        $ls[] = '# automatically genereated by LiteSpeedCache plugin: '
+        . 'https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps';
+        $ls[] = '<IfModule LiteSpeed>';
+        $ls[] = 'CacheLookup on';
+        if ($guestMode) {
+            $ls[] = 'RewriteEngine on';
+            if ($mobileView) {
+                $ls[] = 'RewriteCond %{HTTP_COOKIE} !PrestaShop-';
+                $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "phone|mobile|android|Opera Mini" [NC]';
+                $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=guestm]';
+                $ls[] = 'RewriteCond %{HTTP_COOKIE} !PrestaShop-';
+                $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "!(phone|mobile|android|Opera Mini)" [NC]';
+                $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=guest]';
+            } else {
+                $ls[] = 'RewriteCond %{HTTP_COOKIE} !PrestaShop-';
+                $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=guest]';
+            }
+        }
+        $ls[] = '</IfModule>';
+        $ls[] = '### LITESPEED_CACHE_END';
+        $newcontent = implode("\n", $ls) . "\n";
+        return $newcontent;
+    }
+
+    public static function htAccessBackup($suffix)
+    {
+        $path = _PS_ROOT_DIR_.'/.htaccess';
+        $newfile = $path . '.' . $suffix . time();
+        if (!file_exists($newfile)) {
+            $content = self::getFileContent($path);
+            if ($content) {
+                $res = file_put_contents($newfile, $content);
+                if ($res) {
+                    LSLog::log(__FUNCTION__ . ' backed up as ' . $newfile, LSLog::LEVEL_UPDCONFIG);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static function htAccessUpdate($enableCache, $guestMode, $mobileView)
+    {
+        $path = _PS_ROOT_DIR_.'/.htaccess';
+
+        $oldlines= file($path);
+        if ($oldlines === '') {
+             LSLog::log(__FUNCTION__ . " please manually fix .htaccess, may due to permission", LSLog::LEVEL_FORCE);
+             return false;
+        }
+        $newlines = array();
+        $ind = false;
+        // always remove first
+        foreach ($oldlines as $line) {
+            if (!$ind) {
+                if (strpos($line, 'LITESPEED_CACHE_START') || stripos($line, 'IfModule LiteSpeed')) {
+                    $ind = true;
+                } else {
+                    $newlines[] = $line;
+                }
+            } else {
+                if (strpos($line, 'LITESPEED_CACHE_END')) {
+                    $ind = false;
+                } elseif (strpos($line, '~~start~~')) {
+                    $ind = false;
+                    $newlines[] = $line;
+                }
+            }
+        }
+
+        $newcontent = '';
+        if ($enableCache) {
+            $newcontent = self::genHtAccessContent($guestMode, $mobileView);
+        }
+        $newcontent .= implode($newlines);
+
+        $res = file_put_contents($path, $newcontent);
+        if ($res) {
+            LSLog::log(__FUNCTION__ . ' updated', LSLog::LEVEL_UPDCONFIG);
+            return true;
+        } else {
+            LSLog::log(__FUNCTION__ . " cannot save! Please manually fix .htaccess file", LSLog::LEVEL_FORCE);
+            return false;
+        }
+    }
+
+    // if id is false, load all
     public static function getRelatedItems($id)
     {
         $items = array();
@@ -186,18 +288,16 @@ class LiteSpeedCacheHelper
         $saved = json_decode($snapshot, true);
         if (!is_array($saved)
                 || json_last_error() !== JSON_ERROR_NONE
-                || !isset($saved['data'][$id])) {
+                || ($id != false && !isset($saved['data'][$id]))) {
             return $items;
         }
 
         $related = array();
-        if (isset($saved['first'][$id])) {
+        $tag = ($id) ? $saved['data'][$id]['tag'] : Conf::TAG_ENV;
+        if ($tag == Conf::TAG_ENV) {
             $related = array_keys($saved['data']);
-        } else {
-            $tag = $saved['data'][$id]['tag'];
-            if (isset($saved['tags'][$tag])) {
-                $related = $saved['tags'][$tag];
-            }
+        } elseif (isset($saved['tags'][$tag])) {
+            $related = array_keys($saved['tags'][$tag]);
         }
         foreach ($related as $rid) {
             if ($rid != $id) {
@@ -218,29 +318,25 @@ class LiteSpeedCacheHelper
         $saved = json_decode($snapshot, true);
 
         if (!is_array($saved) || json_last_error() !== JSON_ERROR_NONE) {
-            $saved = array('data' => array(), 'tags' => array(), 'first' => array());
+            $saved = array('data' => array(), 'tags' => array());
         }
 
-        $setFirst = false;
         foreach ($itemList as $item) {
             $id = $item->getId();
             $descr = $item->getInfoLog(true);
             $saved['data'][$id] = $item;
-            if (!$setFirst) {
-                $saved['first'][$id] = $descr;
-                $setFirst = true;
-            } else {
-                $tag = $item->getTag();
-                if (!isset($saved['tags'][$tag])) {
-                    $saved['tags'][$tag] = array($id => $descr);
-                } elseif (!isset($saved['tags'][$tag][$id])) {
-                    $saved['tags'][$tag][$id] = $descr;
-                }
+            $tag = $item->getTag();
+            if ($tag == Conf::TAG_ENV) {
+                continue;
+            }
+            if (!isset($saved['tags'][$tag])) {
+                $saved['tags'][$tag] = array($id => $descr);
+            } elseif (!isset($saved['tags'][$tag][$id])) {
+                $saved['tags'][$tag][$id] = $descr;
             }
         }
         ksort($saved['data']);
         ksort($saved['tags']);
-        ksort($saved['first']);
         $newsnapshot = json_encode($saved, JSON_UNESCAPED_SLASHES);
         if ($snapshot != $newsnapshot) {
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_SAVED_DATA) {

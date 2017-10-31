@@ -39,9 +39,9 @@ class LiteSpeedCacheLog
     const LEVEL_ESI_INCLUDE = 7;
     const LEVEL_CACHE_ROUTE = 8;
     const LEVEL_ENVCOOKIE_DETAIL = 9;
-    const LEVEL_ESI_OUTPUT = 10;
+    const LEVEL_ESI_OUTPUT = 9.5;
     const LEVEL_SAVED_DATA = 10;
-    const LEVEL_HOOK_DETAIL =10;
+    const LEVEL_HOOK_DETAIL = 10;
     const LEVEL_TEMPORARY = 8.5;
 
     protected $logger;

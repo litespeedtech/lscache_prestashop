@@ -272,6 +272,12 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             case 'id':
                 break;
 
+            case 'priv':
+            case 'asvar':
+            case 'ie':
+                $postVal = (int)$postVal;
+                break;
+
             case 'ttl':
                 if ($postVal === '') {
                     // ok, will use default value
@@ -281,6 +287,8 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                     $this->errors[] = $invalid . $s . $this->l('Must be greater than 60 seconds.');
                 } elseif ($this->current_values['priv'] == 1 && $postVal > 7200) {
                     $this->errors[] = $invalid . $s . $this->l('Private TTL must be less than 7200 seconds.');
+                } else {
+                    $postVal = (int)$postVal;
                 }
                 break;
 

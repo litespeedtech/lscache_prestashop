@@ -42,32 +42,44 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
             LSLog::log('In ESI controller display', LSLog::LEVEL_ESI_INCLUDE);
         }
-        $item = EsiItem::decodeEsiUrl();
 
-        if (is_string($item) && _LITESPEED_DEBUG_ >= LSLog::LEVEL_EXCEPTION) {
-            LSLog::log('Invalid ESI url ' . $item, LSLog::LEVEL_EXCEPTION);
-            return;
-        }
+        $lsc = Module::getInstanceByName(LiteSpeedCache::MODULE_NAME);
+        $html = '';
 
-        $this->populateItemContent($item);
-        $html = $item->getContent();
+        if (LiteSpeedCache::setVaryCookie()) {
+            $html = '<!-- EnvChange - reload -->';
+            LSLog::log($html, LSLog::LEVEL_ESI_OUTPUT);
+            $related = false;
+        } else {
+            $item = EsiItem::decodeEsiUrl();
 
-        if ($html == EsiItem::RES_FAILED) {
-            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_EXCEPTION) {
-                LSLog::log('Invalid ESI url - module not found ', LSLog::LEVEL_EXCEPTION);
+            if (is_string($item) && _LITESPEED_DEBUG_ >= LSLog::LEVEL_EXCEPTION) {
+                LSLog::log('Invalid ESI url ' . $item, LSLog::LEVEL_EXCEPTION);
+                return;
             }
-            return;
+            $this->populateItemContent($item);
+            $html = $item->getContent();
+
+            if ($html == EsiItem::RES_FAILED) {
+                if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_EXCEPTION) {
+                    LSLog::log('Invalid ESI url - module not found ', LSLog::LEVEL_EXCEPTION);
+                }
+                return;
+            }
+            $related = $item->getId();
+            $lsc->addCacheControlByEsiModule($item->getConf());
         }
 
-        $related = LSHelper::getRelatedItems($item->getId());
+        $related = LSHelper::getRelatedItems($related);
         $inline = '';
         foreach ($related as $ri) {
             $this->populateItemContent($ri);
             $inline .= $ri->getInline();
         }
-        $lsc = Module::getInstanceByName(LiteSpeedCache::MODULE_NAME);
 
-        $lsc->addCacheControlByEsiModule($item->getParam('m'), ($inline != ''));
+        if ($inline) {
+            $lsc->setEsiOn();
+        }
 
         if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_OUTPUT) {
             LSLog::log('ESI controller output ' . $inline . $html, LSLog::LEVEL_ESI_OUTPUT);
@@ -77,10 +89,6 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
     private function populateItemContent($item)
     {
-        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
-            LSLog::log(__FUNCTION__ . ' start ' . $item->getInfoLog(), LSLog::LEVEL_ESI_INCLUDE);
-        }
-
         switch ($item->getParam('pt')) {
             case EsiItem::ESI_RENDERWIDGET:
                 $this->processRenderWidget($item);
@@ -97,11 +105,14 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             case EsiItem::ESI_TOKEN:
                 $this->processToken($item);
                 break;
+            case EsiItem::ESI_ENV:
+                $this->processEnv($item);
+                break;
             default:
                 $item->setFailed();
         }
         if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
-            LSLog::log(__FUNCTION__ . ' end ' . $item->getInfoLog(), LSLog::LEVEL_ESI_INCLUDE);
+            LSLog::log(__FUNCTION__ . ' ' . $item->getInfoLog(), LSLog::LEVEL_ESI_INCLUDE);
         }
     }
 
@@ -144,7 +155,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
             $item->setFailed();
         } else {
-            if (method_exists($module, getWidgetVariables)) {
+            if (method_exists($module, 'getWidgetVariables')) {
                 $this->context->smarty->assign($module->getWidgetVariables('', $params));
             }
             $method = $item->getParam('mt');
@@ -155,6 +166,11 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
     private function processToken($item)
     {
         $item->setContent(Tools::getToken(false));
+    }
+
+    private function processEnv($item)
+    {
+        $item->setContent('');
     }
 
     private function processSmartyField($item)

@@ -28,7 +28,7 @@ use LiteSpeedCacheConfig as Conf;
 
 class LiteSpeedCacheCore
 {
-    const LSHEADER_PURGE = 'X-Litespeed-Purge';
+    const LSHEADER_PURGE = 'X-Litespeed-Purge2';
     const LSHEADER_CACHE_CONTROL = 'X-Litespeed-Cache-Control';
     const LSHEADER_CACHE_TAG = 'X-Litespeed-Tag';
     const LSHEADER_CACHE_VARY = 'X-Litespeed-Vary';
@@ -37,15 +37,11 @@ class LiteSpeedCacheCore
     private $purgeTags;
     private $config;
     private $esiTtl;
-    private $curHeaders;
 
     public function __construct(LiteSpeedCacheConfig $config)
     {
         $this->config = $config;
         $this->purgeTags = array('pub' => array(), 'priv' => array());
-        $this->curHeaders = array(self::LSHEADER_CACHE_CONTROL => '',
-            self::LSHEADER_CACHE_TAG => '',
-            self::LSHEADER_PURGE => '');
     }
 
     public function setEsiTtl($ttl)
@@ -242,10 +238,7 @@ class LiteSpeedCacheCore
         if ($from && _LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
             LSLog::log('purgeByTags from ' . $from, LSLog::LEVEL_PURGE_EVENT);
         }
-
-        if ($this->addPurgeTags($tags, $isPrivate) == 1) {
-            $this->setPurgeHeader();
-        }
+        $this->addPurgeTags($tags, $isPrivate);
     }
 
     private function getPurgeTagsByProduct($id_product, $product, $isupdate)
@@ -311,18 +304,15 @@ class LiteSpeedCacheCore
             return;
         }
 
-        $returnCode = 0;
+        $res = 0;
         if (!empty($tags['pub'])) {
-            $returnCode |= $this->addPurgeTags($tags['pub'], false);
+            $res |= $this->addPurgeTags($tags['pub'], false);
         }
         if (!empty($tags['priv'])) {
-            $returnCode |= $this->addPurgeTags($tags['priv'], true);
-        }
-        if (($returnCode & 1) == 1) { // added
-            $this->setPurgeHeader();
+            $res |= $this->addPurgeTags($tags['priv'], true);
         }
         if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
-            LSLog::log('purgeByCatchAll ' . $method . ' res=' . $returnCode, LSLog::LEVEL_PURGE_EVENT);
+            LSLog::log('purgeByCatchAll ' . $method . ' res=' . $res, LSLog::LEVEL_PURGE_EVENT);
         }
     }
 
@@ -371,8 +361,8 @@ class LiteSpeedCacheCore
             case 'actionobjectsupplierdeleteafter':
             case 'actionobjectsupplieraddafter':
                 $tags['pub'] = array(Conf::TAG_PREFIX_SUPPLIER . $args['object']->id,
-                Conf::TAG_PREFIX_SUPPLIER, // all supplier
-                Conf::TAG_SITEMAP);
+                    Conf::TAG_PREFIX_SUPPLIER, // all supplier
+                    Conf::TAG_SITEMAP);
                 break;
 
             case 'actionobjectmanufacturerupdateafter':
@@ -393,27 +383,26 @@ class LiteSpeedCacheCore
         return $tags;
     }
 
-    private function setPurgeHeader()
+    private function getPurgeHeader()
     {
-        if (headers_sent() ||
-                (count($this->purgeTags['pub']) == 0 &&
-                count($this->purgeTags['priv']) == 0)) {
-            return;
+        $hasPub = !empty($this->purgeTags['pub']);
+        $hasPriv = !empty($this->purgeTags['priv']);
+        if (!$hasPub && !$hasPriv) {
+            return '';
         }
         $purgeHeader = '';
         $pre = 'tag=' . LiteSpeedCacheHelper::getTagPrefix();
-        $clearInternal = false;
 
         if (in_array('*', $this->purgeTags['pub'])) {
             // when purge all public, also purge all private block
             $purgeHeader .= $pre . ',' . $pre . '_PRIV';
-            $clearInternal = true;
+            LiteSpeedCacheHelper::clearInternalCache();
         } else {
             $pre .= '_';
-            if (count($this->purgeTags['pub'])) {
+            if ($hasPub) {
                 $purgeHeader .= $pre . implode(",$pre", $this->purgeTags['pub']);
             }
-            if (count($this->purgeTags['priv'])) {
+            if ($hasPriv) {
                 if ($purgeHeader) {
                     $purgeHeader .= ';'; // has public
                 }
@@ -426,49 +415,41 @@ class LiteSpeedCacheCore
             }
         }
 
-        if ($purgeHeader
-                && ($purgeHeader != $this->curHeaders[self::LSHEADER_PURGE])
-                && !headers_sent()) {
-            $this->curHeaders[self::LSHEADER_PURGE] = $purgeHeader;
+        if ($purgeHeader) {
             $purgeHeader = self::LSHEADER_PURGE . ': ' . $purgeHeader;
-            header($purgeHeader);   // due to ajax call, always set header on the event
-            if ($clearInternal) {
-                LiteSpeedCacheHelper::clearInternalCache();
-            }
-            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_SETHEADER) {
-                LSLog::log('Set header ' . $purgeHeader, LSLog::LEVEL_SETHEADER);
-            }
         }
+        return $purgeHeader;
     }
 
     public function purgeEntireStorage($from)
     {
         $purgeHeader = self::LSHEADER_PURGE . ': *';
         header($purgeHeader);
+        LiteSpeedCacheHelper::clearInternalCache();
         LSLog::log('Set header ' . $purgeHeader . ' (' . $from . ')', LSLog::LEVEL_FORCE);
     }
 
-    public function setCacheControlHeader($from)
+    public function setCacheControlHeader()
     {
         if (headers_sent()) {
             return;
         }
 
-        $this->setPurgeHeader();
+        $headers = array();
+        if (($purgeHeader = $this->getPurgeHeader()) != '') {
+            $headers[] = $purgeHeader;
+        }
 
         $cacheControlHeader = '';
         $ccflag = LSC::getCCFlag();
-        $dbgMesg = '';
 
         if ((($ccflag & LSC::CCBM_NOT_CACHEABLE) == 0) && (($ccflag & LSC::CCBM_CACHEABLE) != 0)) {
             $prefix = LiteSpeedCacheHelper::getTagPrefix();
             $tags = array();
-            if (($ccflag & LSC::CCBM_ESI_REQ) != 0) {
-                $ttl = $this->esiTtl;
-            } elseif (($ccflag & LSC::CCBM_PRIVATE) != 0) {
-                $ttl = $this->config->get(Conf::CFG_PRIVATE_TTL);
-            } else {
-                $ttl = $this->config->get(Conf::CFG_PUBLIC_TTL);
+            $ttl = (($ccflag & LSC::CCBM_ESI_REQ) == 0) ? '' : $this->esiTtl;
+            if ($ttl == '') {
+                $ttl = (($ccflag & LSC::CCBM_PRIVATE) == 0) ?
+                    $this->config->get(Conf::CFG_PUBLIC_TTL) : $this->config->get(Conf::CFG_PRIVATE_TTL);
             }
 
             if (($ccflag & LSC::CCBM_PRIVATE) == 0) {
@@ -485,11 +466,14 @@ class LiteSpeedCacheCore
                 $tags[] = $prefix . '_' . $tag;
             }
 
-            $cacheTagHeader = self::LSHEADER_CACHE_TAG . ': ' . implode(',', $tags);
-            if ($cacheTagHeader != $this->curHeaders[self::LSHEADER_CACHE_TAG]) {
-                $this->curHeaders[self::LSHEADER_CACHE_TAG] = $cacheTagHeader;
-                header($cacheTagHeader);
-                $dbgMesg .= 'Set header ' . $cacheTagHeader . "\n";
+            $headers[] = self::LSHEADER_CACHE_TAG . ': ' . implode(',', $tags);
+
+            if (($ccflag & LSC::CCBM_GUEST) != 0) {
+                $guestmode = $this->config->get(Conf::CFG_GUESTMODE);
+                if ($guestmode == 0 || $guestmode == 2) {
+                    // if disabled (shouldnot happen, meaning htaccess out of sync), or first page only
+                    $headers[] = 'LSC-Cookie: PrestaShop-lsc=guest';  //set pass-through cookie
+                }
             }
         } else {
             $cacheControlHeader = 'no-cache';
@@ -497,14 +481,17 @@ class LiteSpeedCacheCore
         if (($ccflag & LSC::CCBM_ESI_ON) != 0) {
             $cacheControlHeader .= ',esi=on';
         }
-        if ($cacheControlHeader != $this->curHeaders[self::LSHEADER_CACHE_CONTROL]) {
-            $this->curHeaders[self::LSHEADER_CACHE_CONTROL] = $cacheControlHeader;
-            $cacheControlHeader = self::LSHEADER_CACHE_CONTROL . ': ' . $cacheControlHeader;
-            header($cacheControlHeader);
-            $dbgMesg .= 'Set header ' . $cacheControlHeader;
+        if (($ccflag & LSC::CCBM_VARY_CHANGED) && ($ccflag & LSC::CCBM_ESI_REQ)) {
+            $cacheControlHeader .= ',reload-after';
         }
-        if ($dbgMesg && defined('_LITESPEED_DEBUG_') && _LITESPEED_DEBUG_ >= LSLog::LEVEL_SETHEADER) {
-            LSLog::log($dbgMesg . ' from ' . $from, LSLog::LEVEL_SETHEADER);
+
+        $headers[] = self::LSHEADER_CACHE_CONTROL . ': ' . $cacheControlHeader;
+
+        foreach ($headers as $header) {
+            header($header);
+        }
+        if (defined('_LITESPEED_DEBUG_') && _LITESPEED_DEBUG_ >= LSLog::LEVEL_SETHEADER) {
+            LSLog::log('SetHeader ' . implode("\n", $headers), LSLog::LEVEL_SETHEADER);
         }
     }
 }
