@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -63,7 +63,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache'; // self::MODULE_NAME was rejected by validator
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '1.2.0'; // validator does not allow const here
+        $this->version = '1.2.1'; // validator does not allow const here
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
@@ -409,8 +409,11 @@ class LiteSpeedCache extends Module
                 '/(\'|\")_LSCESIJS-(.+)-START__LSCESIEND_(\'|\")/Usm'),
                 function ($m) {
                     // inject ESI even it's not cacheable
-                    $id = $m[2];
+                    $id = stripslashes($m[2]);
                     $lsc = self::myInstance();
+                    if (!isset($lsc->esiInjection['marker'][$id])) {
+                        $id = stripslashes($id);
+                    }
                     if (!isset($lsc->esiInjection['marker'][$id])) {
                         // should not happen
                         if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_UNEXPECTED) {

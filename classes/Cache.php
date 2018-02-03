@@ -274,6 +274,9 @@ class LiteSpeedCacheCore
 
     private function getPurgeTagsByCategory($category)
     {
+        if ($category == null) {
+            return null; // extra proctection. happened on a client BigBuySynchronizer.php
+        }
         $cid = Conf::TAG_PREFIX_CATEGORY . $category->id_category;
         if (!$this->isNewPurgeTag($cid, false)) {
             return null; // has purge all or already added
@@ -347,7 +350,10 @@ class LiteSpeedCacheCore
             case 'actioncategoryupdate':
             case 'actioncategoryadd':
             case 'actioncategorydelete':
-                return $this->getPurgeTagsByCategory($args['category']);
+                if (isset($args['category'])) {
+                    return $this->getPurgeTagsByCategory($args['category']);
+                }
+                break;
 
             case 'actionobjectcmsupdateafter':
             case 'actionobjectcmsdeleteafter':
