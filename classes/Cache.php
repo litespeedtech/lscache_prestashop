@@ -243,12 +243,12 @@ class LiteSpeedCacheCore
 
     private function getPurgeTagsByProduct($id_product, $product, $isupdate)
     {
+        $tags = array();
         $pid = Conf::TAG_PREFIX_PRODUCT . $id_product;
         if (!$this->isNewPurgeTag($pid, false)) {
-            return null; // has purge all or already added
+            return $tags; // has purge all or already added
         }
 
-        $tags = array();
         $tags['pub'] = $this->config->getDefaultPurgeTagsByProduct();
         $tags['pub'][] = $pid;
         if ($product === null) {
@@ -274,15 +274,15 @@ class LiteSpeedCacheCore
 
     private function getPurgeTagsByCategory($category)
     {
+        $tags = array();
         if ($category == null) {
-            return null; // extra proctection. happened on a client BigBuySynchronizer.php
+            return $tags; // extra proctection. happened on a client BigBuySynchronizer.php
         }
         $cid = Conf::TAG_PREFIX_CATEGORY . $category->id_category;
         if (!$this->isNewPurgeTag($cid, false)) {
-            return null; // has purge all or already added
+            return $tags; // has purge all or already added
         }
 
-        $tags = array();
         $tags['pub'] = $this->config->getDefaultPurgeTagsByCategory();
         $tags['pub'][] = $cid;
 
@@ -301,10 +301,16 @@ class LiteSpeedCacheCore
     {
         $tags = $this->getPurgeTagsByHookMethod($method, $args);
         if (empty($tags)) {
-            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED) {
-                LSLog::log('Unexpected hook function called ' . $method, LSLog::LEVEL_UNEXPECTED);
+            if (($tags === null) && (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED)) {
+                LSLog::log('Unexpected hook function called' . $method, LSLog::LEVEL_UNEXPECTED);
             }
+
             return;
+        }
+
+        if (!defined('_LITESPEED_CALLBACK_')) {
+            define('_LITESPEED_CALLBACK_', 1);
+            ob_start('LiteSpeedCache::callbackOutputFilter');
         }
 
         $res = 0;
@@ -324,7 +330,6 @@ class LiteSpeedCacheCore
         if (strncmp($method, 'hook', 4) != 0) {
             return null;
         }
-
         $event = Tools::strtolower(Tools::substr($method, 4));
         $tags = array();
 

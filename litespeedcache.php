@@ -63,7 +63,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache'; // self::MODULE_NAME was rejected by validator
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '1.2.1'; // validator does not allow const here
+        $this->version = '1.2.2'; // validator does not allow const here
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
@@ -203,10 +203,13 @@ class LiteSpeedCache extends Module
     public function __call($method, $args)
     {
         if (self::isActive()) {
+            $keys = array_keys($args);
+            if (count($keys) == 1 && $keys[0] == 0) {
+                $args = $args[0];
+            }
             $this->cache->purgeByCatchAllMethod($method, $args);
         }
     }
-
     /* our own hook
      * Required field $params['from']
      * $params['public'] & $params['private'] one has to exist, array of tags
@@ -298,7 +301,10 @@ class LiteSpeedCache extends Module
             return 'not active';
         }
 
-        ob_start('LiteSpeedCache::callbackOutputFilter');
+        if (!defined('_LITESPEED_CALLBACK_')) {
+            define('_LITESPEED_CALLBACK_', 1);
+            ob_start('LiteSpeedCache::callbackOutputFilter');
+        }
 
         // 3rd party integration init needs to be before checkRoute
         include_once(_PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php');
@@ -409,7 +415,7 @@ class LiteSpeedCache extends Module
                 '/(\'|\")_LSCESIJS-(.+)-START__LSCESIEND_(\'|\")/Usm'),
                 function ($m) {
                     // inject ESI even it's not cacheable
-                    $id = stripslashes($m[2]);
+                    $id = $m[2];
                     $lsc = self::myInstance();
                     if (!isset($lsc->esiInjection['marker'][$id])) {
                         $id = stripslashes($id);
