@@ -18,44 +18,44 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
+
+/* for integration with PrestaChamps gdprpro module */
 
 use LiteSpeedCacheEsiModConf as EsiConf;
 use LiteSpeedCacheLog as LSLog;
 
-class LscIqitWishlist extends LscIntegration
+class LscGdprPro extends LscIntegration
 {
-    const NAME = 'iqitwishlist';
+    const NAME = 'gdprpro';
 
     protected function init()
     {
         $confData = array(
             EsiConf::FLD_PRIV => 1,
-            EsiConf::FLD_TAG => 'wishlist',
-            EsiConf::FLD_PURGE_CONTROLLERS => 'iqitwishlistactionsModuleFrontController',
+            EsiConf::FLD_TAG => 'gdprpro',
+            EsiConf::FLD_PURGE_CONTROLLERS => 'GdprProStoreCookieModuleFrontController',
             EsiConf::FLD_ASVAR => 1,
         );
-        $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);
+        $this->esiConf = new LiteSpeedCacheEsiModConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);
         $this->registerEsiModule();
-        $this->addJsDef('iqitwishlist', $this);
+        LiteSpeedCacheConfig::getInstance()->overrideGuestMode();
+        $this->addJsDef('gdprSettings:showWindow', $this);
         return true;
     }
 
     protected function JSKeyProcess($jskey)
     {
-        $funcname = 'getWishlistProductsNb';
-        $classname = 'IqitWishlistProduct';
-        if ($jskey != 'iqitwishlist' || !method_exists($classname, $funcname)) {
+        if ($jskey != 'gdprSettings:showWindow') {
             //something wrong, should not happen
-            LSLog::log(__FUNCTION__ . ' unexpected ' . $jskey, LSLog::LEVEL_EXCEPTION);
+            LSLog::log(__FUNCTION__ . ' unexpected key ' . $jskey, LSLog::LEVEL_EXCEPTION);
             return '';
         }
-        $nb = (int)$classname::$funcname((int)Context::getContext()->customer->id);
-        $data = array('nbProducts' => $nb);
+        $data = !Context::getContext()->cookie->gdpr_windows_was_opened;
         return json_encode($data);
     }
 }
 
-LscIqitWishlist::register();
+LscGdprPro::register();

@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -137,7 +137,16 @@ class LiteSpeedCacheHelper
             }
             $ccInclude = $isPrivate ? 'private' : 'public';
             $ccInclude .= ',no-vary';
-            $ccInline = $ccInclude . ',max-age=' . $ttl;
+
+            // onlyCacheIfEmpty is conditional cache, so in esi:include, make it cacheable, this
+            // will only have one cache copy (no need vary) for public page
+            // esi:inline cacheable will be different based on content
+            if ($esiconf->onlyCacheEmtpy() && $item->getContent() !== '') {
+                $ccInline = 'no-cache';
+                $ttl = 0;
+            } else {
+                $ccInline = $ccInclude . ',max-age=' . $ttl;
+            }
 
             $tagInline = ' cache-tag=\''; // need space in front
             $tagInline .= $isPrivate ?
@@ -153,7 +162,7 @@ class LiteSpeedCacheHelper
 
         $esiInclude = sprintf('<esi:include src=\'%s\' cache-control=\'%s\'%s/>', $url, $ccInclude, $tagInclude);
         $inlineStart = sprintf('<esi:inline name=\'%s\' cache-control=\'%s\'%s>', $url, $ccInline, $tagInline);
-        $item->setIncludeInlineTag($esiInclude, $inlineStart, $url);
+        $item->setIncludeInlineTag($esiInclude, $inlineStart, $url, $ttl);
     }
     /* unique prefix for this PS installation, avoid conflict of multiple installations within same cache root */
 

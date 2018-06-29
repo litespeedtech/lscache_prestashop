@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -39,18 +39,18 @@ class LscIqitCompare extends LscIntegration
         );
         $this->esiConf = new LiteSpeedCacheEsiModConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);
         $this->registerEsiModule();
-        $this->addJsDef('iqitcompare', $this);
+        $this->addJsDef('iqitcompare:nbProducts', $this);
         return true;
     }
 
     protected function JSKeyProcess($jskey)
     {
-        if ($jskey != 'iqitcompare') {
+        if ($jskey != 'iqitcompare:nbProducts') {
             //something wrong, should not happen
             LSLog::log(__FUNCTION__ . ' unexpected key ' . $jskey, LSLog::LEVEL_EXCEPTION);
             return '';
         }
-        $data = array('nbProducts' => (int) Context::getContext()->cookie->iqitCompareNb);
+        $data = (int) Context::getContext()->cookie->iqitCompareNb;
         return json_encode($data);
     }
 }

@@ -18,12 +18,11 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
 use LiteSpeedCacheLog as LSLog;
-use LiteSpeedCacheConfig as Conf;
 
 abstract class LscIntegration
 {
@@ -57,8 +56,19 @@ abstract class LscIntegration
     {
         if (!isset(self::$integrated['jsdef'])) {
             self::$integrated['jsdef'] = array();
+            self::$integrated['jsloc'] = array();
         }
         self::$integrated['jsdef'][$jsk] = array('proc' => $proc);
+        $locator = explode(':', $jsk);
+        $cur = &self::$integrated['jsloc'];
+        while ($key = array_shift($locator)) {
+            if (!empty($locator)) {
+                $cur[$key] = array();
+                $cur = &$cur[$key];
+            } else {
+                $cur[$key] = $jsk;
+            }
+        }
     }
 
     protected function registerEsiModule()
@@ -74,41 +84,94 @@ abstract class LscIntegration
         }
     }
 
-    public static function filterJSDef(&$jsDef, &$injected)
+    public static function filterJSDef0(&$jsDef, &$injected)
     {
-        if (!isset(self::$integrated['jsdef']) || !is_array($jsDef)) {
+        if (!isset(self::$integrated['jsloc']) || !is_array($jsDef)) {
             return false;
         }
 
         $replaced = false;
         $log = '';
 
-        $def = &self::$integrated['jsdef'];
         foreach ($jsDef as $key => &$js) {
-            if (isset($def[$key])) {
-                if (!isset($def[$key]['replace'])) {
-                    $proc = $def[$key]['proc'];
-                    $esiParam = array('pt'  => LiteSpeedCacheEsiItem::ESI_JSDEF,
-                        'm'   => $proc::NAME,
-                        'jsk' => $key);
-                    $log .= $proc::NAME . ':' . $key . ' ';
-
-                    $item = new LiteSpeedCacheEsiItem($esiParam, $proc->esiConf);
-                    $id = $item->getId();
-                    $injected[$id] = $item;
-
-                    // replacement, hardcoded
-                    $def[$key]['replace'] = '_LSCESIJS-' . $id . '-START__LSCESIEND_';
-                    $def[$key]['value'] = json_encode($js); // original
+            $curkey = $key;
+            if (is_array($js)) {
+                foreach ($js as $key2 => &$js2) {
+                    $curkey = $key . ':' . $key2;
+                    if (self::filterCurrentJSKeyVal($curkey, $js2, $injected, $log)) {
+                        $replaced = true;
+                    }
                 }
-                $js = $def[$key]['replace'];
-                $replaced = true;
+            } else {
+                if (self::filterCurrentJSKeyVal($curkey, $js, $injected, $log)) {
+                    $replaced = true;
+                }
             }
         }
         if ($log && _LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
             LSLog::log("filter JSDef = " . $log, LSLog::LEVEL_ESI_INCLUDE);
         }
         return $replaced;
+    }
+
+    protected static function filterCurrentJSKeyVal($key, &$val, &$injected, &$log)
+    {
+        $def = &self::$integrated['jsdef'];
+        if (!isset($def[$key])) {
+            return false;
+        }
+        if (!isset($def[$key]['replace'])) {
+            $proc = $def[$key]['proc'];
+            $esiParam = array('pt' => LiteSpeedCacheEsiItem::ESI_JSDEF,
+                'm' => $proc::NAME,
+                'jsk' => $key);
+            $log .= $proc::NAME . ':' . $key . ' ';
+
+            $item = new LiteSpeedCacheEsiItem($esiParam, $proc->esiConf);
+            $id = $item->getId();
+            $injected[$id] = $item;
+
+            // replacement, hardcoded
+            $def[$key]['replace'] = '_LSCESIJS-' . $id . '-START__LSCESIEND_';
+            $def[$key]['value'] = json_encode($val); // original
+        }
+        $val = $def[$key]['replace'];
+        return true;
+    }
+
+    private static function locateJSKey($key, &$js, &$loc, &$injected, &$log)
+    {
+        if (!isset($loc[$key])) {
+            return null;
+        }
+        if (is_array($loc[$key]) && is_array($js)) {
+            $loc = &$loc[$key];
+            foreach ($js as $key2 => &$js2) {
+                self::locateJSKey($key2, $js2, $loc, $injected, $log);
+            }
+        } else {
+            $curkey = $loc[$key];
+            self::filterCurrentJSKeyVal($curkey, $js, $injected, $log);
+        }
+    }
+
+    public static function filterJSDef(&$jsDef)
+    {
+        if (!isset(self::$integrated['jsloc']) || !is_array($jsDef)) {
+            return null;
+        }
+
+        $injected = array();
+        $log = '';
+
+        foreach ($jsDef as $key => &$js) {
+            $loc = &self::$integrated['jsloc'];
+            self::locateJSKey($key, $js, $loc, $injected, $log);
+        }
+        if ($log && _LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
+            LSLog::log("filter JSDef = " . $log, LSLog::LEVEL_ESI_INCLUDE);
+        }
+        return $injected;
     }
 
     public static function processJsDef($item)

@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -272,6 +272,86 @@ class LiteSpeedCacheCore
         return $tags;
     }
 
+    private function getPurgeTagsByProductOrder($id_product, $includeCategory)
+    {
+        $tags = array();
+        $pid = Conf::TAG_PREFIX_PRODUCT . $id_product;
+        if (!$this->isNewPurgeTag($pid, false)) {
+            return $tags; // has purge all or already added
+        }
+
+        $tags[] = $pid;
+        if (!$includeCategory) {
+            return $tags;
+        }
+
+        $product = new Product((int) $id_product);
+
+        $tags[] = Conf::TAG_PREFIX_MANUFACTURER . $product->id_manufacturer;
+        $tags[] = Conf::TAG_PREFIX_SUPPLIER . $product->id_supplier;
+        $cats = $product->getCategories();
+        if (!empty($cats)) {
+            foreach ($cats as $catid) {
+                $tags[] = Conf::TAG_PREFIX_CATEGORY . $catid;
+            }
+        }
+        return $tags;
+    }
+
+    private function getPurgeTagsByOrder($order)
+    {
+        $tags = array();
+        $pubtags = array();
+        $hasStockStatusChange = false;
+
+        $flushOption = $this->config->get(Conf::CFG_FLUSH_PRODCAT);
+        $list = $order->getOrderDetailList();
+
+        foreach ($list as $product) {
+            $includeProd = $includeCats = false;
+            $outstock = ((int) $product['product_quantity_in_stock'] <= 0);
+            if ($outstock) {
+                $hasStockStatusChange = true;
+            }
+            switch ($flushOption) {  // Flush Product and Categories When Product Qty Change
+                case 0: // 0: default - Flush product when qty change, flush categories when stock status change
+                    $includeProd = true;
+                    $includeCats = $outstock;
+                    break;
+                case 1: // 1: Only flush product and categories when stock status change
+                    $includeProd = $outstock;
+                    $includeCats = $outstock;
+                    break;
+                case 2: // 2: Flush product when stock status change, do not flush categories
+                    $includeProd = $outstock;
+                    $includeCats = false;
+                    break;
+                case 3: // 3: Always flush product and categories when qty/stock status change
+                    $includeProd = true;
+                    $includeCats = true;
+                    break;
+            }
+
+            if ($includeProd) {
+                $tags = $this->getPurgeTagsByProductOrder(
+                        $product['product_id'],
+                        $includeCats);
+                if (!empty($tags)) {
+                    $pubtags = array_merge($pubtags, $tags);
+                }
+            }
+        }
+        if (!empty($pubtags)) {
+            if ($hasStockStatusChange) {
+                $pubtags = array_merge(
+                        $pubtags,
+                        $this->config->getDefaultPurgeTagsByProduct());
+            }
+            $tags['pub'] = array_unique($pubtags);
+        }
+        return $tags;
+    }
+
     private function getPurgeTagsByCategory($category)
     {
         $tags = array();
@@ -350,6 +430,8 @@ class LiteSpeedCacheCore
                 return $this->getPurgeTagsByProduct($args['object']->id_product, null, true);
             case 'actionwatermark':
                 return $this->getPurgeTagsByProduct($args['id_product'], null, true);
+            case 'displayorderconfirmation':
+                return $this->getPurgeTagsByOrder($args['order']);
 
             case 'categoryupdate':
             case 'actioncategoryupdate':

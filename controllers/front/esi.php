@@ -67,7 +67,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
                 return;
             }
             $related = $item->getId();
-            $lsc->addCacheControlByEsiModule($item->getConf());
+            $lsc->addCacheControlByEsiModule($item);
         }
 
         $related = LSHelper::getRelatedItems($related);

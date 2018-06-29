@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -35,6 +35,7 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
     const RES_FAILED = '__LSC_RES_FAILED__';
 
     private $sdata;
+    private $cdata; // current
 
     private $conf;
     private $esiInline = false;
@@ -53,6 +54,9 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
             'inlStart' => false,
             'shared'      => null,
             'tag'         => $conf->getTag(),
+        );
+        $this->cdata = array(
+            'inlStart' => false,
         );
     }
 
@@ -79,6 +83,7 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
         }
         $item = new self($sdata['param'], $conf);
         $item->sdata = $sdata;
+        $item->cdata['inlStart'] = $sdata['inlStart'];
         return $item;
     }
 
@@ -97,10 +102,13 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
         return $this->esiInline;
     }
 
-    public function setIncludeInlineTag($esiInclude, $inlineStart, $url)
+    public function setIncludeInlineTag($esiInclude, $inlineStart, $url, $ttl)
     {
+        $this->cdata['inlStart'] = $inlineStart;
+        if ($ttl > 0) {
+            $this->sdata['inlStart'] = $inlineStart;
+        }
         $this->sdata['inc'] = $esiInclude;
-        $this->sdata['inlStart'] = $inlineStart;
         $this->sdata['url'] = $url;
     }
 
@@ -133,14 +141,16 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
     public function setContent($content)
     {
         $this->content = trim($content);
-        if ($this->sdata['inlStart'] == false) {
+
+        if ($this->sdata['inlStart'] == false
+                || $this->conf->onlyCacheEmtpy()) { // can vary, always regenerate
             if ($this->content === '' && $this->conf->ignoreEmptyContent()) {
                 $this->sdata['inc'] = '';
-            } else {
-                LSHelper::genEsiElements($this);
+                return;
             }
+            LSHelper::genEsiElements($this);
         }
-        $this->esiInline = $this->sdata['inlStart'] . $this->content . '</esi:inline>';
+        $this->esiInline = $this->cdata['inlStart'] . $this->content . '</esi:inline>';
     }
 
     public function setFailed($err = '')

@@ -63,7 +63,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache'; // self::MODULE_NAME was rejected by validator
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '1.2.2'; // validator does not allow const here
+        $this->version = '1.2.3'; // validator does not allow const here
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
@@ -283,8 +283,8 @@ class LiteSpeedCache extends Module
         if ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) == 0) {
             return;
         }
-        $injected = array();
-        if (LscIntegration::filterJSDef($jsDef, $injected)) {
+        $injected = LscIntegration::filterJSDef($jsDef);
+        if (!empty($injected)) {
             $lsc = self::myInstance();
             foreach ($injected as $id => $item) {
                 if (!isset($lsc->esiInjection['marker'][$id])) {
@@ -334,14 +334,17 @@ class LiteSpeedCache extends Module
     }
 
 
-    public function addCacheControlByEsiModule($moduleConf)
+    public function addCacheControlByEsiModule($item)
     {
         if (!self::isActive()) {
             $this->cache->purgeByTags('*', false, 'request esi while module is not active');
             return;
         }
-
+        $moduleConf = $item->getConf();
         $ttl = $moduleConf->getTTL();
+        if ($moduleConf->onlyCacheEmtpy() && $item->getContent() !== '') {
+            $ttl = 0;
+        }
         if ($ttl === 0 || $ttl === '0') {
             self::$ccflag |= self::CCBM_NOT_CACHEABLE;
         } else {
@@ -476,15 +479,11 @@ class LiteSpeedCache extends Module
         foreach ($this->esiInjection['marker'] as $item) {
             $inline = $item->getInline();
             if ($inline !== false) {
+                // for ajax call, it's possible no inline content
                 $bufInline .= $inline;
                 if ($item->getConf()->isPrivate()) {
                     $allPrivateItems[] = $item;
                 }
-            } elseif (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_UNEXPECTED) {
-                LiteSpeedCacheLog::log(
-                    __FUNCTION__ . ' inline missing ' . $item->getInfoLog(true),
-                    LiteSpeedCacheLog::LEVEL_UNEXPECTED
-                );
             }
         }
         if ($bufInline) {

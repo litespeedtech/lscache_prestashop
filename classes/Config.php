@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -61,6 +61,7 @@ class LiteSpeedCacheConfig
     const CFG_HOME_TTL = 'homettl';
     const CFG_DIFFMOBILE = 'diff_mobile';
     const CFG_DIFFCUSTGRP = 'diff_customergroup';
+    const CFG_FLUSH_PRODCAT = 'flush_prodcat' ;
     const CFG_GUESTMODE = 'guestmode';
     const CFG_NOCACHE_VAR = 'nocache_vars';
     const CFG_NOCACHE_URL = 'nocache_urls';
@@ -101,6 +102,7 @@ class LiteSpeedCacheConfig
             case self::CFG_GUESTMODE:
             case self::CFG_NOCACHE_VAR:
             case self::CFG_NOCACHE_URL:
+            case self::CFG_FLUSH_PRODCAT:
             // in global developer form
             case self::CFG_DEBUG:
             case self::CFG_DEBUG_LEVEL:
@@ -130,6 +132,15 @@ class LiteSpeedCacheConfig
         return null;
     }
 
+    public function overrideGuestMode()
+    {
+        // if config has guest mode, change to first page only
+        // hardcode behavior here as htaccess already set vary
+        if ($this->all[self::CFG_GUESTMODE] == 1) {
+            $this->all[self::CFG_GUESTMODE] = 2;
+        }
+    }
+
     public function getArray($configField)
     {
         if (($value = $this->get($configField)) != '') {
@@ -147,6 +158,7 @@ class LiteSpeedCacheConfig
                 self::CFG_GUESTMODE => 1,
                 self::CFG_NOCACHE_VAR => '',
                 self::CFG_NOCACHE_URL => '',
+                self::CFG_FLUSH_PRODCAT => 0,
                 self::CFG_DEBUG => 0,
                 self::CFG_DEBUG_LEVEL => 9,
                 self::CFG_ALLOW_IPS => '',
@@ -249,6 +261,7 @@ class LiteSpeedCacheConfig
                     self::CFG_GUESTMODE => $values[self::CFG_GUESTMODE],
                     self::CFG_NOCACHE_VAR => $values[self::CFG_NOCACHE_VAR],
                     self::CFG_NOCACHE_URL => $values[self::CFG_NOCACHE_URL],
+                    self::CFG_FLUSH_PRODCAT => $values[self::CFG_FLUSH_PRODCAT],
                     self::CFG_DEBUG => $values[self::CFG_DEBUG],
                     self::CFG_DEBUG_LEVEL => $values[self::CFG_DEBUG_LEVEL],
                     self::CFG_ALLOW_IPS => $values[self::CFG_ALLOW_IPS],
@@ -533,6 +546,7 @@ class LiteSpeedCacheConfig
             'actionObjectSpecificPriceCoreAddAfter',
             'actionObjectSpecificPriceCoreDeleteAfter',
             'actionWatermark',
+            'displayOrderConfirmation', // from OrderConfirmationController, array('order' => $order)
             /***** category *****/
             'categoryUpdate', // array('category' => $category)
             'actionCategoryUpdate',

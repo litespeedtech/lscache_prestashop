@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -90,6 +90,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             'render' => $this->l('Widget Render Hooks'),
             'asvar' => $this->l('As Variable'),
             'ie' => $this->l('Ignore If Empty'),
+            'ce' => $this->l('Only Cache When Empty'),
         );
     }
 
@@ -160,6 +161,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'render' => '',
                 'asvar' => '',
                 'ie' => '',
+                'ce' => '',
             );
         } else { // list
             $this->original_values = $this->config_values;
@@ -275,6 +277,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             case 'priv':
             case 'asvar':
             case 'ie':
+            case 'ce':
                 $postVal = (int)$postVal;
                 break;
 
@@ -377,7 +380,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
 
     private function processFormSave()
     {
-        $inputs = array('id', 'priv', 'ttl', 'tag', 'events', 'ctrl', 'methods', 'render', 'asvar', 'ie');
+        $inputs = array('id', 'priv', 'ttl', 'tag', 'events', 'ctrl', 'methods', 'render', 'asvar', 'ie', 'ce');
         $this->changed = 0;
         foreach ($inputs as $field) {
             $this->validateInput($field);
@@ -419,7 +422,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             $name = $this->current_id;
             $moduleOptions[] = array(
                 'id' => $name,
-                'name' => $this->config_values[$name]['name']
+                'name' => "[$name] " . $this->config_values[$name]['name']
             );
         } elseif ($this->display == 'add') {
             $list = array();
@@ -436,6 +439,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             }
             natsort($list);
             foreach ($list as $id => $name) {
+                $name = "[$id] $name";
                 $moduleOptions[] = array('id' => $id, 'name' => $name);
             }
         }
@@ -543,6 +547,16 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'desc' => $this->l('Enable to avoid punching a hole for an ESI block whose rendered content is empty.'),
                 'name' => 'ie',
                 'hint' => $this->l('No need to hole-punch if the overridden template intentionally blank it out.'),
+                'disabled' => $disabled,
+                'is_bool' => true,
+                'values' => array(array('value' => 1), array('value' => 0)),
+            ),
+            array(
+                'type' => 'switch',
+                'label' => $this->labels['ce'],
+                'desc' => $this->l('Enable to selectively cache this ESI block only when it contains no content.') . ' '
+                    . $this->l('Non-empty blocks will not be cached. Can be used for popup notices or message blocks.'),
+                'name' => 'ce',
                 'disabled' => $disabled,
                 'is_bool' => true,
                 'values' => array(array('value' => 1), array('value' => 0)),

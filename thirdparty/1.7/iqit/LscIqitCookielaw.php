@@ -18,29 +18,31 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-// base must be included first
-include 'LscIntegration.php';
+use LiteSpeedCacheEsiModConf as EsiConf;
 
-// share for all PS versions
-include 'shared/LscToken.php';
-include 'shared/LscEnv.php';
+class LscIqitCookielaw extends LscIntegration
+{
+    const NAME = 'iqitcookielaw';
 
-// third-party theme integration
-if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) { // for PS 1.7 only
-    // default built-in modules
-    include '1.7/LscCustomerSignIn.php';
-    include '1.7/LscShoppingcart.php';
-
-    // integrated modules, feel free to comment out if you don't need
-    include '1.7/iqit/loader.php';
-    include '1.7/LscGdprPro.php';
-} else { // for PS 1.6 only
-    // default built-in modules
-    include '1.6/LscBlockCart.php';
-    include '1.6/LscBlockUserInfo.php';
-    include '1.6/LscCompareProduct.php';
+    protected function init()
+    {
+        $confData = array(
+            EsiConf::FLD_PRIV => 1,
+            EsiConf::FLD_TAG => 'cookielaw',
+            EsiConf::FLD_ASVAR => 1,
+            EsiConf::FLD_ONLY_CACHE_EMPTY => 1,
+            EsiConf::FLD_IGNORE_EMPTY => 0,
+            EsiConf::FLD_RENDER_WIDGETS => '*',
+        );
+        $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);
+        $this->registerEsiModule();
+        LiteSpeedCacheConfig::getInstance()->overrideGuestMode();
+        return true;
+    }
 }
+
+LscIqitCookielaw::register();

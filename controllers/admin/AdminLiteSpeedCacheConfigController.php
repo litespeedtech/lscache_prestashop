@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -85,6 +85,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             Conf::CFG_404_TTL => $this->l('404 Pages TTL'),
             Conf::CFG_DIFFMOBILE => $this->l('Separate Mobile View'),
             Conf::CFG_DIFFCUSTGRP => $this->l('Separate Cache Copy per Customer Group'),
+            Conf::CFG_FLUSH_PRODCAT => $this->l('Flush Product and Categories When Order Placed'),
             Conf::CFG_GUESTMODE => $this->l('Enable Guest Mode'),
             Conf::CFG_NOCACHE_VAR => $this->l('Do-Not-Cache GET Parameters'),
             Conf::CFG_NOCACHE_URL => $this->l('URL Blacklist'),
@@ -136,6 +137,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 Conf::CFG_GUESTMODE,
                 Conf::CFG_NOCACHE_VAR,
                 Conf::CFG_NOCACHE_URL,
+                Conf::CFG_FLUSH_PRODCAT,
                 Conf::CFG_DEBUG,
                 Conf::CFG_DEBUG_LEVEL,
                 Conf::CFG_ALLOW_IPS,
@@ -250,8 +252,9 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                     $this->errors[] = $invalid;
                 } else {
                     $postVal = (int)$postVal;
-                    if ($postVal < 60) {
-                        $this->errors[] = $invalid . $s . $this->l('Must be greater than 60 seconds.');
+                    if ($postVal < 60 && $postVal != 0) {
+                        $this->errors[] = $invalid . $s .
+                            $this->l('Must be greater than 60 seconds. Enter 0 to disable cache.');
                     } elseif ($postVal != $origVal) {
                         $this->changed |= self::BMC_SHOP;
                         $this->changed |= ($postVal < $origVal) ? self::BMC_MUST_PURGE : self::BMC_MAY_PURGE;
@@ -296,6 +299,17 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 }
                 if ($postVal != $origVal) {
                     $this->changed |= self::BMC_SHOP | self::BMC_MUST_PURGE;
+                }
+                break;
+
+            case Conf::CFG_FLUSH_PRODCAT:
+                $postVal = (int)$postVal;
+                if ($postVal < 0 ||$postVal > 3) {
+                    // should not happen in drop down
+                    $postVal = 0;
+                }
+                if ($postVal != $origVal) {
+                    $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE;
                 }
                 break;
 
@@ -446,6 +460,20 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             $this->labels[Conf::CFG_DIFFCUSTGRP],
             $custgrpOptions,
             $this->l('Enable this option if there is different pricing based on customer groups.')
+        );
+
+        $flushprodOptions = array(
+            array('id' => 0, 'name' => $this->l('Flush product when quantity or stock status change, flush categories only when stock status changes')),
+            array('id' => 1, 'name' => $this->l('Flush product and categories only when stock status changes')),
+            array('id' => 2, 'name' => $this->l('Flush product when stock status changes, do not flush categories when stock status or quantity change')),
+            array('id' => 3, 'name' => $this->l('Always flush product and categories when quantity or stock status change')),
+        );
+        $fg['input'][] = $this->addInputSelect(
+            Conf::CFG_FLUSH_PRODCAT,
+            $this->labels[Conf::CFG_FLUSH_PRODCAT],
+            $flushprodOptions,
+            $this->l('Determines how changes in product quantity and stock status affect product pages and their associated category pages.'),
+            $disabled
         );
 
         $guestOptions = array(

@@ -22,25 +22,12 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-// base must be included first
-include 'LscIntegration.php';
+header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
 
-// share for all PS versions
-include 'shared/LscToken.php';
-include 'shared/LscEnv.php';
+header("Cache-Control: no-store, no-cache, must-revalidate");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
 
-// third-party theme integration
-if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) { // for PS 1.7 only
-    // default built-in modules
-    include '1.7/LscCustomerSignIn.php';
-    include '1.7/LscShoppingcart.php';
-
-    // integrated modules, feel free to comment out if you don't need
-    include '1.7/iqit/loader.php';
-    include '1.7/LscGdprPro.php';
-} else { // for PS 1.6 only
-    // default built-in modules
-    include '1.6/LscBlockCart.php';
-    include '1.6/LscBlockUserInfo.php';
-    include '1.6/LscCompareProduct.php';
-}
+header("Location: ../");
+exit;

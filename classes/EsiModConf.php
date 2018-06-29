@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -45,6 +45,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     const FLD_RENDER_WIDGETS = 'render';
     const FLD_ASVAR = 'asvar';
     const FLD_IGNORE_EMPTY = 'ie';
+    const FLD_ONLY_CACHE_EMPTY = 'ce';
     const FLD_TIPURL = 'tipurl';
 
     private $moduleName;
@@ -83,6 +84,9 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         if (isset($data[self::FLD_IGNORE_EMPTY])) {
             $this->data[self::FLD_IGNORE_EMPTY] = $data[self::FLD_IGNORE_EMPTY];
         }
+        if (isset($data[self::FLD_ONLY_CACHE_EMPTY])) {
+            $this->data[self::FLD_ONLY_CACHE_EMPTY] = $data[self::FLD_ONLY_CACHE_EMPTY];
+        }
         if (isset($data[self::FLD_TIPURL])) {
             $this->data[self::FLD_TIPURL] = $data[self::FLD_TIPURL];
         }
@@ -110,6 +114,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             'render' => $this->getFieldValue(self::FLD_RENDER_WIDGETS, false, true),
             'asvar' => $this->getFieldValue(self::FLD_ASVAR, true),
             'ie' => $this->getFieldValue(self::FLD_IGNORE_EMPTY, true),
+            'ce' => $this->getFieldValue(self::FLD_ONLY_CACHE_EMPTY, true),
             'tipurl' => $this->getFieldValue(self::FLD_TIPURL),
         );
         if ($tmp_instance = Module::getInstanceByName($this->moduleName)) {
@@ -161,6 +166,11 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     public function asVar()
     {
         return (isset($this->data[self::FLD_ASVAR]) && $this->data[self::FLD_ASVAR]);
+    }
+
+    public function onlyCacheEmtpy()
+    {
+        return (isset($this->data[self::FLD_ONLY_CACHE_EMPTY]) && $this->data[self::FLD_ONLY_CACHE_EMPTY]);
     }
 
     public function ignoreEmptyContent()

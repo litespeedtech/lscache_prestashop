@@ -18,29 +18,14 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-// base must be included first
-include 'LscIntegration.php';
+/* You can comment out the lines if you do not use IQIT Modules (warehouse theme)
+ */
 
-// share for all PS versions
-include 'shared/LscToken.php';
-include 'shared/LscEnv.php';
-
-// third-party theme integration
-if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) { // for PS 1.7 only
-    // default built-in modules
-    include '1.7/LscCustomerSignIn.php';
-    include '1.7/LscShoppingcart.php';
-
-    // integrated modules, feel free to comment out if you don't need
-    include '1.7/iqit/loader.php';
-    include '1.7/LscGdprPro.php';
-} else { // for PS 1.6 only
-    // default built-in modules
-    include '1.6/LscBlockCart.php';
-    include '1.6/LscBlockUserInfo.php';
-    include '1.6/LscCompareProduct.php';
-}
+include 'LscIqitCompare.php';
+include 'LscIqitWishlist.php';
+include 'LscIqitCookielaw.php';
+include 'LscIqitPopup.php';
