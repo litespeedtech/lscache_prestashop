@@ -421,7 +421,7 @@ class LiteSpeedCache extends Module
                     $id = $m[2];
                     $lsc = self::myInstance();
                     if (!isset($lsc->esiInjection['marker'][$id])) {
-                        $id = stripslashes($id);
+                        $id = Tools::stripslashes($id);
                     }
                     if (!isset($lsc->esiInjection['marker'][$id])) {
                         // should not happen
