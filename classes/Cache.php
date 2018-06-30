@@ -334,8 +334,9 @@ class LiteSpeedCacheCore
 
             if ($includeProd) {
                 $tags = $this->getPurgeTagsByProductOrder(
-                        $product['product_id'],
-                        $includeCats);
+                    $product['product_id'],
+                    $includeCats
+                );
                 if (!empty($tags)) {
                     $pubtags = array_merge($pubtags, $tags);
                 }
@@ -344,8 +345,9 @@ class LiteSpeedCacheCore
         if (!empty($pubtags)) {
             if ($hasStockStatusChange) {
                 $pubtags = array_merge(
-                        $pubtags,
-                        $this->config->getDefaultPurgeTagsByProduct());
+                    $pubtags,
+                    $this->config->getDefaultPurgeTagsByProduct()
+                );
             }
             $tags['pub'] = array_unique($pubtags);
         }
