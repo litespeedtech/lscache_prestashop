@@ -537,6 +537,8 @@ class LiteSpeedCacheConfig
             'actionCustomerLogoutAfter',
             'actionAuthentication',
             'actionCustomerAccountAdd',
+            /** specific price check **/
+            'actionProductSearchAfter',
             /** public purge * */
             /***** product *****/
             'actionProductAdd',

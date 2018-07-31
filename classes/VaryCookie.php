@@ -113,8 +113,11 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             $this->status |= self::BM_UPDATE_FAILED;
             return;
         }
-        if (($this->status & self::BM_IS_GUEST) > 0 && ($this->status & self::BM_VARYVALUE_CHANGED) == 0) {
-            // no cookie set for guest mode
+        if (($this->status & self::BM_IS_GUEST) > 0
+            && ($this->status & self::BM_VARYVALUE_CHANGED) == 0
+            && LiteSpeedCache::isCacheable()) {
+            // no cookie set for guest mode and only if for cacheable response.
+            // for non-cacheable route, like ajax request, can set vary cookie
             return;
         }
 

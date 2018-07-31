@@ -32,7 +32,9 @@ Otherwise request that the server admin configure the cache root for the server.
 * LSCPS automatically caches the following pages with a GET request (including AJAX GET): Home, Categories, Products, CMS, New products, Best sales, Suppliers, Manufacturers, Prices drop, Sitemap.
 * User information can be cached privately via ESI blocks and auto purged when the information changes. Support for cart and account sign in are built in. Other third-party modules that contain private information can be easily added.
 * Updates in the shop admin area automatically trigger a purge of any related pages in the cache.
+* New client orders automatically trigger a purge of related product and catalog pages based on stock status or quantity (configurable).
 * The cache can be manually flushed from within the PrestaShop admin.
+* If a page contains products with specific prices, TTL will be auto adjusted based on special price effective dates.
 
 ### Testing the Module
 

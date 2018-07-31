@@ -37,6 +37,7 @@ class LiteSpeedCacheCore
     private $purgeTags;
     private $config;
     private $esiTtl;
+    private $specificPrices = array();
 
     public function __construct(LiteSpeedCacheConfig $config)
     {
@@ -333,9 +334,7 @@ class LiteSpeedCacheCore
             }
 
             if ($includeProd) {
-                $tags = $this->getPurgeTagsByProductOrder(
-                        $product['product_id'],
-                        $includeCats);
+                $tags = $this->getPurgeTagsByProductOrder($product['product_id'], $includeCats);
                 if (!empty($tags)) {
                     $pubtags = array_merge($pubtags, $tags);
                 }
@@ -343,9 +342,7 @@ class LiteSpeedCacheCore
         }
         if (!empty($pubtags)) {
             if ($hasStockStatusChange) {
-                $pubtags = array_merge(
-                        $pubtags,
-                        $this->config->getDefaultPurgeTagsByProduct());
+                $pubtags = array_merge($pubtags, $this->config->getDefaultPurgeTagsByProduct());
             }
             $tags['pub'] = array_unique($pubtags);
         }
@@ -522,6 +519,54 @@ class LiteSpeedCacheCore
         LSLog::log('Set header ' . $purgeHeader . ' (' . $from . ')', LSLog::LEVEL_FORCE);
     }
 
+    public function checkSpecificPrices($specific_prices)
+    {
+        LSLog::log('specific price ' . var_export($specific_prices, 1));
+        if ($specific_prices['from'] == $specific_prices['to'] && $specific_prices['to'] == '0000-00-00 00:00:00') {
+            // no date range
+            return;
+        }
+        if (is_array($specific_prices) && isset($specific_prices['to'])) {
+            $this->specificPrices[] = array('from' => $specific_prices['from'],
+                'to' => $specific_prices['to']);
+        }
+    }
+
+    private function adjustTtlBySpecificPrices($ttl)
+    {
+        if (empty($this->specificPrices)) {
+            return $ttl;
+        }
+        $ttl0 = $ttl;
+
+        $now = time();
+        foreach ($this->specificPrices as $sp) {
+            if ($sp['from'] != '0000-00-00 00:00:00') { // from is set
+                $from = strtotime($sp['from']);
+                if ($from > $now) { // not start yet, go by from date
+                    if (($from - $now) < $ttl) {
+                        $ttl = $from - $now;
+                    }
+                    continue;
+                }
+            }
+            if ($sp['to'] != '0000-00-00 00:00:00') { // to is set
+                $to = strtotime($sp['to']);
+                if (($to > $now) && (($to - $now) < $ttl)) {
+                    $ttl = $to - $now;
+                }
+            }
+        }
+        if (defined('_LITESPEED_DEBUG_') && _LITESPEED_DEBUG_ >= LSLog::LEVEL_SPECIFIC_PRICE) {
+            if ($ttl0 != $ttl) {
+                LSLog::log("TTL adjusted due to specific prices from $ttl0 to $ttl", LSLog::LEVEL_SETHEADER);
+            } else {
+                LSLog::log('Detected specific prices, but no TTL adjustment', LSLog::LEVEL_SPECIFIC_PRICE);
+            }
+        }
+        return $ttl;
+    }
+
     public function setCacheControlHeader()
     {
         if (headers_sent()) {
@@ -544,6 +589,7 @@ class LiteSpeedCacheCore
                 $ttl = (($ccflag & LSC::CCBM_PRIVATE) == 0) ?
                     $this->config->get(Conf::CFG_PUBLIC_TTL) : $this->config->get(Conf::CFG_PRIVATE_TTL);
             }
+            $ttl = $this->adjustTtlBySpecificPrices($ttl);
 
             if (($ccflag & LSC::CCBM_PRIVATE) == 0) {
                 $cacheControlHeader .= 'public,max-age=' . $ttl;

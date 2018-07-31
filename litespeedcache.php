@@ -63,7 +63,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache'; // self::MODULE_NAME was rejected by validator
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '1.2.3'; // validator does not allow const here
+        $this->version = '1.2.4'; // validator does not allow const here
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
@@ -139,6 +139,14 @@ class LiteSpeedCache extends Module
     {
         $controllerType = $params['controller_type'];
         $controllerClass = $params['controller_class'];
+
+        if (_LITESPEED_DEBUG_ > 0) {
+            $notprinted = array('AdminDashboardController', 'AdminGamificationController');
+            if (in_array($controllerClass, $notprinted)) {
+                LiteSpeedCacheLog::setDebugLevel(0); // disable logging for current request
+            }
+        }
+
         $status = $this->checkDispatcher($controllerType, $controllerClass);
 
         if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_CACHE_ROUTE) {
@@ -167,6 +175,18 @@ class LiteSpeedCache extends Module
         $this->cache->initCacheTagsByController($params);
     }
 
+    public function hookActionProductSearchAfter($params)
+    {
+        // Hook::exec('actionProductSearchAfter', $searchVariables);
+        if (self::isCacheable() && isset($params['products'])) {
+            foreach ($params['products'] as $p) {
+                if (!empty($p['specific_prices'])) {
+                    $this->cache->checkSpecificPrices($p['specific_prices']);
+                }
+            }
+        }
+    }
+
     public function hookFilterCategoryContent($params)
     {
         if (self::isCacheable()) {
@@ -178,8 +198,13 @@ class LiteSpeedCache extends Module
 
     public function hookFilterProductContent($params)
     {
-        if (self::isCacheable() && isset($params['object']['id'])) {
-            $this->cache->addCacheTags(LiteSpeedCacheConfig::TAG_PREFIX_PRODUCT . $params['object']['id']);
+        if (self::isCacheable()) {
+            if (isset($params['object']['id'])) {
+                $this->cache->addCacheTags(LiteSpeedCacheConfig::TAG_PREFIX_PRODUCT . $params['object']['id']);
+            }
+            if (!empty($params['object']['specific_prices'])) {
+                $this->cache->checkSpecificPrices($params['object']['specific_prices']);
+            }
         }
     }
 
