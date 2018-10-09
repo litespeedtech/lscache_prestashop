@@ -432,8 +432,8 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 if (($module['active'] == 1)
                     && (!in_array($module['name'], $existing))
                     && ($tmp_instance = Module::getInstanceByName($module['name']))
-                    && (!$is17
-                            || ($tmp_instance instanceof PrestaShop\PrestaShop\Core\Module\WidgetInterface))) {
+                    /*&& (!$is17
+                            || ($tmp_instance instanceof PrestaShop\PrestaShop\Core\Module\WidgetInterface))*/) {
                     $list[$module['name']] = $tmp_instance->displayName;
                 }
             }
