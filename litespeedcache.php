@@ -63,7 +63,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache'; // self::MODULE_NAME was rejected by validator
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '1.2.4'; // validator does not allow const here
+        $this->version = '1.2.5'; // validator does not allow const here
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
@@ -421,6 +421,10 @@ class LiteSpeedCache extends Module
         }
 
         $lsc->cache->setCacheControlHeader();
+        /** for testing
+        //  $tname = tempnam('/tmp/t','A');
+        //  file_put_contents($tname, $buffer);
+         */
         return $buffer;
     }
 

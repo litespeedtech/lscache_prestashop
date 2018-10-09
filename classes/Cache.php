@@ -301,6 +301,9 @@ class LiteSpeedCacheCore
 
     private function getPurgeTagsByOrder($order)
     {
+        if ($order == null) { // $order is null, happened in bankwire module
+            return;
+        }
         $tags = array();
         $pubtags = array();
         $hasStockStatusChange = false;
@@ -521,7 +524,7 @@ class LiteSpeedCacheCore
 
     public function checkSpecificPrices($specific_prices)
     {
-        LSLog::log('specific price ' . var_export($specific_prices, 1));
+        // LSLog::log('specific price ' . var_export($specific_prices, 1));
         if ($specific_prices['from'] == $specific_prices['to'] && $specific_prices['to'] == '0000-00-00 00:00:00') {
             // no date range
             return;
