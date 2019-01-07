@@ -445,7 +445,7 @@ class LiteSpeedCache extends Module
             $nb = preg_replace_callback(
                 array('/_LSC(ESI)-(.+)-START_(.*)_LSCESIEND_/Usm',
                 '/(\'|\")_LSCESIJS-(.+)-START__LSCESIEND_(\'|\")/Usm'),
-                function ($m) {
+                static function ($m) {
                     // inject ESI even it's not cacheable
                     $id = $m[2];
                     $lsc = self::myInstance();
