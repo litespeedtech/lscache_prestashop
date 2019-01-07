@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteSpeed Cache for Prestashop
+ * LiteSpeed Cache for Prestashop.
  *
  * NOTICE OF LICENSE
  *
@@ -14,12 +14,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see https://opensource.org/licenses/GPL-3.0
  *
- * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
- * @license     https://opensource.org/licenses/GPL-3.0
+ * @author     LiteSpeed Technologies
+ * @copyright  Copyright (c) 2019 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @author     LiteSpeed Technologies
  */
 
 if (!defined('_PS_VERSION_')) {
