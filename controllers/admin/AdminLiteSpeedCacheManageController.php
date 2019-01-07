@@ -261,7 +261,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
     {
         if ($this->license_disabled) {
             $this->warnings[] = $this->l('No action taken.') . ' '
-                    .$this->l('No LiteSpeed Server with LSCache available.');
+                    . $this->l('No LiteSpeed Server with LSCache available.');
             return false;
         }
 
