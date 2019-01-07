@@ -463,10 +463,11 @@ class LiteSpeedCacheCore
             case 'actionobjectmanufacturerupdateafter':
             case 'actionobjectmanufacturerdeleteafter':
             case 'actionobjectmanufactureraddAfter':
-                $tags['pub'] = array(Conf::TAG_PREFIX_MANUFACTURER . $args['object']->id,
+                $tags['pub'] = array(
+                    Conf::TAG_PREFIX_MANUFACTURER . $args['object']->id,
                     Conf::TAG_PREFIX_MANUFACTURER,
-                    Conf::TAG_SITEMAP,
-                    ); // allbrands
+                    Conf::TAG_SITEMAP, // allbrands
+                );
                 break;
 
             case 'actionobjectstoreupdateafter':
