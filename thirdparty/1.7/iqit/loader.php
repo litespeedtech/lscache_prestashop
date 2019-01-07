@@ -22,8 +22,7 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-/* You can comment out the lines if you do not use IQIT Modules (warehouse theme)
- */
+// You can comment out the lines if you do not use IQIT Modules (warehouse theme)
 
 include __DIR__ . '/LscIqitCompare.php';
 include __DIR__ . '/LscIqitWishlist.php';

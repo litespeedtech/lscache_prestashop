@@ -196,7 +196,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 $this->errors[] = $this->l('You do not have permission to edit this.');
             }
         } elseif (Tools::getIsset('delete' . $t) && $this->current_id) {
-            /* Delete object */
+            // Delete object
             if ($this->canDo('delete')) {
                 $this->action = 'delete';
             } else {

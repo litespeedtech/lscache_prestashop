@@ -224,7 +224,7 @@ class LiteSpeedCache extends Module
         }
     }
 
-    /* this is catchall function for purge events */
+    // this is catchall function for purge events
     public function __call($method, $args)
     {
         if (self::isActive()) {
@@ -319,7 +319,7 @@ class LiteSpeedCache extends Module
         }
     }
 
-    /* return status */
+    // return status
     private function checkDispatcher($controllerType, $controllerClass)
     {
         if (!self::isActiveForUser()) { // check for ip restriction

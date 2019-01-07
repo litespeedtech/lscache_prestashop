@@ -30,7 +30,7 @@ abstract class LscIntegration
     protected $moduleName;
     protected $esiConf;
 
-    /* do not allow public constructor */
+    // do not allow public constructor
     protected function __construct()
     {
     }

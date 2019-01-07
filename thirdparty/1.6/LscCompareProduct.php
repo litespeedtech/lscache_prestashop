@@ -25,7 +25,7 @@
 use LiteSpeedCacheEsiModConf as EsiConf;
 use LiteSpeedCacheLog as LSLog;
 
-/* this is for PS1.6 only */
+// this is for PS1.6 only
 class LscCompareProduct extends LscIntegration
 {
     const NAME = 'lsc_compareproduct';

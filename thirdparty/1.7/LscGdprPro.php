@@ -22,7 +22,7 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-/* for integration with PrestaChamps gdprpro module */
+// for integration with PrestaChamps gdprpro module
 
 use LiteSpeedCacheEsiModConf as EsiConf;
 use LiteSpeedCacheLog as LSLog;
