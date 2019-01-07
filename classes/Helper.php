@@ -190,7 +190,7 @@ class LiteSpeedCacheHelper
         $contents = '';
         $len = @filesize($filepath);
         if ($len) {
-            $h = @fopen($filepath, 'r');
+            $h = @fopen($filepath, 'rb');
             $contents = @fread($h, $len);
             @fclose($h);
         }
