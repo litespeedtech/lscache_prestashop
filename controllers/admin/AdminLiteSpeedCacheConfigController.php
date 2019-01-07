@@ -303,7 +303,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 break;
 
             case Conf::CFG_FLUSH_PRODCAT:
-                $postVal = (int)$postVal;
+                $postVal = (int) $postVal;
                 if ($postVal < 0 || $postVal > 3) {
                     // should not happen in drop down
                     $postVal = 0;
