@@ -70,9 +70,8 @@ class LiteSpeedCache extends Module
 
     const CCBM_MOD_ACTIVE = 2048; // module is enabled
 
-    const CCBM_MOD_ALLOWIP = 4096;
+    const CCBM_MOD_ALLOWIP = 4096; // allow cache for listed IP
 
- // allow cache for listed IP
     // ESI MARKER
     const ESI_MARKER_END = '_LSCESIEND_';
 
