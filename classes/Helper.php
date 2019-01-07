@@ -27,7 +27,6 @@ use LiteSpeedCacheLog as LSLog;
 
 class LiteSpeedCacheHelper
 {
-
     private static $internal = array();
 
     private static function initInternals()
@@ -248,8 +247,8 @@ class LiteSpeedCacheHelper
 
         $oldlines= file($path);
         if ($oldlines === '') {
-             LSLog::log(__FUNCTION__ . ' please manually fix .htaccess, may due to permission', LSLog::LEVEL_FORCE);
-             return false;
+            LSLog::log(__FUNCTION__ . ' please manually fix .htaccess, may due to permission', LSLog::LEVEL_FORCE);
+            return false;
         }
         $newlines = array();
         $ind = false;
