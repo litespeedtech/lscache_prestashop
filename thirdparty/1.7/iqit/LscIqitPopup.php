@@ -21,7 +21,6 @@
  * @copyright  Copyright (c) 2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 use LiteSpeedCacheEsiModConf as EsiConf;
 
 /* If you want to make "do not show again" be remembered, you need to completely disable

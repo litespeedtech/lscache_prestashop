@@ -21,7 +21,6 @@
  * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 class LiteSpeedCacheLog
 {
     // LEVEL is by meaning only, number can be duplicated
