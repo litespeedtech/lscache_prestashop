@@ -174,9 +174,9 @@ $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachecustomizecontroller_fc3
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachecustomizecontroller_664863f66c92551c6e2172f4bb50cf0b'] = 'Elk ESI-blok kan zijn eigen TTL- en purge-events hebben.';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachecustomizecontroller_076dfe07e1223fafb6cda8a3cb394716'] = 'Voor complexere gevallen is een integratieklasse van derden vereist.';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachecustomizecontroller_90542922bc26c9b851ad408ae9f4202c'] = 'Dit vereist een grondig begrip van de interne componenten van Prestashop.';
-$_MODULE['<{litespeedcache}prestashop>adminlitespeedcachecustomizecontroller_5cad34838724e73a8ada215445a8ecd9'] = 'Als u hulp nodig heeft, kunt u een LiteSpeed ​​Tech helpdesk bestellen.';
+$_MODULE['<{litespeedcache}prestashop>adminlitespeedcachecustomizecontroller_5cad34838724e73a8ada215445a8ecd9'] = 'Als u hulp nodig heeft, kunt u een LiteSpeed Tech helpdesk bestellen.';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachecustomizecontroller_c9cc8cce247e49bae79f15173ce97354'] = 'Opslaan';
-$_MODULE['<{litespeedcache}prestashop>adminlitespeedcachemanagecontroller_dc55b0fd018bed842471eb04b8e5f456'] = 'LiteSpeed ​​cachebeheer';
+$_MODULE['<{litespeedcache}prestashop>adminlitespeedcachemanagecontroller_dc55b0fd018bed842471eb04b8e5f456'] = 'LiteSpeed cachebeheer';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachemanagecontroller_30f154f3b868c4750a538e6a13a8dbdc'] = 'Een LiteSpeed-server met de LSCache-module is vereist.';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachemanagecontroller_d1ad4708be1da8a194617bd3862d94c5'] = 'Neem contact op met uw systeembeheerder of webhost voor een geldige LiteSpeed-licentie.';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachemanagecontroller_cfe6e34a4c7f24aad32aa4299562f5b1'] = 'Homepage';
