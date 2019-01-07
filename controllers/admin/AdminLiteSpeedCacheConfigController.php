@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteSpeed Cache for Prestashop
+ * LiteSpeed Cache for Prestashop.
  *
  * NOTICE OF LICENSE
  *
@@ -32,7 +32,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
     private $current_values;
     private $license_disabled;
 
-    /* BITMASK for changed */
+    // BITMASK for changed
     const BMC_SHOP = 1; // change for shop
     const BMC_ALL = 2;  // change for all
     const BMC_NONEED_PURGE = 4; // no need to purge, effective immediately

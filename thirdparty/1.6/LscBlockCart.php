@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteSpeed Cache for Prestashop
+ * LiteSpeed Cache for Prestashop.
  *
  * NOTICE OF LICENSE
  *
@@ -26,7 +26,7 @@ use LiteSpeedCacheEsiModConf as EsiConf;
 
 class LscBlockCart extends LscIntegration
 {
-    /* for PS 1.6 built-in module blockcart */
+    // for PS 1.6 built-in module blockcart
     const NAME = 'blockcart';
 
     protected function init()

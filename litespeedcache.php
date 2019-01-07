@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteSpeed Cache for Prestashop
+ * LiteSpeed Cache for Prestashop.
  *
  * NOTICE OF LICENSE
  *
@@ -224,7 +224,7 @@ class LiteSpeedCache extends Module
         }
     }
 
-    /* this is catchall function for purge events */
+    // this is catchall function for purge events
     public function __call($method, $args)
     {
         if (self::isActive()) {
@@ -319,7 +319,7 @@ class LiteSpeedCache extends Module
         }
     }
 
-    /* return status */
+    // return status
     private function checkDispatcher($controllerType, $controllerClass)
     {
         if (!self::isActiveForUser()) { // check for ip restriction
@@ -422,8 +422,8 @@ class LiteSpeedCache extends Module
 
         $lsc->cache->setCacheControlHeader();
         /** for testing
-        //  $tname = tempnam('/tmp/t','A');
-        //  file_put_contents($tname, $buffer);
+         * //  $tname = tempnam('/tmp/t','A');
+         * //  file_put_contents($tname, $buffer);
          */
         return $buffer;
     }

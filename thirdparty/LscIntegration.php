@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteSpeed Cache for Prestashop
+ * LiteSpeed Cache for Prestashop.
  *
  * NOTICE OF LICENSE
  *
@@ -30,7 +30,7 @@ abstract class LscIntegration
     protected $moduleName;
     protected $esiConf;
 
-    /* do not allow public constructor */
+    // do not allow public constructor
     protected function __construct()
     {
     }

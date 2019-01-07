@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteSpeed Cache for Prestashop
+ * LiteSpeed Cache for Prestashop.
  *
  * NOTICE OF LICENSE
  *
@@ -178,7 +178,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         return (isset($this->data[self::FLD_IGNORE_EMPTY]) && $this->data[self::FLD_IGNORE_EMPTY]);
     }
 
-    /* return array( lowercased classname => 0, 1 ) */
+    // return array( lowercased classname => 0, 1 )
     public function getPurgeControllers()
     {
         if (empty($this->data[self::FLD_PURGE_CONTROLLERS])) {
@@ -249,10 +249,10 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         }
     }
 
-    /* stringData is comma separated list, * for all, ! is not include */
+    // stringData is comma separated list, * for all, ! is not include
     private function parseList($field)
     {
-        /* $res[0] = -1: none; 9: all; 1: included, 2: excluded */
+        // $res[0] = -1: none; 9: all; 1: included, 2: excluded
         $res = array();
         if (!isset($this->data[$field])) {
             $res[0] = -1; // none

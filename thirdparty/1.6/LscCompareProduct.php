@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteSpeed Cache for Prestashop
+ * LiteSpeed Cache for Prestashop.
  *
  * NOTICE OF LICENSE
  *
@@ -25,7 +25,7 @@
 use LiteSpeedCacheEsiModConf as EsiConf;
 use LiteSpeedCacheLog as LSLog;
 
-/* this is for PS1.6 only */
+// this is for PS1.6 only
 class LscCompareProduct extends LscIntegration
 {
     const NAME = 'lsc_compareproduct';
@@ -83,7 +83,7 @@ class LscCompareProduct extends LscIntegration
 
 LscCompareProduct::register();
 
-/*****
+/*
  * README: If you want to enable comparison, you have to locate the template file and modify it to inject ESI.
  * For example, the default one is located at
  *     themes/default-bootstrap/product-compare.tpl
@@ -98,4 +98,4 @@ LscCompareProduct::register();
  *
  * Please note, "{count($compared_products)}" appeared twice, both need to be replaced.
  * Please check the wiki link for more info
- *******/
+ */

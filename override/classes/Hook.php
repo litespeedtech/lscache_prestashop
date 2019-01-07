@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteSpeed Cache for Prestashop
+ * LiteSpeed Cache for Prestashop.
  *
  * NOTICE OF LICENSE
  *
@@ -26,7 +26,6 @@
  * LiteSpeed Cache needs to do ESI hole punch automatically.
  * To override Hook is the only way to do it without changing Prestashop core code.
  * This should not affect any existing functionalities of your Prestashop installation and it is safe to use.
- *
  */
 class Hook extends HookCore
 {
@@ -49,7 +48,7 @@ class Hook extends HookCore
         return $html;
     }
 
-    /* only avail for PS 1.7 */
+    // only avail for PS 1.7
     public static function coreRenderWidget($module, $hook_name, $params)
     {
         if (defined('_LITESPEED_DEBUG_')

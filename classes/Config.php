@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteSpeed Cache for Prestashop
+ * LiteSpeed Cache for Prestashop.
  *
  * NOTICE OF LICENSE
  *
@@ -28,7 +28,7 @@ use LiteSpeedCacheEsiModConf as EsiConf;
 
 class LiteSpeedCacheConfig
 {
-    /* public tag prefix */
+    // public tag prefix
     const TAG_PREFIX_CMS = 'G';
     const TAG_PREFIX_CATEGORY = 'C';
     const TAG_PREFIX_PRODUCT = 'P';
@@ -37,23 +37,23 @@ class LiteSpeedCacheConfig
     const TAG_PREFIX_SUPPLIER = 'L';
     const TAG_PREFIX_SHOP = 'S';
     const TAG_PREFIX_PRIVATE = 'PRIV';
-    /* public tags */
+    // public tags
     const TAG_SEARCH = 'SR';
     const TAG_HOME = 'H';
     const TAG_SITEMAP = 'SP';
     const TAG_STORES = 'ST';
     const TAG_404 = 'D404';
-    /* common private tags */
+    // common private tags
     const TAG_CART = 'cart';
     const TAG_SIGNIN = 'signin';
     const TAG_ENV = 'env';
 
-    /* config entry */
+    // config entry
     const ENTRY_ALL = 'LITESPEED_CACHE_GLOBAL';
     const ENTRY_SHOP = 'LITESPEED_CACHE_SHOP';
     const ENTRY_MODULE = 'LITESPEED_CACHE_MODULE';
 
-    /* config fields */
+    // config fields
     const CFG_ENABLED = 'enable';
     const CFG_PUBLIC_TTL = 'ttl';
     const CFG_PRIVATE_TTL = 'privttl';
@@ -537,10 +537,10 @@ class LiteSpeedCacheConfig
             'actionCustomerLogoutAfter',
             'actionAuthentication',
             'actionCustomerAccountAdd',
-            /** specific price check **/
+            /** specific price check */
             'actionProductSearchAfter',
             /** public purge * */
-            /***** product *****/
+            // product
             'actionProductAdd',
             'actionProductSave',
             'actionProductUpdate', //array('id_product' => (int)$this->id, 'product' => $this)
@@ -549,24 +549,24 @@ class LiteSpeedCacheConfig
             'actionObjectSpecificPriceCoreDeleteAfter',
             'actionWatermark',
             'displayOrderConfirmation', // from OrderConfirmationController, array('order' => $order)
-            /***** category *****/
+            // category
             'categoryUpdate', // array('category' => $category)
             'actionCategoryUpdate',
             'actionCategoryAdd', // here do not purge all, as user can manually do that
             'actionCategoryDelete',
-            /***** cms *****/
+            // cms
             'actionObjectCmsUpdateAfter',
             'actionObjectCmsDeleteAfter',
             'actionObjectCmsAddAfter',
-            /***** supplier *****/
+            // supplier
             'actionObjectSupplierUpdateAfter',
             'actionObjectSupplierDeleteAfter',
             'actionObjectSupplierAddAfter',
-            /***** manufacturer *****/
+            // manufacturer
             'actionObjectManufacturerUpdateAfter',
             'actionObjectManufacturerDeleteAfter',
             'actionObjectManufacturerAddAfter',
-            /***** stores *****/
+            // stores
             'actionObjectStoreUpdateAfter',
             /** lscache own hooks * */
             'litespeedCachePurge',
