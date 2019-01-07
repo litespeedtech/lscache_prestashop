@@ -43,6 +43,7 @@ class LscGdprPro extends LscIntegration
         $this->registerEsiModule();
         LiteSpeedCacheConfig::getInstance()->overrideGuestMode();
         $this->addJsDef('gdprSettings:showWindow', $this);
+
         return true;
     }
 
@@ -51,9 +52,11 @@ class LscGdprPro extends LscIntegration
         if ($jskey != 'gdprSettings:showWindow') {
             //something wrong, should not happen
             LSLog::log(__FUNCTION__ . ' unexpected key ' . $jskey, LSLog::LEVEL_EXCEPTION);
+
             return '';
         }
         $data = !Context::getContext()->cookie->gdpr_windows_was_opened;
+
         return json_encode($data);
     }
 }

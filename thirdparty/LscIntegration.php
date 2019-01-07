@@ -77,11 +77,13 @@ abstract class LscIntegration
     {
         if ($this->esiConf && ($this->esiConf instanceof LiteSpeedCacheEsiModConf)) {
             LiteSpeedCacheConfig::getInstance()->registerEsiModule($this->esiConf);
+
             return true;
         } else {
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_NOTICE) {
                 LSLog::log(__FUNCTION__ . 'something wrong', LSLog::LEVEL_NOTICE);
             }
+
             return false;
         }
     }
@@ -113,6 +115,7 @@ abstract class LscIntegration
         if ($log && _LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
             LSLog::log('filter JSDef = ' . $log, LSLog::LEVEL_ESI_INCLUDE);
         }
+
         return $replaced;
     }
 
@@ -139,6 +142,7 @@ abstract class LscIntegration
             $def[$key]['value'] = json_encode($val); // original
         }
         $val = $def[$key]['replace'];
+
         return true;
     }
 
@@ -174,6 +178,7 @@ abstract class LscIntegration
         if ($log && _LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
             LSLog::log('filter JSDef = ' . $log, LSLog::LEVEL_ESI_INCLUDE);
         }
+
         return $injected;
     }
 
@@ -184,11 +189,13 @@ abstract class LscIntegration
             $key = $item->getParam('jsk');
             if (isset(self::$integrated['jsdef'][$key]['value'])) {
                 $item->setContent(self::$integrated['jsdef'][$key]['value']);
+
                 return;
             }
             $proc = self::$integrated[$name]['class'];
             if (method_exists($proc, 'jsKeyProcess')) {
                 $item->setContent($proc->jsKeyProcess($key));
+
                 return;
             }
         }
@@ -203,6 +210,7 @@ abstract class LscIntegration
             if (method_exists($proc, 'moduleFieldProcess')) {
                 $content = $proc->moduleFieldProcess($item->getParam());
                 $item->setContent($content);
+
                 return;
             }
         }

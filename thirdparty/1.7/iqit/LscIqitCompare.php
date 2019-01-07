@@ -40,6 +40,7 @@ class LscIqitCompare extends LscIntegration
         $this->esiConf = new LiteSpeedCacheEsiModConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);
         $this->registerEsiModule();
         $this->addJsDef('iqitcompare:nbProducts', $this);
+
         return true;
     }
 
@@ -48,9 +49,11 @@ class LscIqitCompare extends LscIntegration
         if ($jskey != 'iqitcompare:nbProducts') {
             //something wrong, should not happen
             LSLog::log(__FUNCTION__ . ' unexpected key ' . $jskey, LSLog::LEVEL_EXCEPTION);
+
             return '';
         }
         $data = (int) Context::getContext()->cookie->iqitCompareNb;
+
         return json_encode($data);
     }
 }

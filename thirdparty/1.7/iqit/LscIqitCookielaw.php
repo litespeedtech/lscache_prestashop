@@ -41,6 +41,7 @@ class LscIqitCookielaw extends LscIntegration
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);
         $this->registerEsiModule();
         LiteSpeedCacheConfig::getInstance()->overrideGuestMode();
+
         return true;
     }
 }

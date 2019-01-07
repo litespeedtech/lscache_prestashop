@@ -122,6 +122,7 @@ class LiteSpeedCacheConfig
         if (self::$instance == null) {
             self::$instance = new LiteSpeedCacheConfig();
         }
+
         return self::$instance;
     }
 
@@ -149,6 +150,7 @@ class LiteSpeedCacheConfig
                 if (!isset($this->all[$configField])) {
                     $this->all = array_replace($this->getDefaultConfData(self::ENTRY_ALL), $this->all);
                 }
+
                 return $this->all[$configField];
             // shop level config
             case self::ENTRY_SHOP:
@@ -162,11 +164,13 @@ class LiteSpeedCacheConfig
                 if (!isset($this->shop[$configField])) {
                     $this->shop = array_replace($this->getDefaultConfData(self::ENTRY_SHOP), $this->shop);
                 }
+
                 return $this->shop[$configField];
             // in module customization
             case self::ENTRY_MODULE:
                 return $this->esiModConf['mods'];
         }
+
         return null;
     }
 
@@ -184,6 +188,7 @@ class LiteSpeedCacheConfig
         if (($value = $this->get($configField)) != '') {
             return preg_split("/[\s,]+/", $value, null, PREG_SPLIT_NO_EMPTY);
         }
+
         return array();
     }
 
@@ -280,8 +285,10 @@ class LiteSpeedCacheConfig
                     LSLog::log('in unregisterHook ' . $r . '=' . $res, LSLog::LEVEL_UPDCONFIG);
                 }
             }
+
             return 2;
         }
+
         return 1;
     }
 
@@ -397,6 +404,7 @@ class LiteSpeedCacheConfig
                 return false;
             }
         }
+
         return $this->pubController[$controllerClass];
     }
 
@@ -404,6 +412,7 @@ class LiteSpeedCacheConfig
     {
         $nocache = array(self::CFG_NOCACHE_URL => $this->getArray(self::CFG_NOCACHE_URL),
             self::CFG_NOCACHE_VAR => $this->getArray(self::CFG_NOCACHE_VAR), );
+
         return $nocache;
     }
 
@@ -424,6 +433,7 @@ class LiteSpeedCacheConfig
         if (isset($m[$mName]) && $m[$mName]->injectRenderWidget($hName)) {
             return $m[$mName];
         }
+
         return false;
     }
 
@@ -437,6 +447,7 @@ class LiteSpeedCacheConfig
         if (isset($this->esiModConf['mods'][$moduleName])) {
             return $this->esiModConf['mods'][$moduleName];
         }
+
         return null;
     }
 
@@ -445,6 +456,7 @@ class LiteSpeedCacheConfig
         if (isset($this->esiModConf['purge_events'][$event])) {
             return $this->esiModConf['purge_events'][$event];
         }
+
         return null;
     }
 
@@ -513,6 +525,7 @@ class LiteSpeedCacheConfig
         if (!empty($conf['priv']) || !empty($conf['pub'])) {
             return $conf;
         }
+
         return false;
     }
 
@@ -524,6 +537,7 @@ class LiteSpeedCacheConfig
             self::TAG_HOME,
             self::TAG_SITEMAP,
         );
+
         return $tags;
     }
 
@@ -535,6 +549,7 @@ class LiteSpeedCacheConfig
             self::TAG_HOME,
             self::TAG_SITEMAP,
         );
+
         return $tags;
     }
 
@@ -555,6 +570,7 @@ class LiteSpeedCacheConfig
                 $flag = LiteSpeedCache::CCBM_MOD_ACTIVE;
             }
         }
+
         return $flag;
     }
 

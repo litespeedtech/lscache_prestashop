@@ -74,9 +74,11 @@ class LiteSpeedCacheHelper
             $pos0 += 4;
             if ($pos1 = strpos($url, '/', $pos0)) {
                 $newurl = Tools::substr($url, $pos1);
+
                 return $newurl;
             }
         }
+
         return false;
     }
 
@@ -89,6 +91,7 @@ class LiteSpeedCacheHelper
         if (!is_dir($dir)) {
             mkdir($dir);
         }
+
         return $dir . '/' . self::$internal['cache_entry'] . '.data';
     }
 
@@ -181,6 +184,7 @@ class LiteSpeedCacheHelper
         if (!isset(self::$internal[$field])) {
             self::initInternals();
         }
+
         return self::$internal[$field];
     }
 
@@ -194,6 +198,7 @@ class LiteSpeedCacheHelper
             $contents = @fread($h, $len);
             @fclose($h);
         }
+
         return $contents;
     }
 
@@ -222,6 +227,7 @@ class LiteSpeedCacheHelper
         $ls[] = '</IfModule>';
         $ls[] = '### LITESPEED_CACHE_END';
         $newcontent = implode("\n", $ls) . "\n";
+
         return $newcontent;
     }
 
@@ -235,10 +241,12 @@ class LiteSpeedCacheHelper
                 $res = file_put_contents($newfile, $content);
                 if ($res) {
                     LSLog::log(__FUNCTION__ . ' backed up as ' . $newfile, LSLog::LEVEL_UPDCONFIG);
+
                     return true;
                 }
             }
         }
+
         return false;
     }
 
@@ -249,6 +257,7 @@ class LiteSpeedCacheHelper
         $oldlines = file($path);
         if ($oldlines === '') {
             LSLog::log(__FUNCTION__ . ' please manually fix .htaccess, may due to permission', LSLog::LEVEL_FORCE);
+
             return false;
         }
         $newlines = array();
@@ -280,9 +289,11 @@ class LiteSpeedCacheHelper
         $res = file_put_contents($path, $newcontent);
         if ($res) {
             LSLog::log(__FUNCTION__ . ' updated', LSLog::LEVEL_UPDCONFIG);
+
             return true;
         } else {
             LSLog::log(__FUNCTION__ . ' cannot save! Please manually fix .htaccess file', LSLog::LEVEL_FORCE);
+
             return false;
         }
     }
@@ -316,6 +327,7 @@ class LiteSpeedCacheHelper
                 }
             }
         }
+
         return $items;
     }
 
@@ -358,6 +370,7 @@ class LiteSpeedCacheHelper
     public static function isStaticResource($url)
     {
         $pattern = '/(js|css|jpg|png|svg|gif|woff|woff2)$/';
+
         return preg_match($pattern, $url);
     }
 

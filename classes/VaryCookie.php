@@ -98,6 +98,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             ) {
             LSLog::log('vary found & match ' . json_encode($vary->vd), LSLog::LEVEL_ENVCOOKIE_DETAIL);
         }
+
         return $changed;
     }
 
@@ -112,6 +113,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             $id = uniqid();
         }
         $val = $_SERVER['REMOTE_ADDR'] . $_SERVER['REMOTE_PORT'] . microtime() . $id;
+
         return md5($val);
     }
 
@@ -119,6 +121,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
     {
         if (headers_sent()) {
             $this->status |= self::BM_UPDATE_FAILED;
+
             return;
         }
         if (($this->status & self::BM_IS_GUEST) > 0
