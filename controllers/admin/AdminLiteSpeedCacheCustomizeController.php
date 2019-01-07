@@ -73,7 +73,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             $this->errors[] = $this->l('LiteSpeed Server with LSCache module is required.') . ' '
                     . $this->l('Please contact your sysadmin or your host to get a valid LiteSpeed license.');
         }
-        include_once(_PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php');
+        include_once _PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php';
 
         $this->initDisplayValues();
         $this->labels = array(

@@ -26,12 +26,12 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-require_once(_PS_MODULE_DIR_ . 'litespeedcache/classes/Helper.php');
-require_once(_PS_MODULE_DIR_ . 'litespeedcache/classes/EsiItem.php');
-require_once(_PS_MODULE_DIR_ . 'litespeedcache/classes/DebugLog.php');
-require_once(_PS_MODULE_DIR_ . 'litespeedcache/classes/Config.php');
-require_once(_PS_MODULE_DIR_ . 'litespeedcache/classes/Cache.php');
-require_once(_PS_MODULE_DIR_ . 'litespeedcache/classes/VaryCookie.php');
+require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/Helper.php';
+require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/EsiItem.php';
+require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/DebugLog.php';
+require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/Config.php';
+require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/Cache.php';
+require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/VaryCookie.php';
 
 class LiteSpeedCache extends Module
 {
@@ -332,7 +332,7 @@ class LiteSpeedCache extends Module
         }
 
         // 3rd party integration init needs to be before checkRoute
-        include_once(_PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php');
+        include_once _PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php';
 
         if ($controllerType == DispatcherCore::FC_FRONT) {
             self::$ccflag |= self::CCBM_FRONT_CONTROLLER;

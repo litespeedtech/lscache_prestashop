@@ -22,7 +22,7 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-require_once('EsiModConf.php');
+require_once 'EsiModConf.php';
 use LiteSpeedCacheLog as LSLog;
 use LiteSpeedCacheEsiModConf as EsiConf;
 
