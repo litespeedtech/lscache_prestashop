@@ -218,7 +218,6 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
                 return;
         }
 
-
         $pattern = "/[\s,]+/";
         $id = Tools::getValue('purgeids');
         $ids = preg_split($pattern, $id, null, PREG_SPLIT_NO_EMPTY);
