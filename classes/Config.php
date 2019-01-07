@@ -72,7 +72,7 @@ class LiteSpeedCacheConfig
 
     private $esiModConf = null;
     private $pubController = null;
-    private $purgeController = array();
+    private $purgeController = [];
     private $all = null;
     private $shop = null;
     private $custMod = null;
@@ -146,13 +146,13 @@ class LiteSpeedCacheConfig
         if (($value = $this->get($configField)) != '') {
             return preg_split("/[\s,]+/", $value, null, PREG_SPLIT_NO_EMPTY);
         }
-        return array();
+        return [];
     }
 
     public function getDefaultConfData($key)
     {
         if ($key == self::ENTRY_ALL) {
-            return array(
+            return [
                 self::CFG_ENABLED => 0,
                 self::CFG_DIFFMOBILE => 0,
                 self::CFG_GUESTMODE => 1,
@@ -163,15 +163,15 @@ class LiteSpeedCacheConfig
                 self::CFG_DEBUG_LEVEL => 9,
                 self::CFG_ALLOW_IPS => '',
                 self::CFG_DEBUG_IPS => '',
-            );
+            ];
         } elseif ($key == self::ENTRY_SHOP) {
-            return array(
+            return [
                 self::CFG_PUBLIC_TTL => 86400,
                 self::CFG_PRIVATE_TTL => 1800,
                 self::CFG_HOME_TTL => 86400,
                 self::CFG_404_TTL => 86400,
                 self::CFG_DIFFCUSTGRP => 0,
-            );
+            ];
         }
     }
 
@@ -204,8 +204,8 @@ class LiteSpeedCacheConfig
             // sth wrong
             return false;
         }
-        $newMod = array();
-        $newevents = array();
+        $newMod = [];
+        $newevents = [];
         foreach ($this->esiModConf['mods'] as $mi) {
             if (($events = $mi->getPurgeEvents()) != null) {
                 $newevents = array_merge($newevents, $events);
@@ -255,7 +255,7 @@ class LiteSpeedCacheConfig
         }
         switch ($key) {
             case self::ENTRY_ALL:
-                $this->all = array(
+                $this->all = [
                     self::CFG_ENABLED => $values[self::CFG_ENABLED],
                     self::CFG_DIFFMOBILE => $values[self::CFG_DIFFMOBILE],
                     self::CFG_GUESTMODE => $values[self::CFG_GUESTMODE],
@@ -266,17 +266,17 @@ class LiteSpeedCacheConfig
                     self::CFG_DEBUG_LEVEL => $values[self::CFG_DEBUG_LEVEL],
                     self::CFG_ALLOW_IPS => $values[self::CFG_ALLOW_IPS],
                     self::CFG_DEBUG_IPS => $values[self::CFG_DEBUG_IPS],
-                );
+                ];
                 Configuration::updateValue(self::ENTRY_ALL, json_encode($this->all));
                 break;
             case self::ENTRY_SHOP:
-                $this->shop = array(
+                $this->shop = [
                     self::CFG_PUBLIC_TTL => $values[self::CFG_PUBLIC_TTL],
                     self::CFG_PRIVATE_TTL => $values[self::CFG_PRIVATE_TTL],
                     self::CFG_HOME_TTL => $values[self::CFG_HOME_TTL],
                     self::CFG_404_TTL => $values[self::CFG_404_TTL],
                     self::CFG_DIFFCUSTGRP => $values[self::CFG_DIFFCUSTGRP],
-                );
+                ];
                 Configuration::updateValue(self::ENTRY_SHOP, json_encode($this->shop));
                 break;
             case self::ENTRY_MODULE:
@@ -318,7 +318,7 @@ class LiteSpeedCacheConfig
         }
 
         $this->custMod = Configuration::get(self::ENTRY_MODULE);
-        $this->esiModConf = array('mods' => array(), 'purge_events' =>array());
+        $this->esiModConf = ['mods' => [], 'purge_events' =>[]];
         $custdata = json_decode($this->custMod, true);
         if ($custdata) {
             foreach ($custdata as $name => $sdata) {
@@ -327,7 +327,7 @@ class LiteSpeedCacheConfig
             }
         }
 
-        $this->pubController = array(
+        $this->pubController = [
             'IndexController' => self::TAG_HOME, // controller name - tag linked to it
             'ProductController' => '',
             'CategoryController' => '',
@@ -341,7 +341,7 @@ class LiteSpeedCacheConfig
             'SitemapController' => self::TAG_SITEMAP,
             'StoresController' => self::TAG_STORES,
             'PageNotFoundController' => self::TAG_404,
-        );
+        ];
 
         LSLog::setDebugLevel($this->isDebug);
         if (!defined('_LITESPEED_DEBUG_')) {
@@ -364,8 +364,8 @@ class LiteSpeedCacheConfig
 
     public function getNoCacheConf()
     {
-        $nocache = array(self::CFG_NOCACHE_URL => $this->getArray(self::CFG_NOCACHE_URL),
-            self::CFG_NOCACHE_VAR => $this->getArray(self::CFG_NOCACHE_VAR));
+        $nocache = [self::CFG_NOCACHE_URL => $this->getArray(self::CFG_NOCACHE_URL),
+            self::CFG_NOCACHE_VAR => $this->getArray(self::CFG_NOCACHE_VAR)];
         return $nocache;
     }
 
@@ -422,11 +422,11 @@ class LiteSpeedCacheConfig
                 // allow ClassName:param1&param2=value
                 $cname = Tools::strtolower($cname);
                 if (!isset($this->purgeController[$cname])) {
-                    $this->purgeController[$cname] = array();
+                    $this->purgeController[$cname] = [];
                 }
                 $detail = &$this->purgeController[$cname];
                 if (!isset($detail[$cparam])) {
-                    $detail[$cparam] = array('priv' => array(), 'pub' => array());
+                    $detail[$cparam] = ['priv' => [], 'pub' => []];
                 }
                 if (!in_array($tag, $detail[$cparam][$type])) {
                     $detail[$cparam][$type][] = $tag;
@@ -437,7 +437,7 @@ class LiteSpeedCacheConfig
         if (!empty($events)) {
             foreach ($events as $event) {
                 if (!isset($this->esiModConf['purge_events'][$event])) {
-                    $this->esiModConf['purge_events'][$event] = array('priv' => array(), 'pub' => array());
+                    $this->esiModConf['purge_events'][$event] = ['priv' => [], 'pub' => []];
                 }
                 if (!in_array($tag, $this->esiModConf['purge_events'][$event][$type])) {
                     $this->esiModConf['purge_events'][$event][$type][] = $tag;
@@ -453,7 +453,7 @@ class LiteSpeedCacheConfig
             return false;
         }
 
-        $conf = array('pub' => array(), 'priv' => array());
+        $conf = ['pub' => [], 'priv' => []];
         foreach ($this->purgeController[$c] as $param => $tags) {
             if ($param !== 0) {
                 //param1&param2
@@ -481,22 +481,22 @@ class LiteSpeedCacheConfig
     public function getDefaultPurgeTagsByProduct()
     {
         // maybe configurable later
-        $tags = array(
+        $tags = [
             self::TAG_SEARCH,
             self::TAG_HOME,
             self::TAG_SITEMAP
-        );
+        ];
         return $tags;
     }
 
     public function getDefaultPurgeTagsByCategory()
     {
         // maybe configurable later
-        $tags = array(
+        $tags = [
             self::TAG_SEARCH,
             self::TAG_HOME,
             self::TAG_SITEMAP
-        );
+        ];
         return $tags;
     }
 
@@ -522,7 +522,7 @@ class LiteSpeedCacheConfig
 
     public function getReservedHooks()
     {
-        $hooks = array(
+        $hooks = [
             /** global * */
             'actionDispatcher', // check cacheable for route
             'displayFooterAfter', // show debug info
@@ -573,7 +573,7 @@ class LiteSpeedCacheConfig
             'litespeedNotCacheable',
             'litespeedEsiBegin',
             'litespeedEsiEnd',
-        );
+        ];
 
         return $hooks;
     }

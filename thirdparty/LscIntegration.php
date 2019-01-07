@@ -26,7 +26,7 @@ use LiteSpeedCacheLog as LSLog;
 
 abstract class LscIntegration
 {
-    protected static $integrated = array();
+    protected static $integrated = [];
     protected $moduleName;
     protected $esiConf;
 
@@ -47,7 +47,7 @@ abstract class LscIntegration
         if ($className::isUsed($name)) {
             $instance = new $className();
             if ($instance->init()) {
-                self::$integrated[$name] = array('class' => $instance);
+                self::$integrated[$name] = ['class' => $instance];
             }
         }
     }
@@ -55,15 +55,15 @@ abstract class LscIntegration
     protected function addJsDef($jsk, $proc)
     {
         if (!isset(self::$integrated['jsdef'])) {
-            self::$integrated['jsdef'] = array();
-            self::$integrated['jsloc'] = array();
+            self::$integrated['jsdef'] = [];
+            self::$integrated['jsloc'] = [];
         }
-        self::$integrated['jsdef'][$jsk] = array('proc' => $proc);
+        self::$integrated['jsdef'][$jsk] = ['proc' => $proc];
         $locator = explode(':', $jsk);
         $cur = &self::$integrated['jsloc'];
         while ($key = array_shift($locator)) {
             if (!empty($locator)) {
-                $cur[$key] = array();
+                $cur[$key] = [];
                 $cur = &$cur[$key];
             } else {
                 $cur[$key] = $jsk;
@@ -122,9 +122,9 @@ abstract class LscIntegration
         }
         if (!isset($def[$key]['replace'])) {
             $proc = $def[$key]['proc'];
-            $esiParam = array('pt' => LiteSpeedCacheEsiItem::ESI_JSDEF,
+            $esiParam = ['pt' => LiteSpeedCacheEsiItem::ESI_JSDEF,
                 'm' => $proc::NAME,
-                'jsk' => $key);
+                'jsk' => $key];
             $log .= $proc::NAME . ':' . $key . ' ';
 
             $item = new LiteSpeedCacheEsiItem($esiParam, $proc->esiConf);
@@ -161,7 +161,7 @@ abstract class LscIntegration
             return null;
         }
 
-        $injected = array();
+        $injected = [];
         $log = '';
 
         foreach ($jsDef as $key => &$js) {

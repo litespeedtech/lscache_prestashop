@@ -77,7 +77,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
         $this->original_values = $this->config->getAllConfigValues();
         $this->current_values = $this->original_values;
-        $this->labels = array(
+        $this->labels = [
             Conf::CFG_ENABLED => $this->l('Enable LiteSpeed Cache'),
             Conf::CFG_PUBLIC_TTL => $this->l('Default Public Cache TTL'),
             Conf::CFG_PRIVATE_TTL => $this->l('Default Private Cache TTL'),
@@ -93,16 +93,16 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             Conf::CFG_DEBUG => $this->l('Enable Debug Log'),
             Conf::CFG_DEBUG_IPS => $this->l('Log Only for Listed IPs'),
             Conf::CFG_DEBUG_LEVEL => $this->l('Debug Level'),
-        );
+        ];
     }
 
     public function initPageHeaderToolbar()
     {
-        $this->page_header_toolbar_btn['purge_shops'] = array(
+        $this->page_header_toolbar_btn['purge_shops'] = [
             'href' => self::$currentIndex . '&purge_shops&token=' . $this->token,
             'desc' => $this->l('Flush All PrestaShop Pages'),
             'icon' => 'process-icon-delete'
-        );
+        ];
         parent::initPageHeaderToolbar();
     }
 
@@ -123,15 +123,15 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
     private function processConfigSave()
     {
-        $inputs = array(
+        $inputs = [
             Conf::CFG_PUBLIC_TTL,
             Conf::CFG_PRIVATE_TTL,
             Conf::CFG_HOME_TTL,
             Conf::CFG_404_TTL,
             Conf::CFG_DIFFCUSTGRP,
-        );
+        ];
         if ($this->is_shop_level != 1) {
-            $all = array(
+            $all = [
                 Conf::CFG_ENABLED,
                 Conf::CFG_DIFFMOBILE,
                 Conf::CFG_GUESTMODE,
@@ -142,7 +142,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 Conf::CFG_DEBUG_LEVEL,
                 Conf::CFG_ALLOW_IPS,
                 Conf::CFG_DEBUG_IPS
-            );
+            ];
             $inputs = array_merge($inputs, $all);
         }
 
@@ -196,7 +196,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
     private function processPurgeShops()
     {
-        $params = array('from' => 'AdminLiteSpeedCacheConfig', 'public' => '*');
+        $params = ['from' => 'AdminLiteSpeedCacheConfig', 'public' => '*'];
         Hook::exec('litespeedCachePurge', $params);
         $this->confirmations[] = $this->l('Notified LiteSpeed Server to flush all pages of this PrestaShop.');
     }
@@ -449,12 +449,12 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             $disabled
         );
 
-        $custgrpOptions = array(
-            array('id' => 0, 'name' => $this->l('No') . $s . $this->l('Everyone shares the same view')),
-            array('id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Each group has its own view')),
-            array('id' => 2, 'name' => $this->l('Two views') . $s .
-                $this->l('One for all logged-in users and another for logged-out users')),
-        );
+        $custgrpOptions = [
+            ['id' => 0, 'name' => $this->l('No') . $s . $this->l('Everyone shares the same view')],
+            ['id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Each group has its own view')],
+            ['id' => 2, 'name' => $this->l('Two views') . $s .
+                $this->l('One for all logged-in users and another for logged-out users')],
+        ];
         $fg['input'][] = $this->addInputSelect(
             Conf::CFG_DIFFCUSTGRP,
             $this->labels[Conf::CFG_DIFFCUSTGRP],
@@ -462,12 +462,12 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             $this->l('Enable this option if there is different pricing based on customer groups.')
         );
 
-        $flushprodOptions = array(
-            array('id' => 0, 'name' => $this->l('Flush product when quantity or stock status change, flush categories only when stock status changes')),
-            array('id' => 1, 'name' => $this->l('Flush product and categories only when stock status changes')),
-            array('id' => 2, 'name' => $this->l('Flush product when stock status changes, do not flush categories when stock status or quantity change')),
-            array('id' => 3, 'name' => $this->l('Always flush product and categories when quantity or stock status change')),
-        );
+        $flushprodOptions = [
+            ['id' => 0, 'name' => $this->l('Flush product when quantity or stock status change, flush categories only when stock status changes')],
+            ['id' => 1, 'name' => $this->l('Flush product and categories only when stock status changes')],
+            ['id' => 2, 'name' => $this->l('Flush product when stock status changes, do not flush categories when stock status or quantity change')],
+            ['id' => 3, 'name' => $this->l('Always flush product and categories when quantity or stock status change')],
+        ];
         $fg['input'][] = $this->addInputSelect(
             Conf::CFG_FLUSH_PRODCAT,
             $this->labels[Conf::CFG_FLUSH_PRODCAT],
@@ -476,12 +476,12 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             $disabled
         );
 
-        $guestOptions = array(
-            array('id' => 0, 'name' => $this->l('No') . $s . $this->l('No default guest view')),
-            array('id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Has default guest view')),
-            array('id' => 2, 'name' => $this->l('First Page Only') . $s .
-                $this->l('Only first page will show the default guest view')),
-        );
+        $guestOptions = [
+            ['id' => 0, 'name' => $this->l('No') . $s . $this->l('No default guest view')],
+            ['id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Has default guest view')],
+            ['id' => 2, 'name' => $this->l('First Page Only') . $s .
+                $this->l('Only first page will show the default guest view')],
+        ];
         $fg['input'][] = $this->addInputSelect(
             Conf::CFG_GUESTMODE,
             $this->labels[Conf::CFG_GUESTMODE],
@@ -545,7 +545,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             $disabled
         );
 
-        $forms = array(array('form' => $fg), array('form' => $formUser), array('form' => $formDev));
+        $forms = [['form' => $fg], ['form' => $formUser], ['form' => $formDev]];
 
         $helper = new HelperForm();
         $helper->show_toolbar = false;
@@ -558,16 +558,16 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         $helper->submit_action = 'submitConfig';
         $helper->currentIndex = self::$currentIndex;
 
-        $helper->tpl_vars = array('fields_value' => $this->current_values);
+        $helper->tpl_vars = ['fields_value' => $this->current_values];
         return $helper->generateForm($forms);
     }
 
     private function addInputText($name, $label, $desc, $suffix = '', $required = true, $disabled = false)
     {
-        $input = array(
+        $input = [
             'type' => 'text', 'name' => $name, 'label' => $label,
             'desc' => $desc, 'class' => 'input fixed-width-sm', 'required' => $required,
-        );
+        ];
         if ($disabled) {
             $input['disabled'] = 1;
         }
@@ -579,10 +579,10 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
     private function addInputSwitch($name, $label, $desc = '', $disabled = false)
     {
-        $input = array(
+        $input = [
             'type' => 'switch', 'name' => $name, 'label' => $label,
-            'values' => array(array('value' => 1), array('value' => 0)),
-        );
+            'values' => [['value' => 1], ['value' => 0]],
+        ];
         if ($desc) {
             $input['desc'] = $desc;
         }
@@ -594,11 +594,11 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
     private function addInputSelect($name, $label, $query, $desc = '', $required = true, $disabled = false)
     {
-        $input = array(
+        $input = [
             'type' => 'select', 'name' => $name, 'label' => $label,
-            'options' => array('query' => $query, 'id' => 'id', 'name' => 'name'),
+            'options' => ['query' => $query, 'id' => 'id', 'name' => 'name'],
             'required' => $required, 'class' => 'input fixed-width-xxl',
-        );
+        ];
         if ($desc) {
             $input['desc'] = $desc;
         }
@@ -610,10 +610,10 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
     private function addInputTextArea($name, $label, $desc, $disabled = false)
     {
-        $input = array(
+        $input = [
             'type' => 'textarea', 'name' => $name, 'label' => $label,
             'desc' => $desc,
-        );
+        ];
         if ($disabled) {
             $input['readonly'] = 1;
         }
@@ -622,12 +622,12 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
     private function newFieldForm($title, $icon, $desc = '')
     {
-        $form = array('legend' => array('title' => $title, 'icon' => "icon-$icon"));
+        $form = ['legend' => ['title' => $title, 'icon' => "icon-$icon"]];
         if ($desc) {
             $form['description'] = $desc;
         }
-        $form['input'] = array();
-        $form['submit'] = array('title' => $this->l('Save'));
+        $form['input'] = [];
+        $form['submit'] = ['title' => $this->l('Save')];
         return $form;
     }
 }

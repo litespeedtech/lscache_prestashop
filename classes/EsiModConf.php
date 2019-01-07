@@ -51,13 +51,13 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     private $moduleName;
     private $type;
     private $data;
-    private $parsed = array();
+    private $parsed = [];
 
     public function __construct($moduleName, $type, $data)
     {
         $this->moduleName = $moduleName;
         $this->type = $type;
-        $this->data = array();
+        $this->data = [];
         //sanatize data
         $this->data[self::FLD_PRIV] = $data[self::FLD_PRIV] ? 1 : 0;
         if (isset($data[self::FLD_TAG])) {
@@ -101,7 +101,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
 
     public function getCustConfArray()
     {
-        $cdata = array(
+        $cdata = [
             'id' => $this->moduleName,
             'name' => $this->moduleName,
             'priv' => $this->isPrivate(),
@@ -116,7 +116,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             'ie' => $this->getFieldValue(self::FLD_IGNORE_EMPTY, true),
             'ce' => $this->getFieldValue(self::FLD_ONLY_CACHE_EMPTY, true),
             'tipurl' => $this->getFieldValue(self::FLD_TIPURL),
-        );
+        ];
         if ($tmp_instance = Module::getInstanceByName($this->moduleName)) {
             $cdata['name'] = $tmp_instance->displayName;
         }
@@ -184,7 +184,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         if (empty($this->data[self::FLD_PURGE_CONTROLLERS])) {
             return null;
         }
-        $controllers = array();
+        $controllers = [];
         $list = preg_split("/[\s,]+/", $this->data[self::FLD_PURGE_CONTROLLERS], null, PREG_SPLIT_NO_EMPTY);
         foreach ($list as $item) {
             // allow ClassName?param1&param2
@@ -253,7 +253,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     private function parseList($field)
     {
         /* $res[0] = -1: none; 9: all; 1: included, 2: excluded */
-        $res = array();
+        $res = [];
         if (!isset($this->data[$field])) {
             $res[0] = -1; // none
         } elseif ($this->data[$field] == '*') {
@@ -266,13 +266,13 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
                 if ($d{0} == '!') {
                     $isInclude |= 2;
                     if (!isset($res[2])) {
-                        $res[2] = array();
+                        $res[2] = [];
                     }
                     $res[2][] = ltrim($d, '!');
                 } else {
                     $isInclude |= 1;
                     if (!isset($res[1])) {
-                        $res[1] = array();
+                        $res[1] = [];
                     }
                     $res[1][] = $d;
                 }

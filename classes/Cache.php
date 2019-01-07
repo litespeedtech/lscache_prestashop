@@ -33,16 +33,16 @@ class LiteSpeedCacheCore
     const LSHEADER_CACHE_TAG = 'X-Litespeed-Tag';
     const LSHEADER_CACHE_VARY = 'X-Litespeed-Vary';
 
-    private $cacheTags = array();
+    private $cacheTags = [];
     private $purgeTags;
     private $config;
     private $esiTtl;
-    private $specificPrices = array();
+    private $specificPrices = [];
 
     public function __construct(LiteSpeedCacheConfig $config)
     {
         $this->config = $config;
-        $this->purgeTags = array('pub' => array(), 'priv' => array());
+        $this->purgeTags = ['pub' => [], 'priv' => []];
     }
 
     public function setEsiTtl($ttl)
@@ -217,7 +217,7 @@ class LiteSpeedCacheCore
         }
 
         if (in_array('*', $this->purgeTags[$type])) {
-            $this->purgeTags[$type] = array('*'); // purge all
+            $this->purgeTags[$type] = ['*']; // purge all
         }
         return $returnCode;
     }
@@ -244,7 +244,7 @@ class LiteSpeedCacheCore
 
     private function getPurgeTagsByProduct($id_product, $product, $isupdate)
     {
-        $tags = array();
+        $tags = [];
         $pid = Conf::TAG_PREFIX_PRODUCT . $id_product;
         if (!$this->isNewPurgeTag($pid, false)) {
             return $tags; // has purge all or already added
@@ -275,7 +275,7 @@ class LiteSpeedCacheCore
 
     private function getPurgeTagsByProductOrder($id_product, $includeCategory)
     {
-        $tags = array();
+        $tags = [];
         $pid = Conf::TAG_PREFIX_PRODUCT . $id_product;
         if (!$this->isNewPurgeTag($pid, false)) {
             return $tags; // has purge all or already added
@@ -304,8 +304,8 @@ class LiteSpeedCacheCore
         if ($order == null) { // $order is null, happened in bankwire module
             return;
         }
-        $tags = array();
-        $pubtags = array();
+        $tags = [];
+        $pubtags = [];
         $hasStockStatusChange = false;
 
         $flushOption = $this->config->get(Conf::CFG_FLUSH_PRODCAT);
@@ -354,7 +354,7 @@ class LiteSpeedCacheCore
 
     private function getPurgeTagsByCategory($category)
     {
-        $tags = array();
+        $tags = [];
         if ($category == null) {
             return $tags; // extra proctection. happened on a client BigBuySynchronizer.php
         }
@@ -411,13 +411,13 @@ class LiteSpeedCacheCore
             return null;
         }
         $event = Tools::strtolower(Tools::substr($method, 4));
-        $tags = array();
+        $tags = [];
 
         switch ($event) {
             case 'actioncustomerlogoutafter':
             case 'actionauthentication':
             case 'actioncustomeraccountadd':
-                $tags['priv'] = array('*');
+                $tags['priv'] = ['*'];
                 break;
 
             case 'actionproductadd':
@@ -445,29 +445,29 @@ class LiteSpeedCacheCore
             case 'actionobjectcmsupdateafter':
             case 'actionobjectcmsdeleteafter':
             case 'actionobjectcmsaddafter':
-                $tags['pub'] = array(Conf::TAG_PREFIX_CMS . $args['object']->id,
+                $tags['pub'] = [Conf::TAG_PREFIX_CMS . $args['object']->id,
                     Conf::TAG_PREFIX_CMS, // cmscategory
-                    Conf::TAG_SITEMAP);
+                    Conf::TAG_SITEMAP];
                 break;
 
             case 'actionobjectsupplierupdateafter':
             case 'actionobjectsupplierdeleteafter':
             case 'actionobjectsupplieraddafter':
-                $tags['pub'] = array(Conf::TAG_PREFIX_SUPPLIER . $args['object']->id,
+                $tags['pub'] = [Conf::TAG_PREFIX_SUPPLIER . $args['object']->id,
                     Conf::TAG_PREFIX_SUPPLIER, // all supplier
-                    Conf::TAG_SITEMAP);
+                    Conf::TAG_SITEMAP];
                 break;
 
             case 'actionobjectmanufacturerupdateafter':
             case 'actionobjectmanufacturerdeleteafter':
             case 'actionobjectmanufactureraddAfter':
-                $tags['pub'] = array(Conf::TAG_PREFIX_MANUFACTURER . $args['object']->id,
+                $tags['pub'] = [Conf::TAG_PREFIX_MANUFACTURER . $args['object']->id,
                     Conf::TAG_PREFIX_MANUFACTURER,
-                    Conf::TAG_SITEMAP); // allbrands
+                    Conf::TAG_SITEMAP]; // allbrands
                 break;
 
             case 'actionobjectstoreupdateafter':
-                $tags['pub'] = array(Conf::TAG_STORES);
+                $tags['pub'] = [Conf::TAG_STORES];
                 break;
 
             default: // custom defined events
@@ -530,8 +530,8 @@ class LiteSpeedCacheCore
             return;
         }
         if (is_array($specific_prices) && isset($specific_prices['to'])) {
-            $this->specificPrices[] = array('from' => $specific_prices['from'],
-                'to' => $specific_prices['to']);
+            $this->specificPrices[] = ['from' => $specific_prices['from'],
+                'to' => $specific_prices['to']];
         }
     }
 
@@ -576,7 +576,7 @@ class LiteSpeedCacheCore
             return;
         }
 
-        $headers = array();
+        $headers = [];
         if (($purgeHeader = $this->getPurgeHeader()) != '') {
             $headers[] = $purgeHeader;
         }
@@ -586,7 +586,7 @@ class LiteSpeedCacheCore
 
         if ((($ccflag & LSC::CCBM_NOT_CACHEABLE) == 0) && (($ccflag & LSC::CCBM_CACHEABLE) != 0)) {
             $prefix = LiteSpeedCacheHelper::getTagPrefix();
-            $tags = array();
+            $tags = [];
             $ttl = (($ccflag & LSC::CCBM_ESI_REQ) == 0) ? '' : $this->esiTtl;
             if ($ttl == '') {
                 $ttl = (($ccflag & LSC::CCBM_PRIVATE) == 0) ?

@@ -31,12 +31,12 @@ class LscIqitCompare extends LscIntegration
 
     protected function init()
     {
-        $confData = array(
+        $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => 'compare',
             EsiConf::FLD_PURGE_CONTROLLERS => 'iqitcompareactionsModuleFrontController',
             EsiConf::FLD_ASVAR => 1,
-        );
+        ];
         $this->esiConf = new LiteSpeedCacheEsiModConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);
         $this->registerEsiModule();
         $this->addJsDef('iqitcompare:nbProducts', $this);

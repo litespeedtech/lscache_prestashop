@@ -1,7 +1,7 @@
 <?php
 
 global $_MODULE;
-$_MODULE = array();
+$_MODULE = [];
 $_MODULE['<{litespeedcache}prestashop>litespeedcache_7a39408c6f201f8ffc1cf7ea77bdc7f1'] = 'לייטספיד מטמון ';
 $_MODULE['<{litespeedcache}prestashop>litespeedcache_e63887a3c31594f66d3768145e15e481'] = 'משתלב עם מודול לייטספיד זיכרון מטמון עמוד מלא על שרת לייטספיד';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcacheconfigcontroller_d2566d2ad619c4d2aa056dca0ff04732'] = 'קונפיגורציות';

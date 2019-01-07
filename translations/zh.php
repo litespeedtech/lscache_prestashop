@@ -1,7 +1,7 @@
 <?php
 
 global $_MODULE;
-$_MODULE = array();
+$_MODULE = [];
 $_MODULE['<{litespeedcache}prestashop>litespeedcache_7a39408c6f201f8ffc1cf7ea77bdc7f1'] = 'LiteSpeed缓存模块';
 $_MODULE['<{litespeedcache}prestashop>litespeedcache_e63887a3c31594f66d3768145e15e481'] = '与LiteSpeed服务器的页面缓存模块集成。';
 $_MODULE['<{litespeedcache}prestashop>litespeedcache_ce6ef6c43f48dbb7b931991422e09269'] = 'LiteSpeed缓存';

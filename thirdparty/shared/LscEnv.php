@@ -30,11 +30,11 @@ class LscEnv extends LscIntegration
     const NAME = 'lsc_env';
     protected function init()
     {
-        $confData = array(
+        $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => LiteSpeedCacheConfig::TAG_ENV,
             EsiConf::FLD_ASVAR => 1,
-        );
+        ];
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
         return $this->registerEsiModule();
     }

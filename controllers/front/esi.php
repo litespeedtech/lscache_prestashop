@@ -129,7 +129,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
     private function processRenderWidget($item)
     {
-        $params = array();
+        $params = [];
         if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
             $item->setFailed();
         } else {
@@ -140,7 +140,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
     private function processWidgetBlock($item)
     {
-        $params = array();
+        $params = [];
         if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
             $item->setFailed();
         } else {
@@ -151,7 +151,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
     private function processCallHook($item)
     {
-        $params = array();
+        $params = [];
         if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
             $item->setFailed();
         } else {

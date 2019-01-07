@@ -28,7 +28,7 @@ use LiteSpeedCacheLog as LSLog;
 class LiteSpeedCacheHelper
 {
 
-    private static $internal = array();
+    private static $internal = [];
 
     private static function initInternals()
     {
@@ -36,7 +36,7 @@ class LiteSpeedCacheHelper
         $cookie = $ctx->cookie;
         $config = Conf::getInstance();
 
-        $defaultParam = array('s' => $ctx->shop->id);
+        $defaultParam = ['s' => $ctx->shop->id];
         if (isset($cookie->iso_code_country)) {
             $defaultParam['ct'] = $cookie->iso_code_country;
         }
@@ -199,7 +199,7 @@ class LiteSpeedCacheHelper
 
     private static function genHtAccessContent($guestMode, $mobileView)
     {
-        $ls = array();
+        $ls = [];
         $ls[] = '### LITESPEED_CACHE_START - Do not remove this line, LSCache plugin will automatically update it';
         $ls[] = '# automatically genereated by LiteSpeedCache plugin: '
         . 'https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps';
@@ -251,7 +251,7 @@ class LiteSpeedCacheHelper
              LSLog::log(__FUNCTION__ . " please manually fix .htaccess, may due to permission", LSLog::LEVEL_FORCE);
              return false;
         }
-        $newlines = array();
+        $newlines = [];
         $ind = false;
         // always remove first
         foreach ($oldlines as $line) {
@@ -290,7 +290,7 @@ class LiteSpeedCacheHelper
     // if id is false, load all
     public static function getRelatedItems($id)
     {
-        $items = array();
+        $items = [];
         $dir = '';
         $cacheFile = self::getCacheFilePath($dir);
         $snapshot = self::getFileContent($cacheFile);
@@ -301,7 +301,7 @@ class LiteSpeedCacheHelper
             return $items;
         }
 
-        $related = array();
+        $related = [];
         $tag = ($id) ? $saved['data'][$id]['tag'] : Conf::TAG_ENV;
         if ($tag == Conf::TAG_ENV) {
             $related = array_keys($saved['data']);
@@ -327,7 +327,7 @@ class LiteSpeedCacheHelper
         $saved = json_decode($snapshot, true);
 
         if (!is_array($saved) || json_last_error() !== JSON_ERROR_NONE) {
-            $saved = array('data' => array(), 'tags' => array());
+            $saved = ['data' => [], 'tags' => []];
         }
 
         foreach ($itemList as $item) {
@@ -339,7 +339,7 @@ class LiteSpeedCacheHelper
                 continue;
             }
             if (!isset($saved['tags'][$tag])) {
-                $saved['tags'][$tag] = array($id => $descr);
+                $saved['tags'][$tag] = [$id => $descr];
             } elseif (!isset($saved['tags'][$tag][$id])) {
                 $saved['tags'][$tag][$id] = $descr;
             }

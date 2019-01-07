@@ -30,13 +30,13 @@ class LscBlockUserInfo extends LscIntegration
 
     protected function init()
     {
-        $confData = array(
+        $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => LiteSpeedCacheConfig::TAG_SIGNIN, // maybe can be removed
             EsiConf::FLD_PURGE_EVENTS => 'actionCustomerLogoutAfter, actionAuthentication',
             EsiConf::FLD_HOOK_METHODS => '!hookDisplayHeader',
             EsiConf::FLD_IGNORE_EMPTY => 1,
-        );
+        ];
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
         return $this->registerEsiModule();
     }

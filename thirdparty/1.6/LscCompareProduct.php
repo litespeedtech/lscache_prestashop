@@ -32,14 +32,14 @@ class LscCompareProduct extends LscIntegration
 
     protected function init()
     {
-        $confData = array(
+        $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => 'compare',
             EsiConf::FLD_PURGE_CONTROLLERS => 'CompareController?id_product',
             EsiConf::FLD_ASVAR => 1,
             EsiConf::FLD_TIPURL => 'https://www.litespeedtech.com/support/wiki/doku.php/'
             . 'litespeed_wiki:cache:lscps:customization_1_6#update_template_for_compare_product_feature',
-        );
+        ];
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
         $this->registerEsiModule();
 

@@ -30,11 +30,11 @@ class LscToken extends LscIntegration
     const NAME = 'lsc_token';
     protected function init()
     {
-        $confData = array(
+        $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => LiteSpeedCacheConfig::TAG_SIGNIN,
             EsiConf::FLD_ASVAR => 1,
-        );
+        ];
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
         return $this->registerEsiModule();
     }
