@@ -27,17 +27,25 @@ use LiteSpeedCacheLog as LSLog;
 class LiteSpeedCacheVaryCookie extends CookieCore
 {
     const BM_HAS_VARYCOOKIE = 1;
+
     const BM_VARYCOOKIE_CHANGED = 2;
+
     const BM_HAS_VARYVALUE = 4;
+
     const BM_VARYVALUE_CHANGED = 8;
+
     const BM_IS_GUEST = 16;
+
     const BM_IS_MOBILEVIEW = 32;
+
     const BM_UPDATE_FAILED = 128;
 
     const DEFAULT_VARY_COOKIE_NAME = '_lscache_vary'; // system default
+
     const PRIVATE_SESSION_COOKIE = 'lsc_private';
 
     private $vd;
+
     private $status = 0;
 
     public function __construct($name = '', $path = '')
@@ -90,6 +98,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             ) {
             LSLog::log('vary found & match ' . json_encode($vary->vd), LSLog::LEVEL_ENVCOOKIE_DETAIL);
         }
+
         return $changed;
     }
 
@@ -104,6 +113,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             $id = uniqid();
         }
         $val = $_SERVER['REMOTE_ADDR'] . $_SERVER['REMOTE_PORT'] . microtime() . $id;
+
         return md5($val);
     }
 
@@ -111,6 +121,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
     {
         if (headers_sent()) {
             $this->status |= self::BM_UPDATE_FAILED;
+
             return;
         }
         if (($this->status & self::BM_IS_GUEST) > 0

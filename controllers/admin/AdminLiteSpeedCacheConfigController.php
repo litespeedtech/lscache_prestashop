@@ -27,21 +27,32 @@ use LiteSpeedCacheConfig as Conf;
 class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 {
     private $config;
+
     private $is_shop_level; // -1: not multishop, 0: multishop global, 1: multishop shop
+
     private $labels;
+
     private $current_values;
+
     private $license_disabled;
 
     // BITMASK for changed
     const BMC_SHOP = 1; // change for shop
+
     const BMC_ALL = 2;  // change for all
+
     const BMC_NONEED_PURGE = 4; // no need to purge, effective immediately
+
     const BMC_MAY_PURGE = 8; // purge to be effective, but don't have to
+
     const BMC_MUST_PURGE = 16;
+
     const BMC_DONE_PURGE = 32; // already purged
+
     const BMC_HTACCESS_UPDATE = 64;
 
     private $original_values;
+
     private $changed = 0;
 
     public function __construct()
@@ -155,6 +166,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
         if ($this->changed == 0) {
             $this->confirmations[] = $this->l('No changes detected. Nothing to save.');
+
             return;
         }
 
@@ -559,6 +571,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         $helper->currentIndex = self::$currentIndex;
 
         $helper->tpl_vars = array('fields_value' => $this->current_values);
+
         return $helper->generateForm($forms);
     }
 
@@ -574,6 +587,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         if ($suffix) {
             $input['suffix'] = $suffix;
         }
+
         return $input;
     }
 
@@ -589,6 +603,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         if ($disabled) {
             $input['disabled'] = 1;
         }
+
         return $input;
     }
 
@@ -605,6 +620,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         if ($disabled) {
             $input['disabled'] = 1;
         }
+
         return $input;
     }
 
@@ -617,6 +633,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         if ($disabled) {
             $input['readonly'] = 1;
         }
+
         return $input;
     }
 
@@ -628,6 +645,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         }
         $form['input'] = array();
         $form['submit'] = array('title' => $this->l('Save'));
+
         return $form;
     }
 }

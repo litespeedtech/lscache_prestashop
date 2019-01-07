@@ -29,28 +29,44 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
 {
     // avail types
     const TYPE_BUILTIN = 0;
+
     const TYPE_INTEGRATED = 1;
+
     const TYPE_CUSTOMIZED = 2;
+
     // avail fields
     const FLD_PRIV = 'priv';
+
     const FLD_TAG = 'tag';
+
     const FLD_TTL = 'ttl';
+
     // comma separated purge events
     const FLD_PURGE_EVENTS = 'events';
+
     // comma separate controller classes, with :P for POST only
     const FLD_PURGE_CONTROLLERS = 'ctrl';
+
     // comma separated list of method, if proceed with "!", meaning not included
     const FLD_HOOK_METHODS = 'methods';
+
     // *: all, list of allowed hooks, or not-allowed hooks
     const FLD_RENDER_WIDGETS = 'render';
+
     const FLD_ASVAR = 'asvar';
+
     const FLD_IGNORE_EMPTY = 'ie';
+
     const FLD_ONLY_CACHE_EMPTY = 'ce';
+
     const FLD_TIPURL = 'tipurl';
 
     private $moduleName;
+
     private $type;
+
     private $data;
+
     private $parsed = array();
 
     public function __construct($moduleName, $type, $data)
@@ -120,6 +136,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         if ($tmp_instance = Module::getInstanceByName($this->moduleName)) {
             $cdata['name'] = $tmp_instance->displayName;
         }
+
         return $cdata;
     }
 
@@ -127,6 +144,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     {
         $sdata = $this->data;
         $sdata['id'] = $this->moduleName;
+
         return $sdata;
     }
 
@@ -145,6 +163,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             $dv = preg_split("/[\s,]+/", $value, null, PREG_SPLIT_NO_EMPTY);
             $value = implode(', ', $dv);
         }
+
         return $value;
     }
 
@@ -195,6 +214,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
                 $controllers[$ct[0]] = $ct[1];
             }
         }
+
         return $controllers;
     }
 
@@ -203,6 +223,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         if (isset($this->data[self::FLD_PURGE_EVENTS])) {
             return preg_split("/[\s,]+/", $this->data[self::FLD_PURGE_EVENTS], null, PREG_SPLIT_NO_EMPTY);
         }
+
         return null;
     }
 
@@ -212,6 +233,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED) {
                 LSLog::log(__FUNCTION__ . ' missing pt', LSLog::LEVEL_UNEXPECTED);
             }
+
             return false;
         }
         switch ($params['pt']) {

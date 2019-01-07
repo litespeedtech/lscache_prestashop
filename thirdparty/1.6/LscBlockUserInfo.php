@@ -38,6 +38,7 @@ class LscBlockUserInfo extends LscIntegration
             EsiConf::FLD_IGNORE_EMPTY => 1,
         );
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
+
         return $this->registerEsiModule();
     }
 }

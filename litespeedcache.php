@@ -36,25 +36,42 @@ require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/VaryCookie.php';
 class LiteSpeedCache extends Module
 {
     private $cache;
+
     private $config;
+
     private $esiInjection;
+
     private static $ccflag = 0; // cache control flag
 
     const MODULE_NAME = 'litespeedcache';
+
     //BITMASK for Cache Control Flag
     const CCBM_CACHEABLE = 1;
+
     const CCBM_PRIVATE = 2;
+
     const CCBM_CAN_INJECT_ESI = 4;
+
     const CCBM_ESI_ON = 8;
+
     const CCBM_ESI_REQ = 16;
+
     const CCBM_GUEST = 32;
+
     const CCBM_ERROR_CODE = 64; // response code is not 200
+
     const CCBM_NOT_CACHEABLE = 128; // for redirect, as first bit is not set, may mean don't know cacheable or not
+
     const CCBM_VARY_CHECKED = 256;
+
     const CCBM_VARY_CHANGED = 512;
+
     const CCBM_FRONT_CONTROLLER = 1024;
+
     const CCBM_MOD_ACTIVE = 2048; // module is enabled
+
     const CCBM_MOD_ALLOWIP = 4096; // allow cache for listed IP
+
     // ESI MARKER
     const ESI_MARKER_END = '_LSCESIEND_';
 
@@ -236,6 +253,7 @@ class LiteSpeedCache extends Module
             $this->cache->purgeByCatchAllMethod($method, $args);
         }
     }
+
     /* our own hook
      * Required field $params['from']
      * $params['public'] & $params['private'] one has to exist, array of tags
@@ -299,6 +317,7 @@ class LiteSpeedCache extends Module
                     LiteSpeedCacheLog::LEVEL_FOOTER_COMMENT
                 );
             }
+
             return $comment;
         }
     }
@@ -340,12 +359,14 @@ class LiteSpeedCache extends Module
         }
         if ($controllerClass == 'litespeedcacheesiModuleFrontController') {
             self::$ccflag |= self::CCBM_ESI_REQ;
+
             return 'esi request';
         }
 
         // here also check purge controller
         if (($reason = $this->cache->isCacheableRoute($controllerType, $controllerClass)) != '') {
             $this->setNotCacheable($reason);
+
             return $reason;
         }
 
@@ -356,14 +377,15 @@ class LiteSpeedCache extends Module
         }
 
         self::$ccflag |= (self::CCBM_CACHEABLE | self::CCBM_CAN_INJECT_ESI);
+
         return 'cacheable & allow esiInject';
     }
-
 
     public function addCacheControlByEsiModule($item)
     {
         if (!self::isActive()) {
             $this->cache->purgeByTags('*', false, 'request esi while module is not active');
+
             return;
         }
         $moduleConf = $item->getConf();
@@ -392,6 +414,7 @@ class LiteSpeedCache extends Module
             }
             self::$ccflag |= self::CCBM_VARY_CHECKED;
         }
+
         return ((self::$ccflag & self::CCBM_VARY_CHANGED) != 0);
     }
 
@@ -436,6 +459,7 @@ class LiteSpeedCache extends Module
         if (!isset($this->esiInjection['marker'][$id])) {
             $this->esiInjection['marker'][$id] = $item;
         }
+
         return '_LSCESI-' . $id . '-START_';
     }
 
@@ -458,6 +482,7 @@ class LiteSpeedCache extends Module
                         if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_UNEXPECTED) {
                             LiteSpeedCacheLog::log('Lost Injection ' . $id, LiteSpeedCacheLog::LEVEL_UNEXPECTED);
                         }
+
                         return '';
                     }
                     $item = $lsc->esiInjection['marker'][$id];
@@ -470,6 +495,7 @@ class LiteSpeedCache extends Module
                         }
                         $esiInclude = $item->getInclude();
                     }
+
                     return $esiInclude;
                 },
                 $buf,
@@ -525,6 +551,7 @@ class LiteSpeedCache extends Module
         if ($bufInline && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_OUTPUT) {
             LiteSpeedCacheLog::log('ESI inline output ' . $bufInline, LiteSpeedCacheLog::LEVEL_ESI_OUTPUT);
         }
+
         return $bufInline . $nb;
     }
 
@@ -588,8 +615,10 @@ class LiteSpeedCache extends Module
                 }
                 LiteSpeedCacheLog::log(__FUNCTION__ . ' ' . $msg, LiteSpeedCacheLog::LEVEL_CUST_SMARTY);
             }
+
             return '';
         }
+
         return $this->registerEsiMarker($esiParam, $conf);
     }
 
@@ -609,6 +638,7 @@ class LiteSpeedCache extends Module
                 ' Ignored hookLitespeedEsiEnd due to error  in hookLitespeedEsiBegin';
             LiteSpeedCacheLog::log(__FUNCTION__ . $err, LiteSpeedCacheLog::LEVEL_CUST_SMARTY);
         }
+
         return '';
     }
 
@@ -631,6 +661,7 @@ class LiteSpeedCache extends Module
         if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_INCLUDE) {
             LiteSpeedCacheLog::log(__FUNCTION__ . " $m : $hook_name", LiteSpeedCacheLog::LEVEL_ESI_INCLUDE);
         }
+
         return $lsc->registerEsiMarker($esiParam, $conf);
     }
 
@@ -653,6 +684,7 @@ class LiteSpeedCache extends Module
         if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_INCLUDE) {
             LiteSpeedCacheLog::log(__FUNCTION__ . " $m : $method", LiteSpeedCacheLog::LEVEL_ESI_INCLUDE);
         }
+
         return $lsc->registerEsiMarker($esiParam, $conf);
     }
 
@@ -688,6 +720,7 @@ class LiteSpeedCache extends Module
             Configuration::updateValue(LiteSpeedCacheConfig::ENTRY_SHOP, $shop);
             Configuration::updateValue(LiteSpeedCacheConfig::ENTRY_MODULE, $mod);
             LiteSpeedCacheHelper::htAccessBackup('b4lsc');
+
             return $this->installHooks();
         } else {
             return false;
@@ -714,6 +747,7 @@ class LiteSpeedCache extends Module
                 return false;
             }
         }
+
         return true;
     }
 
@@ -722,6 +756,7 @@ class LiteSpeedCache extends Module
         $definedtabs = $this->initTabs();
         if (version_compare(_PS_VERSION_, '1.7.1.0', '>=')) {
             $this->tabs = $definedtabs;
+
             return null;
         }
         foreach ($definedtabs as $t) {
@@ -730,6 +765,7 @@ class LiteSpeedCache extends Module
                 $tab->delete();
             }
         }
+
         return $definedtabs;
     }
 
@@ -785,6 +821,7 @@ class LiteSpeedCache extends Module
                 'ParentClassName' => 'AdminLiteSpeedCache',
             ),
         );
+
         return $definedtabs;
     }
 }

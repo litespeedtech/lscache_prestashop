@@ -27,9 +27,13 @@ use LiteSpeedCacheConfig as Conf;
 class AdminLiteSpeedCacheManageController extends ModuleAdminController
 {
     private $config;
+
     private $is_shop_level; // -1: not multishop, 0: multishop global, 1: multishop shop
+
     private $labels;
+
     private $current_values;
+
     private $license_disabled;
 
     public function __construct()
@@ -113,6 +117,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         } elseif (Tools::isSubmit('submitPurgeId')) {
             $this->processPurgeIds();
         }
+
         return parent::postProcess();
     }
 
@@ -211,9 +216,9 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
                 break;
             default:
                 $this->errors[] = $this->l('Illegal entrance');
+
                 return;
         }
-
 
         $pattern = "/[\s,]+/";
         $id = Tools::getValue('purgeids');
@@ -249,11 +254,13 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         if (LiteSpeedCache::isActive() || $tags == '*') {
             $params = array('from' => 'AdminLiteSpeedCacheManage', $key => $tags);
             Hook::exec('litespeedCachePurge', $params);
+
             return true;
         }
 
         $this->warnings[] = $this->l('No action taken.') . ' '
                 . $this->l('This Module is not enabled. Only action allowed is Flush All Prestashop Pages.');
+
         return false;
     }
 
@@ -262,11 +269,13 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         if ($this->license_disabled) {
             $this->warnings[] = $this->l('No action taken.') . ' '
                     . $this->l('No LiteSpeed Server with LSCache available.');
+
             return false;
         }
 
         $html = $this->renderPurgeSelection();
         $html .= $this->renderPurgeId();
+
         return $html;
     }
 
@@ -389,6 +398,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             $form['description'] = $desc;
         }
         $form['input'] = array();
+
         return $form;
     }
 }

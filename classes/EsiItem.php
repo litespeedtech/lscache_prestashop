@@ -27,19 +27,29 @@ use LiteSpeedCacheHelper as LSHelper;
 class LiteSpeedCacheEsiItem implements JsonSerializable
 {
     const ESI_RENDERWIDGET = 'rw';
+
     const ESI_CALLHOOK = 'ch';
+
     const ESI_JSDEF = 'js';
+
     const ESI_SMARTYFIELD = 'mf';
+
     const ESI_TOKEN = 'tk';
+
     const ESI_ENV = 'env';
+
     const RES_FAILED = '__LSC_RES_FAILED__';
 
     private $sdata;
+
     private $cdata; // current
 
     private $conf;
+
     private $esiInline = false;
+
     private $content;
+
     private $err;
 
     public function __construct($param, LiteSpeedCacheEsiModConf $conf)
@@ -84,6 +94,7 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
         $item = new self($sdata['param'], $conf);
         $item->sdata = $sdata;
         $item->cdata['inlStart'] = $sdata['inlStart'];
+
         return $item;
     }
 
@@ -146,6 +157,7 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
                 || $this->conf->onlyCacheEmtpy()) { // can vary, always regenerate
             if ($this->content === '' && $this->conf->ignoreEmptyContent()) {
                 $this->sdata['inc'] = '';
+
                 return;
             }
             LSHelper::genEsiElements($this);
@@ -208,6 +220,7 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
         if ($err) {
             return $err . ' : ' . $pd;
         }
+
         return new self($param, $conf);
     }
 }

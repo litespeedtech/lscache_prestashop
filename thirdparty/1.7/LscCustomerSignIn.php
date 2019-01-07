@@ -40,6 +40,7 @@ class LscCustomerSignIn extends LscIntegration
             . 'litespeed_wiki:cache:lscps:customization_1_7#cart_and_login_widgets_as_esi_blocks',
         );
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
+
         return $this->registerEsiModule();
     }
 }

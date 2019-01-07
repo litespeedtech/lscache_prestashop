@@ -28,15 +28,25 @@ use LiteSpeedCacheEsiModConf as EsiConf;
 class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
 {
     private $config;
+
     private $is_shop_level; // -1: not multishop, 0: multishop global, 1: multishop shop
+
     private $labels;
+
     private $current_values;
+
     private $default_ids;
+
     private $license_disabled;
+
     private $module_options;
+
     private $changed;
+
     private $config_values;
+
     private $original_values;
+
     private $current_id;
 
     public function __construct()
@@ -228,6 +238,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         parent::initContent();
         if ($this->is_shop_level == 1) {
             $this->informations[] = $this->l('This section is only available at the global level.');
+
             return;
         }
 
@@ -391,6 +402,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
 
         if ($this->changed == 0) {
             $this->confirmations[] = $this->l('No changes detected. Nothing to save.');
+
             return;
         }
         $this->saveModConfig($this->current_values);
@@ -597,6 +609,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         }
 
         $helper->tpl_vars = array('fields_value' => $this->current_values);
+
         return $helper->generateForm($forms);
     }
 

@@ -28,6 +28,7 @@ class LscToken extends LscIntegration
 {
     // this is built-in for all PS versions
     const NAME = 'lsc_token';
+
     protected function init()
     {
         $confData = array(
@@ -36,6 +37,7 @@ class LscToken extends LscIntegration
             EsiConf::FLD_ASVAR => 1,
         );
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
+
         return $this->registerEsiModule();
     }
 

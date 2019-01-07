@@ -29,14 +29,21 @@ use LiteSpeedCacheConfig as Conf;
 class LiteSpeedCacheCore
 {
     const LSHEADER_PURGE = 'X-Litespeed-Purge2';
+
     const LSHEADER_CACHE_CONTROL = 'X-Litespeed-Cache-Control';
+
     const LSHEADER_CACHE_TAG = 'X-Litespeed-Tag';
+
     const LSHEADER_CACHE_VARY = 'X-Litespeed-Vary';
 
     private $cacheTags = array();
+
     private $purgeTags;
+
     private $config;
+
     private $esiTtl;
+
     private $specificPrices = array();
 
     public function __construct(LiteSpeedCacheConfig $config)
@@ -81,6 +88,7 @@ class LiteSpeedCacheCore
                 $this->purgeByTags($ptags['priv'], true, $controllerClass);
             }
         }
+
         return $reason;
     }
 
@@ -93,19 +101,23 @@ class LiteSpeedCacheCore
             if ($url1 !== $url) { // contains *
                 if (strpos($requrl, $url1) !== false) {
                     $reason = 'disabled url (partial match) ' . $url;
+
                     return true;
                 }
             } elseif ($url == $requrl) {
                 $reason = 'disabled url (exact match) ' . $url;
+
                 return true;
             }
         }
         foreach ($nocache[Conf::CFG_NOCACHE_VAR] as $var) {
             if (isset($_REQUEST[$var])) {
                 $reason = 'contains param ' . $var;
+
                 return true;
             }
         }
+
         return false;
     }
 
@@ -122,6 +134,7 @@ class LiteSpeedCacheCore
                 }
             }
         }
+
         return false;
     }
 
@@ -134,6 +147,7 @@ class LiteSpeedCacheCore
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED) {
                 LSLog::log('initCacheTagsByController - no controller in param', LSLog::LEVEL_UNEXPECTED);
             }
+
             return;
         }
         $controller = $params['controller'];
@@ -193,6 +207,7 @@ class LiteSpeedCacheCore
         } elseif (!in_array($tag, $this->cacheTags)) {
             $this->cacheTags[] = $tag;
         }
+
         return (count($this->cacheTags) > $old);
     }
 
@@ -219,6 +234,7 @@ class LiteSpeedCacheCore
         if (in_array('*', $this->purgeTags[$type])) {
             $this->purgeTags[$type] = array('*'); // purge all
         }
+
         return $returnCode;
     }
 
@@ -270,6 +286,7 @@ class LiteSpeedCacheCore
                 $tags['pub'][] = Conf::TAG_PREFIX_CATEGORY . $catid;
             }
         }
+
         return $tags;
     }
 
@@ -296,6 +313,7 @@ class LiteSpeedCacheCore
                 $tags[] = Conf::TAG_PREFIX_CATEGORY . $catid;
             }
         }
+
         return $tags;
     }
 
@@ -349,6 +367,7 @@ class LiteSpeedCacheCore
             }
             $tags['pub'] = array_unique($pubtags);
         }
+
         return $tags;
     }
 
@@ -374,6 +393,7 @@ class LiteSpeedCacheCore
                 }
             }
         }
+
         return $tags;
     }
 
@@ -477,6 +497,7 @@ class LiteSpeedCacheCore
             default: // custom defined events
                 return $this->config->getPurgeTagsByEvent($event);
         }
+
         return $tags;
     }
 
@@ -515,6 +536,7 @@ class LiteSpeedCacheCore
         if ($purgeHeader) {
             $purgeHeader = self::LSHEADER_PURGE . ': ' . $purgeHeader;
         }
+
         return $purgeHeader;
     }
 
@@ -572,6 +594,7 @@ class LiteSpeedCacheCore
                 LSLog::log('Detected specific prices, but no TTL adjustment', LSLog::LEVEL_SPECIFIC_PRICE);
             }
         }
+
         return $ttl;
     }
 
