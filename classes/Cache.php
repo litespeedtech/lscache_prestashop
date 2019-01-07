@@ -29,14 +29,21 @@ use LiteSpeedCacheConfig as Conf;
 class LiteSpeedCacheCore
 {
     const LSHEADER_PURGE = 'X-Litespeed-Purge2';
+
     const LSHEADER_CACHE_CONTROL = 'X-Litespeed-Cache-Control';
+
     const LSHEADER_CACHE_TAG = 'X-Litespeed-Tag';
+
     const LSHEADER_CACHE_VARY = 'X-Litespeed-Vary';
 
     private $cacheTags = array();
+
     private $purgeTags;
+
     private $config;
+
     private $esiTtl;
+
     private $specificPrices = array();
 
     public function __construct(LiteSpeedCacheConfig $config)

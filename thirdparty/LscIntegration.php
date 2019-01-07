@@ -27,7 +27,9 @@ use LiteSpeedCacheLog as LSLog;
 abstract class LscIntegration
 {
     protected static $integrated = array();
+
     protected $moduleName;
+
     protected $esiConf;
 
     // do not allow public constructor

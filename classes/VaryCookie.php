@@ -27,17 +27,25 @@ use LiteSpeedCacheLog as LSLog;
 class LiteSpeedCacheVaryCookie extends CookieCore
 {
     const BM_HAS_VARYCOOKIE = 1;
+
     const BM_VARYCOOKIE_CHANGED = 2;
+
     const BM_HAS_VARYVALUE = 4;
+
     const BM_VARYVALUE_CHANGED = 8;
+
     const BM_IS_GUEST = 16;
+
     const BM_IS_MOBILEVIEW = 32;
+
     const BM_UPDATE_FAILED = 128;
 
     const DEFAULT_VARY_COOKIE_NAME = '_lscache_vary'; // system default
+
     const PRIVATE_SESSION_COOKIE = 'lsc_private';
 
     private $vd;
+
     private $status = 0;
 
     public function __construct($name = '', $path = '')

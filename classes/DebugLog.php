@@ -26,28 +26,49 @@ class LiteSpeedCacheLog
 {
     // LEVEL is by meaning only, number can be duplicated
     const LEVEL_FORCE = 0;
+
     const LEVEL_FOOTER_COMMENT = 3.5;
+
     const LEVEL_EXCEPTION = 1;
+
     const LEVEL_UNEXPECTED = 2;
+
     const LEVEL_NOTICE = 3;
+
     const LEVEL_CUST_SMARTY = 3;
+
     const LEVEL_UPDCONFIG = 3;
+
     const LEVEL_SETHEADER = 4;
+
     const LEVEL_ENVCOOKIE_CHANGE = 5;
+
     const LEVEL_PURGE_EVENT = 5;
+
     const LEVEL_NOCACHE_REASON = 6;
+
     const LEVEL_ESI_INCLUDE = 7;
+
     const LEVEL_CACHE_ROUTE = 8;
+
     const LEVEL_ENVCOOKIE_DETAIL = 9;
+
     const LEVEL_SPECIFIC_PRICE = 9.5;
+
     const LEVEL_ESI_OUTPUT = 9.5;
+
     const LEVEL_SAVED_DATA = 10;
+
     const LEVEL_HOOK_DETAIL = 10;
+
     const LEVEL_TEMPORARY = 8.5;
 
     protected $logger;
+
     protected $prefix;
+
     private $isDebug = 0;
+
     protected static $instance = null;
 
     public static function getInstance()
