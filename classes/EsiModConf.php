@@ -110,7 +110,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             'type' => $this->type,
             'events' => $this->getFieldValue(self::FLD_PURGE_EVENTS, false, true),
             'ctrl' => $this->getFieldValue(self::FLD_PURGE_CONTROLLERS, false, true),
-            'methods'=> $this->getFieldValue(self::FLD_HOOK_METHODS, false, true),
+            'methods' => $this->getFieldValue(self::FLD_HOOK_METHODS, false, true),
             'render' => $this->getFieldValue(self::FLD_RENDER_WIDGETS, false, true),
             'asvar' => $this->getFieldValue(self::FLD_ASVAR, true),
             'ie' => $this->getFieldValue(self::FLD_IGNORE_EMPTY, true),

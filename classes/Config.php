@@ -318,7 +318,7 @@ class LiteSpeedCacheConfig
         }
 
         $this->custMod = Configuration::get(self::ENTRY_MODULE);
-        $this->esiModConf = array('mods' => array(), 'purge_events' =>array());
+        $this->esiModConf = array('mods' => array(), 'purge_events' => array());
         $custdata = json_decode($this->custMod, true);
         if ($custdata) {
             foreach ($custdata as $name => $sdata) {

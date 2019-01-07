@@ -103,7 +103,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         } else {
             $id = uniqid();
         }
-        $val =  $_SERVER['REMOTE_ADDR'] . $_SERVER['REMOTE_PORT'] . microtime() . $id;
+        $val = $_SERVER['REMOTE_ADDR'] . $_SERVER['REMOTE_PORT'] . microtime() . $id;
         return md5($val);
     }
 
