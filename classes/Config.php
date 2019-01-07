@@ -61,7 +61,7 @@ class LiteSpeedCacheConfig
     const CFG_HOME_TTL = 'homettl';
     const CFG_DIFFMOBILE = 'diff_mobile';
     const CFG_DIFFCUSTGRP = 'diff_customergroup';
-    const CFG_FLUSH_PRODCAT = 'flush_prodcat' ;
+    const CFG_FLUSH_PRODCAT = 'flush_prodcat';
     const CFG_GUESTMODE = 'guestmode';
     const CFG_NOCACHE_VAR = 'nocache_vars';
     const CFG_NOCACHE_URL = 'nocache_urls';

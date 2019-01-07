@@ -86,7 +86,7 @@ class LiteSpeedCacheHelper
         if (!isset(self::$internal['esi_base_url'])) {
             self::initInternals();
         }
-        $dir = self::$internal['cache_dir'] ;
+        $dir = self::$internal['cache_dir'];
         if (!is_dir($dir)) {
             mkdir($dir);
         }
@@ -101,7 +101,7 @@ class LiteSpeedCacheHelper
         foreach (scandir($dir) as $entry) {
             if (preg_match('/\.data$/', $entry)) {
                 @unlink($dir . '/' . $entry);
-                ++$count ;
+                ++$count;
             }
         }
         if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
