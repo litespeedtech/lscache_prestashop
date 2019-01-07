@@ -101,7 +101,7 @@ class LiteSpeedCacheHelper
         foreach (scandir($dir) as $entry) {
             if (preg_match('/\.data$/', $entry)) {
                 @unlink($dir . '/' . $entry);
-                $count ++;
+                $count++;
             }
         }
         if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
