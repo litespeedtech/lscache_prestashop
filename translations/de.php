@@ -3,14 +3,14 @@
 global $_MODULE;
 $_MODULE = array();
 $_MODULE['<{litespeedcache}prestashop>litespeedcache_7a39408c6f201f8ffc1cf7ea77bdc7f1'] = 'LiteSpeed-Cache-Modul';
-$_MODULE['<{litespeedcache}prestashop>litespeedcache_e63887a3c31594f66d3768145e15e481'] = 'LiteSpeed ​​ganzseitige Cache-Integration auf einem LiteSpeed-Server';
+$_MODULE['<{litespeedcache}prestashop>litespeedcache_e63887a3c31594f66d3768145e15e481'] = 'LiteSpeed ganzseitige Cache-Integration auf einem LiteSpeed-Server';
 $_MODULE['<{litespeedcache}prestashop>litespeedcache_ce6ef6c43f48dbb7b931991422e09269'] = 'LiteSpeed-Cache';
 $_MODULE['<{litespeedcache}prestashop>litespeedcache_34e34c43ec6b943c10a3cc1a1a16fb11'] = 'Verwalten';
 $_MODULE['<{litespeedcache}prestashop>litespeedcache_254f642527b45bc260048e30704edb39'] = 'Konfigurieren';
 $_MODULE['<{litespeedcache}prestashop>litespeedcache_da22c93ccb398c72070f4000cc7b59a1'] = 'Anpassen';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcacheconfigcontroller_d2566d2ad619c4d2aa056dca0ff04732'] = 'LiteSpeed-Cache-Konfiguration';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcacheconfigcontroller_30f154f3b868c4750a538e6a13a8dbdc'] = 'Sie benötigen einen Litespeed-Server mit dem LSCache-Modul.';
-$_MODULE['<{litespeedcache}prestashop>adminlitespeedcacheconfigcontroller_d1ad4708be1da8a194617bd3862d94c5'] = 'Bitte kontaktieren Sie Ihren Administrator für eine gültige LiteSpeed ​​Lizenz.';
+$_MODULE['<{litespeedcache}prestashop>adminlitespeedcacheconfigcontroller_d1ad4708be1da8a194617bd3862d94c5'] = 'Bitte kontaktieren Sie Ihren Administrator für eine gültige LiteSpeed Lizenz.';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcacheconfigcontroller_1abd4f68d4c6428120fcd32f6ada8125'] = 'Aktivieren Sie den LiteSpeed-Cache';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcacheconfigcontroller_6aea896a479db06740216f5aa14cd95f'] = 'Standard-TTL für den öffentlichen Cache';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcacheconfigcontroller_f2861eb7bfe9598730a3b303d45f611b'] = 'Standard-TTL des privaten Cache';
@@ -174,7 +174,7 @@ $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachecustomizecontroller_fc3
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachecustomizecontroller_664863f66c92551c6e2172f4bb50cf0b'] = 'Jeder ESI-Block kann seine eigenen TTL- und Lösch-Ereignisse haben.';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachecustomizecontroller_076dfe07e1223fafb6cda8a3cb394716'] = 'Für komplexere Fälle ist eine Integrationsklasse von Drittanbietern erforderlich.';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachecustomizecontroller_90542922bc26c9b851ad408ae9f4202c'] = 'Dies erfordert ein gründliches Verständnis der internen Komponenten von Prestashop.';
-$_MODULE['<{litespeedcache}prestashop>adminlitespeedcachecustomizecontroller_5cad34838724e73a8ada215445a8ecd9'] = 'Wenn Sie Hilfe benötigen, können Sie einen LiteSpeed ​​Tech-Helpdesk bestellen.';
+$_MODULE['<{litespeedcache}prestashop>adminlitespeedcachecustomizecontroller_5cad34838724e73a8ada215445a8ecd9'] = 'Wenn Sie Hilfe benötigen, können Sie einen LiteSpeed Tech-Helpdesk bestellen.';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachecustomizecontroller_c9cc8cce247e49bae79f15173ce97354'] = 'Speichern';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachemanagecontroller_dc55b0fd018bed842471eb04b8e5f456'] = 'LiteSpeed-Cache-Verwaltung';
 $_MODULE['<{litespeedcache}prestashop>adminlitespeedcachemanagecontroller_30f154f3b868c4750a538e6a13a8dbdc'] = 'Der LiteSpeed-Server mit dem LSCache-Modul ist erforderlich.';
