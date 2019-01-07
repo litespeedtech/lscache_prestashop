@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteSpeed Cache for Prestashop
+ * LiteSpeed Cache for Prestashop.
  *
  * NOTICE OF LICENSE
  *
@@ -173,7 +173,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
     }
 
     /**
-     * Retrieve GET and POST value and translate them to actions
+     * Retrieve GET and POST value and translate them to actions.
      */
     public function initProcess()
     {
