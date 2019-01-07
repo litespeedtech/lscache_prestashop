@@ -36,6 +36,7 @@ class LscEnv extends LscIntegration
             EsiConf::FLD_ASVAR => 1,
         );
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
+
         return $this->registerEsiModule();
     }
 

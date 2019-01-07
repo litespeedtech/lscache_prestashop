@@ -54,6 +54,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
             if (is_string($item) && _LITESPEED_DEBUG_ >= LSLog::LEVEL_EXCEPTION) {
                 LSLog::log('Invalid ESI url ' . $item, LSLog::LEVEL_EXCEPTION);
+
                 return;
             }
             $this->populateItemContent($item);
@@ -63,6 +64,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
                 if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_EXCEPTION) {
                     LSLog::log('Invalid ESI url - module not found ', LSLog::LEVEL_EXCEPTION);
                 }
+
                 return;
             }
             $related = $item->getId();
@@ -123,6 +125,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             $params['cookie'] = $this->context->cookie;
             $params['cart'] = $this->context->cart;
         }
+
         return $module;
     }
 

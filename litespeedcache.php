@@ -316,6 +316,7 @@ class LiteSpeedCache extends Module
                     LiteSpeedCacheLog::LEVEL_FOOTER_COMMENT
                 );
             }
+
             return $comment;
         }
     }
@@ -357,12 +358,14 @@ class LiteSpeedCache extends Module
         }
         if ($controllerClass == 'litespeedcacheesiModuleFrontController') {
             self::$ccflag |= self::CCBM_ESI_REQ;
+
             return 'esi request';
         }
 
         // here also check purge controller
         if (($reason = $this->cache->isCacheableRoute($controllerType, $controllerClass)) != '') {
             $this->setNotCacheable($reason);
+
             return $reason;
         }
 
@@ -373,6 +376,7 @@ class LiteSpeedCache extends Module
         }
 
         self::$ccflag |= (self::CCBM_CACHEABLE | self::CCBM_CAN_INJECT_ESI);
+
         return 'cacheable & allow esiInject';
     }
 
@@ -380,6 +384,7 @@ class LiteSpeedCache extends Module
     {
         if (!self::isActive()) {
             $this->cache->purgeByTags('*', false, 'request esi while module is not active');
+
             return;
         }
         $moduleConf = $item->getConf();
@@ -408,6 +413,7 @@ class LiteSpeedCache extends Module
             }
             self::$ccflag |= self::CCBM_VARY_CHECKED;
         }
+
         return ((self::$ccflag & self::CCBM_VARY_CHANGED) != 0);
     }
 
@@ -452,6 +458,7 @@ class LiteSpeedCache extends Module
         if (!isset($this->esiInjection['marker'][$id])) {
             $this->esiInjection['marker'][$id] = $item;
         }
+
         return '_LSCESI-' . $id . '-START_';
     }
 
@@ -474,6 +481,7 @@ class LiteSpeedCache extends Module
                         if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_UNEXPECTED) {
                             LiteSpeedCacheLog::log('Lost Injection ' . $id, LiteSpeedCacheLog::LEVEL_UNEXPECTED);
                         }
+
                         return '';
                     }
                     $item = $lsc->esiInjection['marker'][$id];
@@ -486,6 +494,7 @@ class LiteSpeedCache extends Module
                         }
                         $esiInclude = $item->getInclude();
                     }
+
                     return $esiInclude;
                 },
                 $buf,
@@ -541,6 +550,7 @@ class LiteSpeedCache extends Module
         if ($bufInline && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_OUTPUT) {
             LiteSpeedCacheLog::log('ESI inline output ' . $bufInline, LiteSpeedCacheLog::LEVEL_ESI_OUTPUT);
         }
+
         return $bufInline . $nb;
     }
 
@@ -604,8 +614,10 @@ class LiteSpeedCache extends Module
                 }
                 LiteSpeedCacheLog::log(__FUNCTION__ . ' ' . $msg, LiteSpeedCacheLog::LEVEL_CUST_SMARTY);
             }
+
             return '';
         }
+
         return $this->registerEsiMarker($esiParam, $conf);
     }
 
@@ -625,6 +637,7 @@ class LiteSpeedCache extends Module
                 ' Ignored hookLitespeedEsiEnd due to error  in hookLitespeedEsiBegin';
             LiteSpeedCacheLog::log(__FUNCTION__ . $err, LiteSpeedCacheLog::LEVEL_CUST_SMARTY);
         }
+
         return '';
     }
 
@@ -647,6 +660,7 @@ class LiteSpeedCache extends Module
         if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_INCLUDE) {
             LiteSpeedCacheLog::log(__FUNCTION__ . " $m : $hook_name", LiteSpeedCacheLog::LEVEL_ESI_INCLUDE);
         }
+
         return $lsc->registerEsiMarker($esiParam, $conf);
     }
 
@@ -669,6 +683,7 @@ class LiteSpeedCache extends Module
         if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_INCLUDE) {
             LiteSpeedCacheLog::log(__FUNCTION__ . " $m : $method", LiteSpeedCacheLog::LEVEL_ESI_INCLUDE);
         }
+
         return $lsc->registerEsiMarker($esiParam, $conf);
     }
 
@@ -704,6 +719,7 @@ class LiteSpeedCache extends Module
             Configuration::updateValue(LiteSpeedCacheConfig::ENTRY_SHOP, $shop);
             Configuration::updateValue(LiteSpeedCacheConfig::ENTRY_MODULE, $mod);
             LiteSpeedCacheHelper::htAccessBackup('b4lsc');
+
             return $this->installHooks();
         } else {
             return false;
@@ -730,6 +746,7 @@ class LiteSpeedCache extends Module
                 return false;
             }
         }
+
         return true;
     }
 
@@ -738,6 +755,7 @@ class LiteSpeedCache extends Module
         $definedtabs = $this->initTabs();
         if (version_compare(_PS_VERSION_, '1.7.1.0', '>=')) {
             $this->tabs = $definedtabs;
+
             return null;
         }
         foreach ($definedtabs as $t) {
@@ -746,6 +764,7 @@ class LiteSpeedCache extends Module
                 $tab->delete();
             }
         }
+
         return $definedtabs;
     }
 
@@ -801,6 +820,7 @@ class LiteSpeedCache extends Module
                 'ParentClassName' => 'AdminLiteSpeedCache',
             ),
         );
+
         return $definedtabs;
     }
 }

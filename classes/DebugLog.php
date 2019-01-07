@@ -75,6 +75,7 @@ class LiteSpeedCacheLog
         if (!self::$instance) {
             self::$instance = new LiteSpeedCacheLog();
         }
+
         return self::$instance;
     }
 
@@ -91,6 +92,7 @@ class LiteSpeedCacheLog
             $path = version_compare(_PS_VERSION_, '1.7.0.0', '>=') ? '/app/logs' : '/log';
             $this->logger->setFilename(_PS_ROOT_DIR_ . $path . '/lscache.log');
         }
+
         return $this->logger;
     }
 

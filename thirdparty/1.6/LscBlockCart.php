@@ -40,6 +40,7 @@ class LscBlockCart extends LscIntegration
             . 'litespeed_wiki:cache:lscps:customization_1_6#customize_blockcart_template',
         );
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
+
         return $this->registerEsiModule();
     }
 }

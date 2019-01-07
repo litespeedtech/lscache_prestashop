@@ -165,6 +165,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
         if ($this->changed == 0) {
             $this->confirmations[] = $this->l('No changes detected. Nothing to save.');
+
             return;
         }
 
@@ -569,6 +570,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         $helper->currentIndex = self::$currentIndex;
 
         $helper->tpl_vars = array('fields_value' => $this->current_values);
+
         return $helper->generateForm($forms);
     }
 
@@ -584,6 +586,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         if ($suffix) {
             $input['suffix'] = $suffix;
         }
+
         return $input;
     }
 
@@ -599,6 +602,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         if ($disabled) {
             $input['disabled'] = 1;
         }
+
         return $input;
     }
 
@@ -615,6 +619,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         if ($disabled) {
             $input['disabled'] = 1;
         }
+
         return $input;
     }
 
@@ -627,6 +632,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         if ($disabled) {
             $input['readonly'] = 1;
         }
+
         return $input;
     }
 
@@ -638,6 +644,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         }
         $form['input'] = array();
         $form['submit'] = array('title' => $this->l('Save'));
+
         return $form;
     }
 }

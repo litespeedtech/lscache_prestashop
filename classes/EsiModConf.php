@@ -135,6 +135,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         if ($tmp_instance = Module::getInstanceByName($this->moduleName)) {
             $cdata['name'] = $tmp_instance->displayName;
         }
+
         return $cdata;
     }
 
@@ -142,6 +143,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     {
         $sdata = $this->data;
         $sdata['id'] = $this->moduleName;
+
         return $sdata;
     }
 
@@ -160,6 +162,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             $dv = preg_split("/[\s,]+/", $value, null, PREG_SPLIT_NO_EMPTY);
             $value = implode(', ', $dv);
         }
+
         return $value;
     }
 
@@ -210,6 +213,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
                 $controllers[$ct[0]] = $ct[1];
             }
         }
+
         return $controllers;
     }
 
@@ -218,6 +222,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         if (isset($this->data[self::FLD_PURGE_EVENTS])) {
             return preg_split("/[\s,]+/", $this->data[self::FLD_PURGE_EVENTS], null, PREG_SPLIT_NO_EMPTY);
         }
+
         return null;
     }
 
@@ -227,6 +232,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED) {
                 LSLog::log(__FUNCTION__ . ' missing pt', LSLog::LEVEL_UNEXPECTED);
             }
+
             return false;
         }
         switch ($params['pt']) {

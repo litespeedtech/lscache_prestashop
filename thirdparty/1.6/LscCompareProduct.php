@@ -43,6 +43,7 @@ class LscCompareProduct extends LscIntegration
         $this->registerEsiModule();
 
         $this->addJsDef('comparedProductsIds', $this);
+
         return true;
     }
 
@@ -58,6 +59,7 @@ class LscCompareProduct extends LscIntegration
                 $value = '[' . implode(',', $compared_products) . ']';
             }
         }
+
         return $value;
     }
 
@@ -68,6 +70,7 @@ class LscCompareProduct extends LscIntegration
             $compared_products = CompareProduct::getCompareProducts(Context::getContext()->cookie->id_compare);
             $countVal = count($compared_products);
         }
+
         return "$countVal";
     }
 
@@ -76,6 +79,7 @@ class LscCompareProduct extends LscIntegration
         $res = ($name == self::NAME)
             && Configuration::get('PS_COMPARATOR_MAX_ITEM')
             && method_exists('CompareProduct', 'getCompareProducts');
+
         return $res;
     }
 }

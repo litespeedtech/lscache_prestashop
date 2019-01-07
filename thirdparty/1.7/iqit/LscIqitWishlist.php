@@ -39,6 +39,7 @@ class LscIqitWishlist extends LscIntegration
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);
         $this->registerEsiModule();
         $this->addJsDef('iqitwishlist:nbProducts', $this);
+
         return true;
     }
 
@@ -49,9 +50,11 @@ class LscIqitWishlist extends LscIntegration
         if ($jskey != 'iqitwishlist:nbProducts' || !method_exists($classname, $funcname)) {
             //something wrong, should not happen
             LSLog::log(__FUNCTION__ . ' unexpected ' . $jskey, LSLog::LEVEL_EXCEPTION);
+
             return '';
         }
         $data = (int) $classname::$funcname((int) Context::getContext()->customer->id);
+
         return json_encode($data);
     }
 }

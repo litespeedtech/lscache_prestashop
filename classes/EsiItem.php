@@ -93,6 +93,7 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
         $item = new self($sdata['param'], $conf);
         $item->sdata = $sdata;
         $item->cdata['inlStart'] = $sdata['inlStart'];
+
         return $item;
     }
 
@@ -155,6 +156,7 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
                 || $this->conf->onlyCacheEmtpy()) { // can vary, always regenerate
             if ($this->content === '' && $this->conf->ignoreEmptyContent()) {
                 $this->sdata['inc'] = '';
+
                 return;
             }
             LSHelper::genEsiElements($this);
@@ -217,6 +219,7 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
         if ($err) {
             return $err . ' : ' . $pd;
         }
+
         return new self($param, $conf);
     }
 }

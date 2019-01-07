@@ -46,6 +46,7 @@ class Hook extends HookCore
                 && ($marker = LiteSpeedCache::injectCallHook($module, $method)) !== false) {
             $html = $marker . $html . LiteSpeedCache::ESI_MARKER_END;
         }
+
         return $html;
     }
 
@@ -65,6 +66,7 @@ class Hook extends HookCore
                 && ($marker = LiteSpeedCache::injectRenderWidget($module, $hook_name)) !== false) {
             $html = $marker . $html . LiteSpeedCache::ESI_MARKER_END;
         }
+
         return $html;
     }
 }
