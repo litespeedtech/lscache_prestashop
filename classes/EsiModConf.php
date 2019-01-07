@@ -263,7 +263,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             $isInclude = 0; // included is 1, excluded is 2
             foreach ($list as $d) {
                 $d = Tools::strtolower($d);
-                if ($d{0} == '!') {
+                if ($d[0] == '!') {
                     $isInclude |= 2;
                     if (!isset($res[2])) {
                         $res[2] = [];

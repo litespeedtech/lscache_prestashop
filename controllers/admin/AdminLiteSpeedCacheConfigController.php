@@ -341,7 +341,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                     $postVal = '';
                 } else {
                     foreach ($clean as $url) {
-                        if ($url{0} != '/') {
+                        if ($url[0] != '/') {
                             $this->errors[] = $invalid . $s . $this->l('Relative URL must start with "/".');
                         }
                     }
