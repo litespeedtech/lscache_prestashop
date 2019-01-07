@@ -101,13 +101,13 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 $this->page_header_toolbar_btn['new_esi'] = array(
                     'href' => self::$currentIndex . '&addesimod&token=' . $this->token,
                     'desc' => $this->l('Add New ESI Block'),
-                    'icon' => 'process-icon-new'
+                    'icon' => 'process-icon-new',
                 );
             } else {
                 $this->page_header_toolbar_btn['goback'] = array(
                     'href' => self::$currentIndex . '&token=' . $this->token,
                     'desc' => $this->l('Back to List'),
-                    'icon' => 'process-icon-back'
+                    'icon' => 'process-icon-back',
                 );
             }
         }
@@ -422,7 +422,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             $name = $this->current_id;
             $moduleOptions[] = array(
                 'id' => $name,
-                'name' => "[$name] " . $this->config_values[$name]['name']
+                'name' => "[$name] " . $this->config_values[$name]['name'],
             );
         } elseif ($this->display == 'add') {
             $list = array();
@@ -566,7 +566,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         $form = array(
             'legend' => array(
                 'title' => $this->l('Convert Widget to ESI Block'),
-                'icon' => 'icon-cogs'
+                'icon' => 'icon-cogs',
             ),
             'description' => $this->l('You can hole punch a widget as an ESI block.') . $s
                 . $this->l('Each ESI block can have its own TTL and purge events.') . $s
@@ -606,7 +606,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             'id' => array('title' => $this->labels['id'], 'width' => 'auto'),
             'name' => array('title' => $this->labels['name'], 'width' => 'auto'),
             'pubpriv' => array('title' => $this->labels['pubpriv'], 'width' => '25', 'align' => 'center',
-                'badge_success' => true, 'badge_danger' => true),
+                'badge_success' => true, 'badge_danger' => true, ),
             'ttl' => array('title' => $this->labels['ttl'], 'align' => 'center', 'class' => 'fixed-width-sm'),
             'tag' => array('title' => $this->labels['tag'], 'align' => 'center', 'class' => 'fixed-width-sm'),
             'typeD' => array('title' => $this->labels['type'], 'align' => 'center', 'badge_warning' => true),

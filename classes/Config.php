@@ -365,7 +365,7 @@ class LiteSpeedCacheConfig
     public function getNoCacheConf()
     {
         $nocache = array(self::CFG_NOCACHE_URL => $this->getArray(self::CFG_NOCACHE_URL),
-            self::CFG_NOCACHE_VAR => $this->getArray(self::CFG_NOCACHE_VAR));
+            self::CFG_NOCACHE_VAR => $this->getArray(self::CFG_NOCACHE_VAR), );
         return $nocache;
     }
 
@@ -484,7 +484,7 @@ class LiteSpeedCacheConfig
         $tags = array(
             self::TAG_SEARCH,
             self::TAG_HOME,
-            self::TAG_SITEMAP
+            self::TAG_SITEMAP,
         );
         return $tags;
     }
@@ -495,7 +495,7 @@ class LiteSpeedCacheConfig
         $tags = array(
             self::TAG_SEARCH,
             self::TAG_HOME,
-            self::TAG_SITEMAP
+            self::TAG_SITEMAP,
         );
         return $tags;
     }

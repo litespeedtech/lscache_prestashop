@@ -447,7 +447,7 @@ class LiteSpeedCacheCore
             case 'actionobjectcmsaddafter':
                 $tags['pub'] = array(Conf::TAG_PREFIX_CMS . $args['object']->id,
                     Conf::TAG_PREFIX_CMS, // cmscategory
-                    Conf::TAG_SITEMAP);
+                    Conf::TAG_SITEMAP, );
                 break;
 
             case 'actionobjectsupplierupdateafter':
@@ -455,7 +455,7 @@ class LiteSpeedCacheCore
             case 'actionobjectsupplieraddafter':
                 $tags['pub'] = array(Conf::TAG_PREFIX_SUPPLIER . $args['object']->id,
                     Conf::TAG_PREFIX_SUPPLIER, // all supplier
-                    Conf::TAG_SITEMAP);
+                    Conf::TAG_SITEMAP, );
                 break;
 
             case 'actionobjectmanufacturerupdateafter':
@@ -463,7 +463,7 @@ class LiteSpeedCacheCore
             case 'actionobjectmanufactureraddAfter':
                 $tags['pub'] = array(Conf::TAG_PREFIX_MANUFACTURER . $args['object']->id,
                     Conf::TAG_PREFIX_MANUFACTURER,
-                    Conf::TAG_SITEMAP); // allbrands
+                    Conf::TAG_SITEMAP, ); // allbrands
                 break;
 
             case 'actionobjectstoreupdateafter':
@@ -531,7 +531,7 @@ class LiteSpeedCacheCore
         }
         if (is_array($specific_prices) && isset($specific_prices['to'])) {
             $this->specificPrices[] = array('from' => $specific_prices['from'],
-                'to' => $specific_prices['to']);
+                'to' => $specific_prices['to'], );
         }
     }
 

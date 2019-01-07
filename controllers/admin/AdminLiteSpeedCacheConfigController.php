@@ -101,7 +101,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         $this->page_header_toolbar_btn['purge_shops'] = array(
             'href' => self::$currentIndex . '&purge_shops&token=' . $this->token,
             'desc' => $this->l('Flush All PrestaShop Pages'),
-            'icon' => 'process-icon-delete'
+            'icon' => 'process-icon-delete',
         );
         parent::initPageHeaderToolbar();
     }
@@ -141,7 +141,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 Conf::CFG_DEBUG,
                 Conf::CFG_DEBUG_LEVEL,
                 Conf::CFG_ALLOW_IPS,
-                Conf::CFG_DEBUG_IPS
+                Conf::CFG_DEBUG_IPS,
             );
             $inputs = array_merge($inputs, $all);
         }
@@ -453,7 +453,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             array('id' => 0, 'name' => $this->l('No') . $s . $this->l('Everyone shares the same view')),
             array('id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Each group has its own view')),
             array('id' => 2, 'name' => $this->l('Two views') . $s .
-                $this->l('One for all logged-in users and another for logged-out users')),
+                $this->l('One for all logged-in users and another for logged-out users'), ),
         );
         $fg['input'][] = $this->addInputSelect(
             Conf::CFG_DIFFCUSTGRP,
@@ -480,7 +480,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             array('id' => 0, 'name' => $this->l('No') . $s . $this->l('No default guest view')),
             array('id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Has default guest view')),
             array('id' => 2, 'name' => $this->l('First Page Only') . $s .
-                $this->l('Only first page will show the default guest view')),
+                $this->l('Only first page will show the default guest view'), ),
         );
         $fg['input'][] = $this->addInputSelect(
             Conf::CFG_GUESTMODE,

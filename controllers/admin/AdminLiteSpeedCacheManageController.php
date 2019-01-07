@@ -96,7 +96,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
                 'href' => self::$currentIndex . '&purge_all&token=' . $this->token,
                 'desc' => $this->l('Flush Entire Cache Storage'),
                 'icon' => 'process-icon-delete',
-                'class' => 'btn-warning'
+                'class' => 'btn-warning',
             );
         }
         parent::initPageHeaderToolbar();
@@ -289,7 +289,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
                     array('id' => 'cms', 'name' => $this->labels['cms']),
                     array('id' => 'priv', 'name' => $this->labels['priv']),
                 ),
-                'id' => 'id', 'name' => 'name')
+                'id' => 'id', 'name' => 'name', ),
         );
         $selCat = array(
             'type' => 'categories',
@@ -299,7 +299,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
                 'root_category' => 1,
                 'id' => 'id_category',
                 'name' => 'name_category',
-            )
+            ),
         );
         if ($this->is_shop_level !== -1) {
             $cbPurge['hint'] = $this->labels['affectall'];
@@ -354,7 +354,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             'label' => $this->l('Select ID Type'),
             'name' => 'purgeby',
             'required' => false,
-            'options' => array('query' => $query, 'id' => 'purgeby', 'name' => 'name')
+            'options' => array('query' => $query, 'id' => 'purgeby', 'name' => 'name'),
         );
 
         $form['input'][] = $textareaIds;
