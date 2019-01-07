@@ -444,7 +444,7 @@ class LiteSpeedCache extends Module
             // U :ungreedy s: dotall m: multiline
             $nb = preg_replace_callback(
                 array('/_LSC(ESI)-(.+)-START_(.*)_LSCESIEND_/Usm',
-                '/(\'|\")_LSCESIJS-(.+)-START__LSCESIEND_(\'|\")/Usm'),
+                    '/(\'|\")_LSCESIJS-(.+)-START__LSCESIEND_(\'|\")/Usm'),
                 function ($m) {
                     // inject ESI even it's not cacheable
                     $id = $m[2];
