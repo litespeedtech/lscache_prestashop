@@ -109,7 +109,7 @@ abstract class LscIntegration
             }
         }
         if ($log && _LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
-            LSLog::log("filter JSDef = " . $log, LSLog::LEVEL_ESI_INCLUDE);
+            LSLog::log('filter JSDef = ' . $log, LSLog::LEVEL_ESI_INCLUDE);
         }
         return $replaced;
     }
@@ -169,7 +169,7 @@ abstract class LscIntegration
             self::locateJSKey($key, $js, $loc, $injected, $log);
         }
         if ($log && _LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
-            LSLog::log("filter JSDef = " . $log, LSLog::LEVEL_ESI_INCLUDE);
+            LSLog::log('filter JSDef = ' . $log, LSLog::LEVEL_ESI_INCLUDE);
         }
         return $injected;
     }
