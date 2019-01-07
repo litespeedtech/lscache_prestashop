@@ -84,7 +84,8 @@ class LiteSpeedCache extends Module
         // instantiate cache even when module not enabled, because may still need purge cache.
         $this->cache = new LiteSpeedCacheCore($this->config);
         $this->esiInjection = array('tracker' => array(),
-            'marker' => array(), );
+            'marker' => array(),
+        );
 
         self::$ccflag |= $this->config->moduleEnabled();
         if (!defined('_LITESPEED_CACHE_')) {

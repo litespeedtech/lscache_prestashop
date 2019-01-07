@@ -124,7 +124,8 @@ abstract class LscIntegration
             $proc = $def[$key]['proc'];
             $esiParam = array('pt' => LiteSpeedCacheEsiItem::ESI_JSDEF,
                 'm' => $proc::NAME,
-                'jsk' => $key, );
+                'jsk' => $key,
+            );
             $log .= $proc::NAME . ':' . $key . ' ';
 
             $item = new LiteSpeedCacheEsiItem($esiParam, $proc->esiConf);
