@@ -275,7 +275,7 @@ class LiteSpeedCacheHelper
         if ($enableCache) {
             $newcontent = self::genHtAccessContent($guestMode, $mobileView);
         }
-        $newcontent .= implode($newlines);
+        $newcontent .= implode('', $newlines);
 
         $res = file_put_contents($path, $newcontent);
         if ($res) {
