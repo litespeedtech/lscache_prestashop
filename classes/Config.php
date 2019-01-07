@@ -537,10 +537,10 @@ class LiteSpeedCacheConfig
             'actionCustomerLogoutAfter',
             'actionAuthentication',
             'actionCustomerAccountAdd',
-            /** specific price check **/
+            /** specific price check */
             'actionProductSearchAfter',
             /** public purge * */
-            /***** product *****/
+            /* product */
             'actionProductAdd',
             'actionProductSave',
             'actionProductUpdate', //array('id_product' => (int)$this->id, 'product' => $this)
@@ -549,24 +549,24 @@ class LiteSpeedCacheConfig
             'actionObjectSpecificPriceCoreDeleteAfter',
             'actionWatermark',
             'displayOrderConfirmation', // from OrderConfirmationController, array('order' => $order)
-            /***** category *****/
+            /* category */
             'categoryUpdate', // array('category' => $category)
             'actionCategoryUpdate',
             'actionCategoryAdd', // here do not purge all, as user can manually do that
             'actionCategoryDelete',
-            /***** cms *****/
+            /* cms */
             'actionObjectCmsUpdateAfter',
             'actionObjectCmsDeleteAfter',
             'actionObjectCmsAddAfter',
-            /***** supplier *****/
+            /* supplier */
             'actionObjectSupplierUpdateAfter',
             'actionObjectSupplierDeleteAfter',
             'actionObjectSupplierAddAfter',
-            /***** manufacturer *****/
+            /* manufacturer */
             'actionObjectManufacturerUpdateAfter',
             'actionObjectManufacturerDeleteAfter',
             'actionObjectManufacturerAddAfter',
-            /***** stores *****/
+            /* stores */
             'actionObjectStoreUpdateAfter',
             /** lscache own hooks * */
             'litespeedCachePurge',
