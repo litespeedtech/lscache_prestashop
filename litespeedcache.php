@@ -84,7 +84,8 @@ class LiteSpeedCache extends Module
         // instantiate cache even when module not enabled, because may still need purge cache.
         $this->cache = new LiteSpeedCacheCore($this->config);
         $this->esiInjection = array('tracker' => array(),
-            'marker' => array());
+            'marker' => array(),
+        );
 
         self::$ccflag |= $this->config->moduleEnabled();
         if (!defined('_LITESPEED_CACHE_')) {
@@ -444,7 +445,7 @@ class LiteSpeedCache extends Module
             // U :ungreedy s: dotall m: multiline
             $nb = preg_replace_callback(
                 array('/_LSC(ESI)-(.+)-START_(.*)_LSCESIEND_/Usm',
-                '/(\'|\")_LSCESIJS-(.+)-START__LSCESIEND_(\'|\")/Usm'),
+                    '/(\'|\")_LSCESIJS-(.+)-START__LSCESIEND_(\'|\")/Usm', ),
                 function ($m) {
                     // inject ESI even it's not cacheable
                     $id = $m[2];
