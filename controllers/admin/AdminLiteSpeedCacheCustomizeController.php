@@ -278,7 +278,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             case 'asvar':
             case 'ie':
             case 'ce':
-                $postVal = (int)$postVal;
+                $postVal = (int) $postVal;
                 break;
 
             case 'ttl':
@@ -291,7 +291,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 } elseif ($this->current_values['priv'] == 1 && $postVal > 7200) {
                     $this->errors[] = $invalid . $s . $this->l('Private TTL must be less than 7200 seconds.');
                 } else {
-                    $postVal = (int)$postVal;
+                    $postVal = (int) $postVal;
                 }
                 break;
 
