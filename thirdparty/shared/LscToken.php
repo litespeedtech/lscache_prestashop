@@ -28,6 +28,7 @@ class LscToken extends LscIntegration
 {
     // this is built-in for all PS versions
     const NAME = 'lsc_token';
+
     protected function init()
     {
         $confData = array(

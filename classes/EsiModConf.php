@@ -29,28 +29,44 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
 {
     // avail types
     const TYPE_BUILTIN = 0;
+
     const TYPE_INTEGRATED = 1;
+
     const TYPE_CUSTOMIZED = 2;
+
     // avail fields
     const FLD_PRIV = 'priv';
+
     const FLD_TAG = 'tag';
+
     const FLD_TTL = 'ttl';
+
     // comma separated purge events
     const FLD_PURGE_EVENTS = 'events';
+
     // comma separate controller classes, with :P for POST only
     const FLD_PURGE_CONTROLLERS = 'ctrl';
+
     // comma separated list of method, if proceed with "!", meaning not included
     const FLD_HOOK_METHODS = 'methods';
+
     // *: all, list of allowed hooks, or not-allowed hooks
     const FLD_RENDER_WIDGETS = 'render';
+
     const FLD_ASVAR = 'asvar';
+
     const FLD_IGNORE_EMPTY = 'ie';
+
     const FLD_ONLY_CACHE_EMPTY = 'ce';
+
     const FLD_TIPURL = 'tipurl';
 
     private $moduleName;
+
     private $type;
+
     private $data;
+
     private $parsed = array();
 
     public function __construct($moduleName, $type, $data)

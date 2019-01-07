@@ -30,53 +30,91 @@ class LiteSpeedCacheConfig
 {
     /* public tag prefix */
     const TAG_PREFIX_CMS = 'G';
+
     const TAG_PREFIX_CATEGORY = 'C';
+
     const TAG_PREFIX_PRODUCT = 'P';
+
     const TAG_PREFIX_ESIBLOCK = 'E';
+
     const TAG_PREFIX_MANUFACTURER = 'M';
+
     const TAG_PREFIX_SUPPLIER = 'L';
+
     const TAG_PREFIX_SHOP = 'S';
+
     const TAG_PREFIX_PRIVATE = 'PRIV';
+
     /* public tags */
     const TAG_SEARCH = 'SR';
+
     const TAG_HOME = 'H';
+
     const TAG_SITEMAP = 'SP';
+
     const TAG_STORES = 'ST';
+
     const TAG_404 = 'D404';
+
     /* common private tags */
     const TAG_CART = 'cart';
+
     const TAG_SIGNIN = 'signin';
+
     const TAG_ENV = 'env';
 
     /* config entry */
     const ENTRY_ALL = 'LITESPEED_CACHE_GLOBAL';
+
     const ENTRY_SHOP = 'LITESPEED_CACHE_SHOP';
+
     const ENTRY_MODULE = 'LITESPEED_CACHE_MODULE';
 
     /* config fields */
     const CFG_ENABLED = 'enable';
+
     const CFG_PUBLIC_TTL = 'ttl';
+
     const CFG_PRIVATE_TTL = 'privttl';
+
     const CFG_404_TTL = '404ttl';
+
     const CFG_HOME_TTL = 'homettl';
+
     const CFG_DIFFMOBILE = 'diff_mobile';
+
     const CFG_DIFFCUSTGRP = 'diff_customergroup';
+
     const CFG_FLUSH_PRODCAT = 'flush_prodcat' ;
+
     const CFG_GUESTMODE = 'guestmode';
+
     const CFG_NOCACHE_VAR = 'nocache_vars';
+
     const CFG_NOCACHE_URL = 'nocache_urls';
+
     const CFG_DEBUG = 'debug';
+
     const CFG_DEBUG_LEVEL = 'debug_level';
+
     const CFG_ALLOW_IPS = 'allow_ips';
+
     const CFG_DEBUG_IPS = 'debug_ips';
 
     private $esiModConf;
+
     private $pubController;
+
     private $purgeController = array();
+
     private $all;
+
     private $shop;
+
     private $custMod;
+
     private $isDebug = 0;
+
     private static $instance = null;
 
     public static function getInstance()

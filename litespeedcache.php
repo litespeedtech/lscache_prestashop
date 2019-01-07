@@ -36,25 +36,43 @@ require_once(_PS_MODULE_DIR_ . 'litespeedcache/classes/VaryCookie.php');
 class LiteSpeedCache extends Module
 {
     private $cache;
+
     private $config;
+
     private $esiInjection;
+
     private static $ccflag = 0; // cache control flag
 
     const MODULE_NAME = 'litespeedcache';
+
     //BITMASK for Cache Control Flag
     const CCBM_CACHEABLE = 1;
+
     const CCBM_PRIVATE = 2;
+
     const CCBM_CAN_INJECT_ESI = 4;
+
     const CCBM_ESI_ON = 8;
+
     const CCBM_ESI_REQ = 16;
+
     const CCBM_GUEST = 32;
+
     const CCBM_ERROR_CODE = 64; // response code is not 200
+
     const CCBM_NOT_CACHEABLE = 128; // for redirect, as first bit is not set, may mean don't know cacheable or not
+
     const CCBM_VARY_CHECKED = 256;
+
     const CCBM_VARY_CHANGED = 512;
+
     const CCBM_FRONT_CONTROLLER = 1024;
+
     const CCBM_MOD_ACTIVE = 2048; // module is enabled
-    const CCBM_MOD_ALLOWIP = 4096; // allow cache for listed IP
+
+    const CCBM_MOD_ALLOWIP = 4096;
+
+ // allow cache for listed IP
     // ESI MARKER
     const ESI_MARKER_END = '_LSCESIEND_';
 
@@ -235,6 +253,7 @@ class LiteSpeedCache extends Module
             $this->cache->purgeByCatchAllMethod($method, $args);
         }
     }
+
     /* our own hook
      * Required field $params['from']
      * $params['public'] & $params['private'] one has to exist, array of tags
@@ -357,7 +376,6 @@ class LiteSpeedCache extends Module
         self::$ccflag |= (self::CCBM_CACHEABLE | self::CCBM_CAN_INJECT_ESI);
         return 'cacheable & allow esiInject';
     }
-
 
     public function addCacheControlByEsiModule($item)
     {

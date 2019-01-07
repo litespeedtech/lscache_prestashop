@@ -28,15 +28,25 @@ use LiteSpeedCacheEsiModConf as EsiConf;
 class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
 {
     private $config;
+
     private $is_shop_level; // -1: not multishop, 0: multishop global, 1: multishop shop
+
     private $labels;
+
     private $current_values;
+
     private $default_ids;
+
     private $license_disabled;
+
     private $module_options;
+
     private $changed;
+
     private $config_values;
+
     private $original_values;
+
     private $current_id;
 
     public function __construct()

@@ -28,6 +28,7 @@ class LscEnv extends LscIntegration
 {
     // this is built-in for all PS versions
     const NAME = 'lsc_env';
+
     protected function init()
     {
         $confData = array(

@@ -27,7 +27,6 @@ use LiteSpeedCacheLog as LSLog;
 
 class LiteSpeedCacheHelper
 {
-
     private static $internal = array();
 
     private static function initInternals()
@@ -164,6 +163,7 @@ class LiteSpeedCacheHelper
         $inlineStart = sprintf('<esi:inline name=\'%s\' cache-control=\'%s\'%s>', $url, $ccInline, $tagInline);
         $item->setIncludeInlineTag($esiInclude, $inlineStart, $url, $ttl);
     }
+
     /* unique prefix for this PS installation, avoid conflict of multiple installations within same cache root */
 
     public static function getTagPrefix()

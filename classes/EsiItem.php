@@ -27,19 +27,29 @@ use LiteSpeedCacheHelper as LSHelper;
 class LiteSpeedCacheEsiItem implements JsonSerializable
 {
     const ESI_RENDERWIDGET = 'rw';
+
     const ESI_CALLHOOK = 'ch';
+
     const ESI_JSDEF = 'js';
+
     const ESI_SMARTYFIELD = 'mf';
+
     const ESI_TOKEN = 'tk';
+
     const ESI_ENV = 'env';
+
     const RES_FAILED = '__LSC_RES_FAILED__';
 
     private $sdata;
+
     private $cdata; // current
 
     private $conf;
+
     private $esiInline = false;
+
     private $content;
+
     private $err;
 
     public function __construct($param, LiteSpeedCacheEsiModConf $conf)

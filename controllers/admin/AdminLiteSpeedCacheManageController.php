@@ -27,9 +27,13 @@ use LiteSpeedCacheConfig as Conf;
 class AdminLiteSpeedCacheManageController extends ModuleAdminController
 {
     private $config;
+
     private $is_shop_level; // -1: not multishop, 0: multishop global, 1: multishop shop
+
     private $labels;
+
     private $current_values;
+
     private $license_disabled;
 
     public function __construct()
