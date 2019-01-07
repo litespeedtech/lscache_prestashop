@@ -212,7 +212,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
         switch ($name) {
             case Conf::CFG_ENABLED:
-                $postVal = (int)$postVal;
+                $postVal = (int) $postVal;
                 if ($postVal != $origVal) {
                     // if disable, purge all
                     $this->changed |= self::BMC_ALL | self::BMC_HTACCESS_UPDATE
@@ -224,7 +224,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 if (!Validate::isUnsignedInt($postVal)) {
                     $this->errors[] = $invalid;
                 } else {
-                    $postVal = (int)$postVal;
+                    $postVal = (int) $postVal;
                     if ($postVal < 300) {
                         $this->errors[] = $invalid . $s . $this->l('Must be greater than 300 seconds');
                     } elseif ($postVal != $origVal) {
@@ -238,7 +238,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 if (!Validate::isUnsignedInt($postVal)) {
                     $this->errors[] = $invalid;
                 } else {
-                    $postVal = (int)$postVal;
+                    $postVal = (int) $postVal;
                     if ($postVal < 180 || $postVal > 7200) {
                         $this->errors[] = $invalid . $s . $this->l('Must be within the 180 to 7200 range.');
                     } elseif ($postVal != $origVal) {
@@ -251,7 +251,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 if (!Validate::isUnsignedInt($postVal)) {
                     $this->errors[] = $invalid;
                 } else {
-                    $postVal = (int)$postVal;
+                    $postVal = (int) $postVal;
                     if ($postVal < 60 && $postVal != 0) {
                         $this->errors[] = $invalid . $s .
                             $this->l('Must be greater than 60 seconds. Enter 0 to disable cache.');
@@ -266,7 +266,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 if (!Validate::isUnsignedInt($postVal)) {
                     $this->errors[] = $invalid;
                 } else {
-                    $postVal = (int)$postVal;
+                    $postVal = (int) $postVal;
                     if ($postVal > 0 && $postVal < 300) {
                         $this->errors[] = $invalid . $s . $this->l('Must be greater than 300 seconds.');
                     } elseif ($postVal != $origVal) {
@@ -281,7 +281,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 break;
 
             case Conf::CFG_DIFFMOBILE:
-                $postVal = (int)$postVal;
+                $postVal = (int) $postVal;
                 if ($postVal != 0 && $postVal != 1 && $postVal != 2) {
                     // should not happen in drop down
                     $postVal = 0;
@@ -292,7 +292,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 break;
 
             case Conf::CFG_DIFFCUSTGRP:
-                $postVal = (int)$postVal;
+                $postVal = (int) $postVal;
                 if ($postVal != 0 && $postVal != 1 && $postVal != 2) {
                     // should not happen in drop down
                     $postVal = 0;
@@ -314,7 +314,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 break;
 
             case Conf::CFG_GUESTMODE:
-                $postVal = (int)$postVal;
+                $postVal = (int) $postVal;
                 if ($postVal != $origVal) {
                     $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE | self::BMC_HTACCESS_UPDATE;
                 }
@@ -353,7 +353,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 break;
 
             case Conf::CFG_DEBUG:
-                $postVal = (int)$postVal;
+                $postVal = (int) $postVal;
                 if ($postVal != $origVal) {
                     $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE;
                 }
@@ -363,7 +363,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 if (!Validate::isUnsignedInt($postVal) || $postVal < 1 || $postVal > 10) {
                     $this->errors[] = $invalid . $s . $this->l('Valid range is 1 to 10.');
                 } else {
-                    $postVal = (int)$postVal;
+                    $postVal = (int) $postVal;
                     if ($postVal != $origVal) {
                         $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE;
                     }
@@ -375,7 +375,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                     $postVal = '';
                 } else {
                     foreach ($clean as $ip) {
-                        if (!preg_match("/^[[:alnum:]._-]+$/", $ip)) {
+                        if (!preg_match('/^[[:alnum:]._-]+$/', $ip)) {
                             $this->errors[] = $invalid;
                         }
                     }
@@ -391,7 +391,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                     $postVal = '';
                 } else {
                     foreach ($clean as $ip) {
-                        if (!preg_match("/^[[:alnum:]._-]+$/", $ip)) {
+                        if (!preg_match('/^[[:alnum:]._-]+$/', $ip)) {
                             $this->errors[] = $invalid;
                         }
                     }

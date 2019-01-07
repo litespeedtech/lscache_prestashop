@@ -53,7 +53,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         $this->vd = array(
             'cv' => array('name' => $name, 'ov' => null, 'nv' => null), // cookieVary
             'vv' => array('ov' => null, 'nv' => null),   // valueVary
-            'ps' => array('ov' => null, 'nv' => null),// private session
+            'ps' => array('ov' => null, 'nv' => null), // private session
         );
         $this->init();
     }

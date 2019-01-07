@@ -47,7 +47,7 @@ class LiteSpeedCacheHelper
             $defaultParam['l'] = $cookie->id_lang;
         }
         if ($config->get(Conf::CFG_DIFFMOBILE)) {
-            $defaultParam['mobi'] = $ctx->getMobileDevice() ? 1:0;
+            $defaultParam['mobi'] = $ctx->getMobileDevice() ? 1 : 0;
         }
         $esiurl = $ctx->link->getModuleLink(LiteSpeedCache::MODULE_NAME, 'esi', $defaultParam);
         $esiurl0 = $ctx->link->getModuleLink(LiteSpeedCache::MODULE_NAME, 'esi');
@@ -101,7 +101,7 @@ class LiteSpeedCacheHelper
         foreach (scandir($dir) as $entry) {
             if (preg_match('/\.data$/', $entry)) {
                 @unlink($dir . '/' . $entry);
-                $count ++;
+                ++$count ;
             }
         }
         if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
@@ -190,7 +190,7 @@ class LiteSpeedCacheHelper
         $contents = '';
         $len = @filesize($filepath);
         if ($len) {
-            $h = @fopen($filepath, 'r');
+            $h = @fopen($filepath, 'rb');
             $contents = @fread($h, $len);
             @fclose($h);
         }
@@ -227,7 +227,7 @@ class LiteSpeedCacheHelper
 
     public static function htAccessBackup($suffix)
     {
-        $path = _PS_ROOT_DIR_.'/.htaccess';
+        $path = _PS_ROOT_DIR_ . '/.htaccess';
         $newfile = $path . '.' . $suffix . time();
         if (!file_exists($newfile)) {
             $content = self::getFileContent($path);
@@ -244,11 +244,11 @@ class LiteSpeedCacheHelper
 
     public static function htAccessUpdate($enableCache, $guestMode, $mobileView)
     {
-        $path = _PS_ROOT_DIR_.'/.htaccess';
+        $path = _PS_ROOT_DIR_ . '/.htaccess';
 
         $oldlines = file($path);
         if ($oldlines === '') {
-             LSLog::log(__FUNCTION__ . " please manually fix .htaccess, may due to permission", LSLog::LEVEL_FORCE);
+             LSLog::log(__FUNCTION__ . ' please manually fix .htaccess, may due to permission', LSLog::LEVEL_FORCE);
              return false;
         }
         $newlines = array();
@@ -275,14 +275,14 @@ class LiteSpeedCacheHelper
         if ($enableCache) {
             $newcontent = self::genHtAccessContent($guestMode, $mobileView);
         }
-        $newcontent .= implode($newlines);
+        $newcontent .= implode('', $newlines);
 
         $res = file_put_contents($path, $newcontent);
         if ($res) {
             LSLog::log(__FUNCTION__ . ' updated', LSLog::LEVEL_UPDCONFIG);
             return true;
         } else {
-            LSLog::log(__FUNCTION__ . " cannot save! Please manually fix .htaccess file", LSLog::LEVEL_FORCE);
+            LSLog::log(__FUNCTION__ . ' cannot save! Please manually fix .htaccess file', LSLog::LEVEL_FORCE);
             return false;
         }
     }

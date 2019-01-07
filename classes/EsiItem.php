@@ -39,8 +39,8 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
 
     private $conf;
     private $esiInline = false;
-    private $content = null;
-    private $err = null;
+    private $content;
+    private $err;
 
     public function __construct($param, LiteSpeedCacheEsiModConf $conf)
     {

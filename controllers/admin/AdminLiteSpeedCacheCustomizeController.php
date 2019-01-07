@@ -73,7 +73,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             $this->errors[] = $this->l('LiteSpeed Server with LSCache module is required.') . ' '
                     . $this->l('Please contact your sysadmin or your host to get a valid LiteSpeed license.');
         }
-        include_once(_PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php');
+        include_once _PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php';
 
         $this->initDisplayValues();
         $this->labels = array(
@@ -138,7 +138,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                         $this->l('Built-in') : $this->l('Integrated');
             }
             if ($idata['tipurl']) {
-                $this->warnings[] = $idata['name'] . ': <a href="'. $idata['tipurl']
+                $this->warnings[] = $idata['name'] . ': <a href="' . $idata['tipurl']
                     . '" target="_blank" rel="noopener noreferrer">' . $this->l('See online tips') . '</a>';
                 $idata['name'] .= ' (*)';
             }
@@ -235,7 +235,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             $this->content = $this->renderForm();
         } elseif ($this->display == 'list') {
             $s = ' ';
-            $this->informations[] = $this->l('You can make an ESI block for a widget, also known as Hole-Punching.').$s
+            $this->informations[] = $this->l('You can make an ESI block for a widget, also known as Hole-Punching.') . $s
                 . $this->l('Built-in and integrated modules cannot be changed.') . $s
                 . $this->l('These are advanced settings for third-party modules.') . $s
                 . '<a href="https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps" '
@@ -278,7 +278,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             case 'asvar':
             case 'ie':
             case 'ce':
-                $postVal = (int)$postVal;
+                $postVal = (int) $postVal;
                 break;
 
             case 'ttl':
@@ -291,7 +291,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 } elseif ($this->current_values['priv'] == 1 && $postVal > 7200) {
                     $this->errors[] = $invalid . $s . $this->l('Private TTL must be less than 7200 seconds.');
                 } else {
-                    $postVal = (int)$postVal;
+                    $postVal = (int) $postVal;
                 }
                 break;
 
