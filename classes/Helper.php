@@ -364,7 +364,7 @@ class LiteSpeedCacheHelper
     public static function licenseEnabled()
     {
         // possible string "on,crawler,esi", will enforce checking in future
-        return ( (isset($_SERVER['X-LSCACHE']) && $_SERVER['X-LSCACHE']) // for lsws
+        return ((isset($_SERVER['X-LSCACHE']) && $_SERVER['X-LSCACHE']) // for lsws
                 || (isset($_SERVER['HTTP_X_LSCACHE']) && $_SERVER['HTTP_X_LSCACHE']));  // lslb
     }
 }

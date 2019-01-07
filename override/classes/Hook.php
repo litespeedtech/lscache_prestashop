@@ -32,7 +32,7 @@ class Hook extends HookCore
     public static function coreCallHook($module, $method, $params)
     {
         if (defined('_LITESPEED_DEBUG_')
-            && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_HOOK_DETAIL ) {
+            && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_HOOK_DETAIL) {
             // No logic added here. This is to print out all hook events, for module customization,
             // to add purge or tagging event hook
             $mesg = '  in hook coreCallHook ' . get_class($module) . ' - ' . $method;
