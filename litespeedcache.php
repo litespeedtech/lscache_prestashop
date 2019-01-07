@@ -422,8 +422,8 @@ class LiteSpeedCache extends Module
 
         $lsc->cache->setCacheControlHeader();
         /** for testing
-        //  $tname = tempnam('/tmp/t','A');
-        //  file_put_contents($tname, $buffer);
+         * //  $tname = tempnam('/tmp/t','A');
+         * //  file_put_contents($tname, $buffer);
          */
         return $buffer;
     }
