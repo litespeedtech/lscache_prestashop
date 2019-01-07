@@ -47,7 +47,7 @@ class LiteSpeedCacheHelper
             $defaultParam['l'] = $cookie->id_lang;
         }
         if ($config->get(Conf::CFG_DIFFMOBILE)) {
-            $defaultParam['mobi'] = $ctx->getMobileDevice() ? 1:0;
+            $defaultParam['mobi'] = $ctx->getMobileDevice() ? 1 : 0;
         }
         $esiurl = $ctx->link->getModuleLink(LiteSpeedCache::MODULE_NAME, 'esi', $defaultParam);
         $esiurl0 = $ctx->link->getModuleLink(LiteSpeedCache::MODULE_NAME, 'esi');

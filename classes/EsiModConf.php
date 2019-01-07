@@ -139,7 +139,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     {
         $value = (isset($this->data[$field])) ? $this->data[$field] : '';
         if ($isbool) {
-            $value = ($value) ? true:false;
+            $value = ($value) ? true : false;
         }
         if ($splitClean && $value) {
             $dv = preg_split("/[\s,]+/", $value, null, PREG_SPLIT_NO_EMPTY);
