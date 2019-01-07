@@ -291,7 +291,7 @@ class LiteSpeedCache extends Module
     public function hookDisplayFooterAfter($params)
     {
         if (self::isCacheable() && _LITESPEED_DEBUG_) {
-            $comment = '<!-- LiteSpeed Cache snapshot generated at ' . gmdate("Y/m/d H:i:s") . ' GMT -->';
+            $comment = '<!-- LiteSpeed Cache snapshot generated at ' . gmdate('Y/m/d H:i:s') . ' GMT -->';
             if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_FOOTER_COMMENT) {
                 LiteSpeedCacheLog::log(
                     'Add html comments in footer ' . $comment,

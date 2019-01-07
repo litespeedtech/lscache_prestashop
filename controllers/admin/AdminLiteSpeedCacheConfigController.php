@@ -375,7 +375,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                     $postVal = '';
                 } else {
                     foreach ($clean as $ip) {
-                        if (!preg_match("/^[[:alnum:]._-]+$/", $ip)) {
+                        if (!preg_match('/^[[:alnum:]._-]+$/', $ip)) {
                             $this->errors[] = $invalid;
                         }
                     }
@@ -391,7 +391,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                     $postVal = '';
                 } else {
                     foreach ($clean as $ip) {
-                        if (!preg_match("/^[[:alnum:]._-]+$/", $ip)) {
+                        if (!preg_match('/^[[:alnum:]._-]+$/', $ip)) {
                             $this->errors[] = $invalid;
                         }
                     }

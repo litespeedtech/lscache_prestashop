@@ -248,7 +248,7 @@ class LiteSpeedCacheHelper
 
         $oldlines= file($path);
         if ($oldlines === '') {
-             LSLog::log(__FUNCTION__ . " please manually fix .htaccess, may due to permission", LSLog::LEVEL_FORCE);
+             LSLog::log(__FUNCTION__ . ' please manually fix .htaccess, may due to permission', LSLog::LEVEL_FORCE);
              return false;
         }
         $newlines = array();
@@ -282,7 +282,7 @@ class LiteSpeedCacheHelper
             LSLog::log(__FUNCTION__ . ' updated', LSLog::LEVEL_UPDCONFIG);
             return true;
         } else {
-            LSLog::log(__FUNCTION__ . " cannot save! Please manually fix .htaccess file", LSLog::LEVEL_FORCE);
+            LSLog::log(__FUNCTION__ . ' cannot save! Please manually fix .htaccess file', LSLog::LEVEL_FORCE);
             return false;
         }
     }
