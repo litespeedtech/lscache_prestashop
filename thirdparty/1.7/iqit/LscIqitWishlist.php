@@ -52,7 +52,7 @@ class LscIqitWishlist extends LscIntegration
             LSLog::log(__FUNCTION__ . ' unexpected ' . $jskey, LSLog::LEVEL_EXCEPTION);
             return '';
         }
-        $data = (int)$classname::$funcname((int)Context::getContext()->customer->id);
+        $data = (int) $classname::$funcname((int) Context::getContext()->customer->id);
         return json_encode($data);
     }
 }
