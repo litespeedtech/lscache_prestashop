@@ -246,7 +246,7 @@ class LiteSpeedCacheHelper
     {
         $path = _PS_ROOT_DIR_.'/.htaccess';
 
-        $oldlines= file($path);
+        $oldlines = file($path);
         if ($oldlines === '') {
              LSLog::log(__FUNCTION__ . " please manually fix .htaccess, may due to permission", LSLog::LEVEL_FORCE);
              return false;

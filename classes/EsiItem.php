@@ -44,16 +44,16 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
 
     public function __construct($param, LiteSpeedCacheEsiModConf $conf)
     {
-        $this->conf= $conf;
+        $this->conf = $conf;
 
         $this->sdata = array(
-            'id'          => json_encode($param),
-            'param'       => $param,
-            'url'         => '',
-            'inc'         => false,
+            'id' => json_encode($param),
+            'param' => $param,
+            'url' => '',
+            'inc' => false,
             'inlStart' => false,
-            'shared'      => null,
-            'tag'         => $conf->getTag(),
+            'shared' => null,
+            'tag' => $conf->getTag(),
         );
         $this->cdata = array(
             'inlStart' => false,

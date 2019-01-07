@@ -407,7 +407,7 @@ class LiteSpeedCache extends Module
             self::$ccflag |= self::CCBM_ERROR_CODE;
             if (LiteSpeedCacheHelper::isStaticResource($_SERVER['REQUEST_URI'])) {
                 $buffer = '<!-- 404 not found -->';
-                self::$ccflag &=  ~self::CCBM_CAN_INJECT_ESI;
+                self::$ccflag &= ~self::CCBM_CAN_INJECT_ESI;
             }
         } elseif ($code != 200) {
             self::$ccflag |= self::CCBM_ERROR_CODE;
