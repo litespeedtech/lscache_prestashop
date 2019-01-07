@@ -70,12 +70,12 @@ class LiteSpeedCacheConfig
     const CFG_ALLOW_IPS = 'allow_ips';
     const CFG_DEBUG_IPS = 'debug_ips';
 
-    private $esiModConf = null;
-    private $pubController = null;
+    private $esiModConf;
+    private $pubController;
     private $purgeController = array();
-    private $all = null;
-    private $shop = null;
-    private $custMod = null;
+    private $all;
+    private $shop;
+    private $custMod;
     private $isDebug = 0;
     private static $instance = null;
 
