@@ -227,7 +227,7 @@ class LiteSpeedCacheHelper
 
     public static function htAccessBackup($suffix)
     {
-        $path = _PS_ROOT_DIR_.'/.htaccess';
+        $path = _PS_ROOT_DIR_ . '/.htaccess';
         $newfile = $path . '.' . $suffix . time();
         if (!file_exists($newfile)) {
             $content = self::getFileContent($path);
@@ -244,7 +244,7 @@ class LiteSpeedCacheHelper
 
     public static function htAccessUpdate($enableCache, $guestMode, $mobileView)
     {
-        $path = _PS_ROOT_DIR_.'/.htaccess';
+        $path = _PS_ROOT_DIR_ . '/.htaccess';
 
         $oldlines= file($path);
         if ($oldlines === '') {

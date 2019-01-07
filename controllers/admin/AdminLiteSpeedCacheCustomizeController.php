@@ -138,7 +138,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                         $this->l('Built-in') : $this->l('Integrated');
             }
             if ($idata['tipurl']) {
-                $this->warnings[] = $idata['name'] . ': <a href="'. $idata['tipurl']
+                $this->warnings[] = $idata['name'] . ': <a href="' . $idata['tipurl']
                     . '" target="_blank" rel="noopener noreferrer">' . $this->l('See online tips') . '</a>';
                 $idata['name'] .= ' (*)';
             }
@@ -235,7 +235,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             $this->content = $this->renderForm();
         } elseif ($this->display == 'list') {
             $s = ' ';
-            $this->informations[] = $this->l('You can make an ESI block for a widget, also known as Hole-Punching.').$s
+            $this->informations[] = $this->l('You can make an ESI block for a widget, also known as Hole-Punching.') . $s
                 . $this->l('Built-in and integrated modules cannot be changed.') . $s
                 . $this->l('These are advanced settings for third-party modules.') . $s
                 . '<a href="https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps" '
