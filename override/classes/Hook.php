@@ -26,7 +26,6 @@
  * LiteSpeed Cache needs to do ESI hole punch automatically.
  * To override Hook is the only way to do it without changing Prestashop core code.
  * This should not affect any existing functionalities of your Prestashop installation and it is safe to use.
- *
  */
 class Hook extends HookCore
 {
