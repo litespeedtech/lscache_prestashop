@@ -23,24 +23,24 @@
  */
 
 // base must be included first
-include __DIR__ . '/LscIntegration.php';
+include dirname(__FILE__) . '/LscIntegration.php';
 
 // share for all PS versions
-include __DIR__ . '/shared/LscToken.php';
-include __DIR__ . '/shared/LscEnv.php';
+include dirname(__FILE__) . '/shared/LscToken.php';
+include dirname(__FILE__) . '/shared/LscEnv.php';
 
 // third-party theme integration
 if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) { // for PS 1.7 only
     // default built-in modules
-    include __DIR__ . '/1.7/LscCustomerSignIn.php';
-    include __DIR__ . '/1.7/LscShoppingcart.php';
+    include dirname(__FILE__) . '/1.7/LscCustomerSignIn.php';
+    include dirname(__FILE__) . '/1.7/LscShoppingcart.php';
 
     // integrated modules, feel free to comment out if you don't need
-    include __DIR__ . '/1.7/iqit/loader.php';
-    include __DIR__ . '/1.7/LscGdprPro.php';
+    include dirname(__FILE__) . '/1.7/iqit/loader.php';
+    include dirname(__FILE__) . '/1.7/LscGdprPro.php';
 } else { // for PS 1.6 only
     // default built-in modules
-    include __DIR__ . '/1.6/LscBlockCart.php';
-    include __DIR__ . '/1.6/LscBlockUserInfo.php';
-    include __DIR__ . '/1.6/LscCompareProduct.php';
+    include dirname(__FILE__) . '/1.6/LscBlockCart.php';
+    include dirname(__FILE__) . '/1.6/LscBlockUserInfo.php';
+    include dirname(__FILE__) . '/1.6/LscCompareProduct.php';
 }
