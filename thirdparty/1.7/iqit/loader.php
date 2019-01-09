@@ -24,7 +24,7 @@
 
 // You can comment out the lines if you do not use IQIT Modules (warehouse theme)
 
-include __DIR__ . '/LscIqitCompare.php';
-include __DIR__ . '/LscIqitWishlist.php';
-include __DIR__ . '/LscIqitCookielaw.php';
-include __DIR__ . '/LscIqitPopup.php';
+include dirname(__FILE__) . '/LscIqitCompare.php';
+include dirname(__FILE__) . '/LscIqitWishlist.php';
+include dirname(__FILE__) . '/LscIqitCookielaw.php';
+include dirname(__FILE__) . '/LscIqitPopup.php';
