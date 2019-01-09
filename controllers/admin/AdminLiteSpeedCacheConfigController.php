@@ -475,10 +475,22 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         );
 
         $flushprodOptions = array(
-            array('id' => 0, 'name' => $this->l('Flush product when quantity or stock status change, flush categories only when stock status changes')),
-            array('id' => 1, 'name' => $this->l('Flush product and categories only when stock status changes')),
-            array('id' => 2, 'name' => $this->l('Flush product when stock status changes, do not flush categories when stock status or quantity change')),
-            array('id' => 3, 'name' => $this->l('Always flush product and categories when quantity or stock status change')),
+            array(
+                'id' => 0,
+                'name' => $this->l('Flush product when quantity or stock status change, flush categories only when stock status changes'),
+            ),
+            array(
+                'id' => 1,
+                'name' => $this->l('Flush product and categories only when stock status changes'),
+            ),
+            array(
+                'id' => 2,
+                'name' => $this->l('Flush product when stock status changes, do not flush categories when stock status or quantity change'),
+            ),
+            array(
+                'id' => 3,
+                'name' => $this->l('Always flush product and categories when quantity or stock status change'),
+            ),
         );
         $fg['input'][] = $this->addInputSelect(
             Conf::CFG_FLUSH_PRODCAT,

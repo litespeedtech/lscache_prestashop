@@ -246,7 +246,8 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             $this->content = $this->renderForm();
         } elseif ($this->display == 'list') {
             $s = ' ';
-            $this->informations[] = $this->l('You can make an ESI block for a widget, also known as Hole-Punching.') . $s
+            $this->informations[] = $this->l('You can make an ESI block for a widget, also known as Hole-Punching.')
+                . $s
                 . $this->l('Built-in and integrated modules cannot be changed.') . $s
                 . $this->l('These are advanced settings for third-party modules.') . $s
                 . '<a href="https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps" '
@@ -429,7 +430,6 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
     private function getModuleOptions()
     {
         $moduleOptions = array();
-        $is17 = version_compare(_PS_VERSION_, '1.7.0.0', '>=');
         if ($this->display == 'edit' || $this->display == 'view') {
             $name = $this->current_id;
             $moduleOptions[] = array(
@@ -444,8 +444,9 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 if (($module['active'] == 1)
                     && (!in_array($module['name'], $existing))
                     && ($tmp_instance = Module::getInstanceByName($module['name']))
-                    /*&& (!$is17
-                            || ($tmp_instance instanceof PrestaShop\PrestaShop\Core\Module\WidgetInterface))*/) {
+                 // && (!version_compare(_PS_VERSION_, '1.7.0.0', '>=')
+                 // || ($tmp_instance instanceof PrestaShop\PrestaShop\Core\Module\WidgetInterface))
+                ){
                     $list[$module['name']] = $tmp_instance->displayName;
                 }
             }
