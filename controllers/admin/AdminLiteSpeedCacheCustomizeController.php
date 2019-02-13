@@ -339,9 +339,9 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                         // allow ClassName?param1&param2
                         if (!preg_match('/^([a-zA-Z_]+)(\?[a-zA-Z_0-9\-&]+)?$/', $ci, $m)) {
                             $this->errors[] = $invalid . $s . $invalidChars;
-                        } elseif (!class_exists($m[1])) {
-                            $this->errors[] = $invalid . $s . $this->l('Invalid class name.');
-                        }
+                        } /*elseif (!class_exists($m[1])) {
+                            $this->errors[] = $invalid . $s . ' ' . $m[1] . ' ' . $this->l('Invalid class name.');
+                        }*/
                     }
                     $postVal = implode(', ', $clean);
                 }

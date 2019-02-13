@@ -90,7 +90,14 @@ class LiteSpeedCacheLog
     {
         if ($this->logger == null) {
             $this->logger = new FileLogger(FileLogger::DEBUG);
-            $path = version_compare(_PS_VERSION_, '1.7.0.0', '>=') ? '/app/logs' : '/log';
+
+            if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
+                $path = '/log';
+            } elseif (version_compare(_PS_VERSION_, '1.7.3', '<=')) {
+                $path = '/app/logs';
+            } else {
+                $path = '/var/logs';
+            }
             $this->logger->setFilename(_PS_ROOT_DIR_ . $path . '/lscache.log');
         }
 
