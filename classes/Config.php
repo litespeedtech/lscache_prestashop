@@ -627,6 +627,8 @@ class LiteSpeedCacheConfig
             'litespeedNotCacheable',
             'litespeedEsiBegin',
             'litespeedEsiEnd',
+            // web service
+            'addWebserviceResources',
         );
 
         return $hooks;

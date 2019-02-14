@@ -317,6 +317,39 @@ class LiteSpeedCacheCore
         return $tags;
     }
 
+    private function getPurgeTagsByWebService()
+    {
+        $method = $_SERVER['REQUEST_METHOD'];
+        if ($method == 'GET' || $method == 'HEAD') {
+            // possible methods are POST, PUT, DELETE
+            return;
+        }
+        $resources = explode('/', $_REQUEST['url']);
+        if (empty($resources) || count($resources) != 2 || intval($resources[1]) != $resources[1]) {
+            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_WEBSERVICE_DETAIL)
+                LSLog::log("WebService Purge - Ignored " . var_export($resources, 1), LSLog::LEVEL_WEBSERVICE_DETAIL);
+            return;
+        }
+
+        $pubtags = [];
+        $restype = $resources[0];
+        $resid = $resources[1];
+
+        switch ($resources[0]) {
+            case 'products':
+                $pubtags[] = Conf::TAG_PREFIX_PRODUCT . $resid;
+                break;
+            case 'categories':
+                $pubtags[] = Conf::TAG_PREFIX_CATEGORY . $resid;
+                break;
+            default:
+                return;
+        }
+        $tags = ['pub' => $pubtags];
+
+        return $tags;
+    }
+
     private function getPurgeTagsByOrder($order)
     {
         if ($order == null) { // $order is null, happened in bankwire module
@@ -401,7 +434,9 @@ class LiteSpeedCacheCore
     {
         $tags = $this->getPurgeTagsByHookMethod($method, $args);
         if (empty($tags)) {
-            if (($tags === null) && (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED)) {
+            if (($tags === null)
+                && (strcasecmp($method, 'hookaddWebserviceResources') != 0)
+                && (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED)) {
                 LSLog::log('Unexpected hook function called' . $method, LSLog::LEVEL_UNEXPECTED);
             }
 
@@ -493,6 +528,9 @@ class LiteSpeedCacheCore
             case 'actionobjectstoreupdateafter':
                 $tags['pub'] = array(Conf::TAG_STORES);
                 break;
+
+            case 'addwebserviceresources':
+                return $this->getPurgeTagsByWebService();
 
             default: // custom defined events
                 return $this->config->getPurgeTagsByEvent($event);

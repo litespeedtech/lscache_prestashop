@@ -53,6 +53,8 @@ class LiteSpeedCacheLog
 
     const LEVEL_ENVCOOKIE_DETAIL = 9;
 
+    const LEVEL_WEBSERVICE_DETAIL = 9;
+
     const LEVEL_SPECIFIC_PRICE = 9.5;
 
     const LEVEL_ESI_OUTPUT = 9.5;
