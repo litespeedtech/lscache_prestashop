@@ -2,7 +2,7 @@
 <module>
     <name>litespeedcache</name>
     <displayName><![CDATA[LiteSpeed Cache Plugin]]></displayName>
-    <version><![CDATA[1.2.5]]></version>
+    <version><![CDATA[1.2.6]]></version>
     <description><![CDATA[Integrates with LiteSpeed Full Page Cache on LiteSpeed Server.]]></description>
     <author><![CDATA[LiteSpeedTech]]></author>
     <tab><![CDATA[administration]]></tab>

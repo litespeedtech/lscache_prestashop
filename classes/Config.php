@@ -469,7 +469,7 @@ class LiteSpeedCacheConfig
         $tag = $esiConf->getTag();
         if ($pc = $esiConf->getPurgeControllers()) {
             foreach ($pc as $cname => $cparam) {
-                // allow ClassName:param1&param2=value
+                // allow ClassName?param1&param2=value
                 $cname = Tools::strtolower($cname);
                 if (!isset($this->purgeController[$cname])) {
                     $this->purgeController[$cname] = array();
@@ -629,6 +629,8 @@ class LiteSpeedCacheConfig
             'litespeedEsiEnd',
             // web service
             'addWebserviceResources',
+            'updateProduct', // from Product array('id_product' => )
+            'actionUpdateQuantity', // from StockAvailable array('id_product' => $id_product,...)
         );
 
         return $hooks;

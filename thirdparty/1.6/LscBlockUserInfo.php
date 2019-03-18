@@ -38,9 +38,31 @@ class LscBlockUserInfo extends LscIntegration
             EsiConf::FLD_IGNORE_EMPTY => 1,
         );
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
+        $this->registerEsiModule();
+        $this->addJsDef('isLogged', $this);
+        $this->addJsDef('isLoggedWishlist', $this);
 
-        return $this->registerEsiModule();
+        return true;
     }
+
+    protected function JSKeyProcess($jskey)
+    {
+        $logged = Context::getContext()->customer->isLogged();
+        if ($jskey == 'isLogged') {
+            $logged = (int)$logged;
+        }
+        elseif ($jskey == 'isLoggedWishlist') {
+            $logged = (bool)$logged;
+        }
+        else {
+            //something wrong, should not happen
+            LSLog::log(__FUNCTION__ . ' unexpected ' . $jskey, LSLog::LEVEL_EXCEPTION);
+            return '';
+        }
+
+        return json_encode($logged);
+    }
+
 }
 
 LscBlockUserInfo::register();

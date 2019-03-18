@@ -27,4 +27,11 @@ class AdminLiteSpeedCacheController extends ModuleAdminController
     /* this file serve as place holder for tab space. No content needed.
      * But class needs to be existed and extend ModuleAdminController
      */
+    public function __construct()
+    {
+        parent::__construct();
+        $linkClass = $this->module->active ? 'AdminLiteSpeedCacheManage' : 'AdminHome';
+        Tools::redirectAdmin($this->context->link->getAdminLink($linkClass));
+    }
+
 }

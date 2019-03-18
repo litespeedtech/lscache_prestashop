@@ -327,7 +327,7 @@ class LiteSpeedCacheCore
         $resources = explode('/', $_REQUEST['url']);
         if (empty($resources) || count($resources) != 2 || intval($resources[1]) != $resources[1]) {
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_WEBSERVICE_DETAIL)
-                LSLog::log("WebService Purge - Ignored " . var_export($resources, 1), LSLog::LEVEL_WEBSERVICE_DETAIL);
+                LSLog::log("WebService Purge - Ignored $method " . var_export($resources, 1), LSLog::LEVEL_WEBSERVICE_DETAIL);
             return;
         }
 
@@ -336,11 +336,13 @@ class LiteSpeedCacheCore
         $resid = $resources[1];
 
         switch ($resources[0]) {
-            case 'products':
-                $pubtags[] = Conf::TAG_PREFIX_PRODUCT . $resid;
-                break;
             case 'categories':
                 $pubtags[] = Conf::TAG_PREFIX_CATEGORY . $resid;
+                break;
+            case 'stock_availables':
+                if ($prod_id = $this->getProdidByStockAvailId($resid)) {
+                    $pubtags[] = Conf::TAG_PREFIX_PRODUCT . $prod_id;
+                }
                 break;
             default:
                 return;
@@ -348,6 +350,20 @@ class LiteSpeedCacheCore
         $tags = ['pub' => $pubtags];
 
         return $tags;
+    }
+
+    private function getProdidByStockAvailId($stockavail_id)
+    {
+        if ($stockavail_id <= 0) {
+            return null;
+        }
+
+        $query = new DbQuery();
+        $query->select('id_product');
+        $query->from('stock_available');
+        $query->where('id_stock_available = ' . (int) $stockavail_id);
+
+        return (int) Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($query);
     }
 
     private function getPurgeTagsByOrder($order)
@@ -484,7 +500,12 @@ class LiteSpeedCacheCore
             case 'actionobjectspecificpricecoredeleteafter':
                 return $this->getPurgeTagsByProduct($args['object']->id_product, null, true);
             case 'actionwatermark':
-                return $this->getPurgeTagsByProduct($args['id_product'], null, true);
+            case 'updateproduct':
+            case 'actionupdatequantity':
+                if (isset($args['id_product'])) {
+                    return $this->getPurgeTagsByProduct($args['id_product'], null, true);
+                }
+                break;
             case 'displayorderconfirmation':
                 return $this->getPurgeTagsByOrder($args['order']);
 

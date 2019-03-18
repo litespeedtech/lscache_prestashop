@@ -519,8 +519,8 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'readonly' => $disabled, // allow ClassName?param1&param2
                 'desc' => $this->l('You can automatically purge the cached ESI blocks by dispatched controllers.')
                 . $s . $this->l('Specify a comma-delimited list of controller class names.') . $s
-                . $this->l('If you add ":param" after the name, purge will be triggered only if that param is set.')
-                . $s . $this->l('You can add multiple parameters, like "className:param1&param2".'),
+                . $this->l('If you add "?param" after the name, purge will be triggered only if that param is set.')
+                . $s . $this->l('You can add multiple parameters, like "className?param1&param2".'),
             ),
             array(
                 'type' => 'textarea',

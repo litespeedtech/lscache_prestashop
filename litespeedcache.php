@@ -80,7 +80,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache'; // self::MODULE_NAME was rejected by validator
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '1.2.5'; // validator does not allow const here
+        $this->version = '1.2.6'; // validator does not allow const here
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
@@ -131,6 +131,11 @@ class LiteSpeedCache extends Module
     public static function isCacheable()
     {
         return (((self::$ccflag & self::CCBM_NOT_CACHEABLE) == 0) && ((self::$ccflag & self::CCBM_CACHEABLE) != 0));
+    }
+
+    public static function isEsiRequest()
+    {
+        return ((self::$ccflag & self::CCBM_ESI_REQ) != 0);
     }
 
     public static function canInjectEsi()

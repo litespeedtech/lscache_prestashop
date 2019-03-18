@@ -48,10 +48,6 @@ class LiteSpeedCacheHelper
         if ($config->get(Conf::CFG_DIFFMOBILE)) {
             $defaultParam['mobi'] = $ctx->getMobileDevice() ? 1 : 0;
         }
-        $esiurl = $ctx->link->getModuleLink(LiteSpeedCache::MODULE_NAME, 'esi', $defaultParam);
-        $esiurl0 = $ctx->link->getModuleLink(LiteSpeedCache::MODULE_NAME, 'esi');
-        self::$internal['esi_base_url'] = self::getRelativeUri($esiurl);
-        self::$internal['esi_base_url_raw'] = self::getRelativeUri($esiurl0);
 
         self::$internal['pub_ttl'] = $config->get(Conf::CFG_PUBLIC_TTL);
         self::$internal['priv_ttl'] = $config->get(Conf::CFG_PRIVATE_TTL);
@@ -59,13 +55,19 @@ class LiteSpeedCacheHelper
         $unique = str_split(md5(_PS_ROOT_DIR_));
         $prefix = 'PS' . implode('', array_slice($unique, 0, 5)); // take 5 char
         self::$internal['tag_prefix'] = $prefix;
-        self::$internal['cache_entry'] = $prefix . md5(self::$internal['esi_base_url']);
         self::$internal['cache_dir'] = _PS_CACHE_DIR_ . LiteSpeedCache::MODULE_NAME;
 
         $tag0 = $prefix; // for purge all PS cache
         $tag1 = $prefix . '_' . Conf::TAG_PREFIX_SHOP . $defaultParam['s']; // for purge one shop
         self::$internal['tag_shared_pub'] = $tag0 . ',' . $tag1;
         self::$internal['tag_shared_priv'] = 'public:' . $prefix . '_PRIV'; // in private cache, use public:prefix_PRIV
+
+        if (LiteSpeedCache::canInjectEsi() || LiteSpeedCache::isCacheable() || LiteSpeedCache::isEsiRequest()) {
+            // For some purge events, it may not load from dispatcher, getModuleLink will fail
+            $esiurl = $ctx->link->getModuleLink(LiteSpeedCache::MODULE_NAME, 'esi', $defaultParam);
+            self::$internal['esi_base_url'] = self::getRelativeUri($esiurl);
+            self::$internal['cache_entry'] = $prefix . md5(self::$internal['esi_base_url']);
+        }
     }
 
     public static function getRelativeUri($url)
@@ -84,22 +86,26 @@ class LiteSpeedCacheHelper
 
     public static function getCacheFilePath(&$dir)
     {
-        if (!isset(self::$internal['esi_base_url'])) {
+        $dir = self::getCacheDir();
+        return $dir . '/' . self::$internal['cache_entry'] . '.data';
+    }
+
+    public static function getCacheDir()
+    {
+        if (!isset(self::$internal['cache_dir'])) {
             self::initInternals();
         }
         $dir = self::$internal['cache_dir'];
         if (!is_dir($dir)) {
             mkdir($dir);
         }
-
-        return $dir . '/' . self::$internal['cache_entry'] . '.data';
+        return $dir;
     }
 
     public static function clearInternalCache()
     {
         $count = 0;
-        $dir = '';
-        self::getCacheFilePath($dir);
+        $dir = self::getCacheDir();
         foreach (scandir($dir) as $entry) {
             if (preg_match('/\.data$/', $entry)) {
                 @unlink($dir . '/' . $entry);
