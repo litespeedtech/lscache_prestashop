@@ -31,7 +31,7 @@ class LscBlockCart extends LscIntegration
 
     protected function init()
     {
-        $confData = array(
+        $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => LiteSpeedCacheConfig::TAG_CART,
             EsiConf::FLD_PURGE_CONTROLLERS => 'CartController?id_product',
@@ -39,7 +39,7 @@ class LscBlockCart extends LscIntegration
             EsiConf::FLD_IGNORE_EMPTY => 1,
             EsiConf::FLD_TIPURL => 'https://www.litespeedtech.com/support/wiki/doku.php/'
             . 'litespeed_wiki:cache:lscps:customization_1_6#customize_blockcart_template',
-        );
+        ];
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
 
         return $this->registerEsiModule();

@@ -30,7 +30,7 @@ class LscCustomerSignIn extends LscIntegration
 
     protected function init()
     {
-        $confData = array(
+        $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => LiteSpeedCacheConfig::TAG_SIGNIN,
             EsiConf::FLD_PURGE_EVENTS => 'actionCustomerLogoutAfter, actionAuthentication',
@@ -38,7 +38,7 @@ class LscCustomerSignIn extends LscIntegration
             EsiConf::FLD_IGNORE_EMPTY => 1,
             EsiConf::FLD_TIPURL => 'https://www.litespeedtech.com/support/wiki/doku.php/'
             . 'litespeed_wiki:cache:lscps:customization_1_7#cart_and_login_widgets_as_esi_blocks',
-        );
+        ];
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
 
         return $this->registerEsiModule();

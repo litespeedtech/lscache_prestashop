@@ -58,11 +58,11 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         $this->_modified = false; // disallow others to call write
         $this->_allow_writing = false;
 
-        $this->vd = array(
-            'cv' => array('name' => $name, 'ov' => null, 'nv' => null), // cookieVary
-            'vv' => array('ov' => null, 'nv' => null),   // valueVary
-            'ps' => array('ov' => null, 'nv' => null), // private session
-        );
+        $this->vd = [
+            'cv' => ['name' => $name, 'ov' => null, 'nv' => null], // cookieVary
+            'vv' => ['ov' => null, 'nv' => null],   // valueVary
+            'ps' => ['ov' => null, 'nv' => null], // private session
+        ];
         $this->init();
     }
 
@@ -80,7 +80,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
                 return true;
             }
         } else { // non guest
-            return ($this->vd['cv']['ov'] !== $this->vd['cv']['nv']);
+            return $this->vd['cv']['ov'] !== $this->vd['cv']['nv'];
         }
     }
 
@@ -173,7 +173,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
 
         // check lscache vary cookie, not default PS cookie, workaround validator
         $cookies = ${'_COOKIE'};
-        $data = array();
+        $data = [];
         if (LiteSpeedCache::isRestrictedIP()) {
             $data['dev'] = 1;
         }

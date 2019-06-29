@@ -30,13 +30,13 @@ class LscBlockUserInfo extends LscIntegration
 
     protected function init()
     {
-        $confData = array(
+        $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => LiteSpeedCacheConfig::TAG_SIGNIN, // maybe can be removed
             EsiConf::FLD_PURGE_EVENTS => 'actionCustomerLogoutAfter, actionAuthentication',
             EsiConf::FLD_HOOK_METHODS => '!hookDisplayHeader',
             EsiConf::FLD_IGNORE_EMPTY => 1,
-        );
+        ];
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
         $this->registerEsiModule();
         $this->addJsDef('isLogged', $this);
@@ -49,20 +49,18 @@ class LscBlockUserInfo extends LscIntegration
     {
         $logged = Context::getContext()->customer->isLogged();
         if ($jskey == 'isLogged') {
-            $logged = (int)$logged;
-        }
-        elseif ($jskey == 'isLoggedWishlist') {
-            $logged = (bool)$logged;
-        }
-        else {
+            $logged = (int) $logged;
+        } elseif ($jskey == 'isLoggedWishlist') {
+            $logged = (bool) $logged;
+        } else {
             //something wrong, should not happen
             LSLog::log(__FUNCTION__ . ' unexpected ' . $jskey, LSLog::LEVEL_EXCEPTION);
+
             return '';
         }
 
         return json_encode($logged);
     }
-
 }
 
 LscBlockUserInfo::register();

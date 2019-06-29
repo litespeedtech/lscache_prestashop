@@ -56,7 +56,7 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
     {
         $this->conf = $conf;
 
-        $this->sdata = array(
+        $this->sdata = [
             'id' => json_encode($param),
             'param' => $param,
             'url' => '',
@@ -64,10 +64,10 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
             'inlStart' => false,
             'shared' => null,
             'tag' => $conf->getTag(),
-        );
-        $this->cdata = array(
+        ];
+        $this->cdata = [
             'inlStart' => false,
-        );
+        ];
     }
 
     public function jsonSerialize()

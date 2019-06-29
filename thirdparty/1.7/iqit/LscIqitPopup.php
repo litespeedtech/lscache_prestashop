@@ -33,14 +33,14 @@ class LscIqitPopup extends LscIntegration
 
     protected function init()
     {
-        $confData = array(
+        $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => 'popup',
             EsiConf::FLD_ASVAR => 1,
             EsiConf::FLD_ONLY_CACHE_EMPTY => 1,
             EsiConf::FLD_IGNORE_EMPTY => 0,
             EsiConf::FLD_RENDER_WIDGETS => '*',
-        );
+        ];
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);
         $this->registerEsiModule();
         LiteSpeedCacheConfig::getInstance()->overrideGuestMode();

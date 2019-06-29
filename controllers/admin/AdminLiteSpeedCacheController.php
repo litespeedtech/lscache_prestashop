@@ -33,5 +33,4 @@ class AdminLiteSpeedCacheController extends ModuleAdminController
         $linkClass = $this->module->active ? 'AdminLiteSpeedCacheManage' : 'AdminHome';
         Tools::redirectAdmin($this->context->link->getAdminLink($linkClass));
     }
-
 }

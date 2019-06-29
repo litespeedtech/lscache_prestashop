@@ -30,13 +30,13 @@ class LscShoppingcart extends LscIntegration
 
     protected function init()
     {
-        $confData = array(
+        $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => LiteSpeedCacheConfig::TAG_CART,
             EsiConf::FLD_PURGE_CONTROLLERS => 'CartController?id_product',
             EsiConf::FLD_RENDER_WIDGETS => '*',
             EsiConf::FLD_IGNORE_EMPTY => 1,
-        );
+        ];
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
 
         return $this->registerEsiModule();
