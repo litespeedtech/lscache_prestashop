@@ -332,9 +332,10 @@ class LiteSpeedCacheCore
         }
 
         $pubtags = [];
+        $restype = $resources[0];
         $resid = $resources[1];
 
-        switch ($resources[0]) {
+        switch ($restype) {
             case 'categories':
                 $pubtags[] = Conf::TAG_PREFIX_CATEGORY . $resid;
                 break;

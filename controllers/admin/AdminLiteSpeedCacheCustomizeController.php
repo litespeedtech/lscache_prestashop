@@ -429,7 +429,6 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
     private function getModuleOptions()
     {
         $moduleOptions = array();
-        //$is17 = version_compare(_PS_VERSION_, '1.7.0.0', '>=');
         if ($this->display == 'edit' || $this->display == 'view') {
             $name = $this->current_id;
             $moduleOptions[] = array(
@@ -444,8 +443,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 if (($module['active'] == 1)
                     && (!in_array($module['name'], $existing))
                     && ($tmp_instance = Module::getInstanceByName($module['name']))
-                    /*&& (!$is17
-                            || ($tmp_instance instanceof PrestaShop\PrestaShop\Core\Module\WidgetInterface))*/) {
+                ) {
                     $list[$module['name']] = $tmp_instance->displayName;
                 }
             }
