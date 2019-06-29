@@ -332,7 +332,6 @@ class LiteSpeedCacheCore
         }
 
         $pubtags = [];
-        $restype = $resources[0];
         $resid = $resources[1];
 
         switch ($resources[0]) {

@@ -429,7 +429,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
     private function getModuleOptions()
     {
         $moduleOptions = array();
-        $is17 = version_compare(_PS_VERSION_, '1.7.0.0', '>=');
+        //$is17 = version_compare(_PS_VERSION_, '1.7.0.0', '>=');
         if ($this->display == 'edit' || $this->display == 'view') {
             $name = $this->current_id;
             $moduleOptions[] = array(
