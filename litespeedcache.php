@@ -789,8 +789,8 @@ class LiteSpeedCache extends Module
                 $tab->name[$lang['id_lang']] = $t['name'];
             }
 
-            $tab->id_parent = is_int($t['ParentClassName']) ?
-                $t['ParentClassName'] : (int) Tab::getIdFromClassName($t['ParentClassName']);
+            $tab->id_parent = is_int($t['parent_class_name']) ?
+                $t['parent_class_name'] : (int) Tab::getIdFromClassName($t['parent_class_name']);
             $tab->module = $this->name;
             $tab->add();
         }
@@ -805,25 +805,25 @@ class LiteSpeedCache extends Module
                 'name' => $this->l('LiteSpeed Cache'), // this will use the default admin lang
                 'visible' => 1,
                 'icon' => 'flash_on',
-                'ParentClassName' => $root_node,
+                'parent_class_name' => $root_node,
             ),
             array(
                 'class_name' => 'AdminLiteSpeedCacheManage',
                 'name' => $this->l('Manage'),
                 'visible' => 1,
-                'ParentClassName' => 'AdminLiteSpeedCache',
+                'parent_class_name' => 'AdminLiteSpeedCache',
             ),
             array(
                 'class_name' => 'AdminLiteSpeedCacheConfig',
                 'name' => $this->l('Configuration'),
                 'visible' => 1,
-                'ParentClassName' => 'AdminLiteSpeedCache',
+                'parent_class_name' => 'AdminLiteSpeedCache',
             ),
             array(
                 'class_name' => 'AdminLiteSpeedCacheCustomize',
                 'name' => $this->l('Customization'),
                 'visible' => 1,
-                'ParentClassName' => 'AdminLiteSpeedCache',
+                'parent_class_name' => 'AdminLiteSpeedCache',
             ),
         );
 
