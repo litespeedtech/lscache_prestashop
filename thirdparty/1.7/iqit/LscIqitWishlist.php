@@ -31,12 +31,12 @@ class LscIqitWishlist extends LscIntegration
 
     protected function init()
     {
-        $confData = array(
+        $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => 'wishlist',
             EsiConf::FLD_PURGE_CONTROLLERS => 'iqitwishlistactionsModuleFrontController',
             EsiConf::FLD_ASVAR => 1,
-        );
+        ];
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);
         $this->registerEsiModule();
         $this->addJsDef('iqitwishlist:nbProducts', $this);

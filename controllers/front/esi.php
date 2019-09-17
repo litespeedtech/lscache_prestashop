@@ -22,9 +22,9 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-use LiteSpeedCacheLog as LSLog;
-use LiteSpeedCacheHelper as LSHelper;
 use LiteSpeedCacheEsiItem as EsiItem;
+use LiteSpeedCacheHelper as LSHelper;
+use LiteSpeedCacheLog as LSLog;
 
 class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 {
@@ -132,7 +132,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
     private function processRenderWidget($item)
     {
-        $params = array();
+        $params = [];
         if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
             $item->setFailed();
         } else {
@@ -143,7 +143,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
     private function processWidgetBlock($item)
     {
-        $params = array();
+        $params = [];
         if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
             $item->setFailed();
         } else {
@@ -154,7 +154,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
     private function processCallHook($item)
     {
-        $params = array();
+        $params = [];
         if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
             $item->setFailed();
         } else {
