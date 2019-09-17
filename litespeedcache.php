@@ -84,12 +84,12 @@ class LiteSpeedCache extends Module
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
-        $this->ps_versions_compliancy = array(
+        $this->ps_versions_compliancy = [
             'min' => '1.6', // support both 1.6 and 1.7
             'max' => _PS_VERSION_,
-        );
+        ];
 
-        $this->controllers = array('esi');
+        $this->controllers = ['esi'];
 
         $this->bootstrap = true;
         parent::__construct();
@@ -100,9 +100,9 @@ class LiteSpeedCache extends Module
         $this->config = LiteSpeedCacheConfig::getInstance();
         // instantiate cache even when module not enabled, because may still need purge cache.
         $this->cache = new LiteSpeedCacheCore($this->config);
-        $this->esiInjection = array('tracker' => array(),
-            'marker' => array(),
-        );
+        $this->esiInjection = ['tracker' => [],
+            'marker' => [],
+        ];
 
         self::$ccflag |= $this->config->moduleEnabled();
         if (!defined('_LITESPEED_CACHE_')) {
@@ -115,32 +115,32 @@ class LiteSpeedCache extends Module
 
     public static function isActive()
     {
-        return ((self::$ccflag & (self::CCBM_MOD_ACTIVE | self::CCBM_MOD_ALLOWIP)) != 0);
+        return (self::$ccflag & (self::CCBM_MOD_ACTIVE | self::CCBM_MOD_ALLOWIP)) != 0;
     }
 
     public static function isActiveForUser()
     {
-        return ((self::$ccflag & self::CCBM_MOD_ACTIVE) != 0);
+        return (self::$ccflag & self::CCBM_MOD_ACTIVE) != 0;
     }
 
     public static function isRestrictedIP()
     {
-        return ((self::$ccflag & self::CCBM_MOD_ALLOWIP) != 0);
+        return (self::$ccflag & self::CCBM_MOD_ALLOWIP) != 0;
     }
 
     public static function isCacheable()
     {
-        return (((self::$ccflag & self::CCBM_NOT_CACHEABLE) == 0) && ((self::$ccflag & self::CCBM_CACHEABLE) != 0));
+        return ((self::$ccflag & self::CCBM_NOT_CACHEABLE) == 0) && ((self::$ccflag & self::CCBM_CACHEABLE) != 0);
     }
 
     public static function isEsiRequest()
     {
-        return ((self::$ccflag & self::CCBM_ESI_REQ) != 0);
+        return (self::$ccflag & self::CCBM_ESI_REQ) != 0;
     }
 
     public static function canInjectEsi()
     {
-        return ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) != 0);
+        return (self::$ccflag & self::CCBM_CAN_INJECT_ESI) != 0;
     }
 
     public static function getCCFlag()
@@ -164,7 +164,7 @@ class LiteSpeedCache extends Module
         $controllerClass = $params['controller_class'];
 
         if (_LITESPEED_DEBUG_ > 0) {
-            $notprinted = array('AdminDashboardController', 'AdminGamificationController');
+            $notprinted = ['AdminDashboardController', 'AdminGamificationController'];
             if (in_array($controllerClass, $notprinted)) {
                 LiteSpeedCacheLog::setDebugLevel(0); // disable logging for current request
             }
@@ -420,7 +420,7 @@ class LiteSpeedCache extends Module
             self::$ccflag |= self::CCBM_VARY_CHECKED;
         }
 
-        return ((self::$ccflag & self::CCBM_VARY_CHANGED) != 0);
+        return (self::$ccflag & self::CCBM_VARY_CHANGED) != 0;
     }
 
     public static function callbackOutputFilter($buffer)
@@ -450,7 +450,7 @@ class LiteSpeedCache extends Module
         }
 
         $lsc->cache->setCacheControlHeader();
-        /** for testing
+        /* for testing
          * //  $tname = tempnam('/tmp/t','A');
          * //  file_put_contents($tname, $buffer);
          */
@@ -473,8 +473,8 @@ class LiteSpeedCache extends Module
         if (count($this->esiInjection['marker'])) {
             // U :ungreedy s: dotall m: multiline
             $nb = preg_replace_callback(
-                array('/_LSC(ESI)-(.+)-START_(.*)_LSCESIEND_/Usm',
-                    '/(\'|\")_LSCESIJS-(.+)-START__LSCESIEND_(\'|\")/Usm', ),
+                ['/_LSC(ESI)-(.+)-START_(.*)_LSCESIEND_/Usm',
+                    '/(\'|\")_LSCESIJS-(.+)-START__LSCESIEND_(\'|\")/Usm', ],
                 function ($m) {
                     // inject ESI even it's not cacheable
                     $id = $m[2];
@@ -516,13 +516,13 @@ class LiteSpeedCache extends Module
         // Tools::getToken() is not really used for cacheable pages
         // Tools::getToken(false) is used -------------- caninject
         $static_token = Tools::getToken(false);
-        $tkparam = array('pt' => LiteSpeedCacheEsiItem::ESI_TOKEN, 'm' => LscToken::NAME, 'd' => 'static');
+        $tkparam = ['pt' => LiteSpeedCacheEsiItem::ESI_TOKEN, 'm' => LscToken::NAME, 'd' => 'static'];
         $tkitem = new LiteSpeedCacheEsiItem($tkparam, $this->config->getEsiModuleConf(LscToken::NAME));
         $tkitem->setContent($static_token);
         // we always add to inline
         $this->esiInjection['marker'][$tkitem->getId()] = $tkitem;
 
-        $envparam = array('pt' => LiteSpeedCacheEsiItem::ESI_ENV, 'm' => LscEnv::NAME);
+        $envparam = ['pt' => LiteSpeedCacheEsiItem::ESI_ENV, 'm' => LscEnv::NAME];
         $envitem = new LiteSpeedCacheEsiItem($envparam, $this->config->getEsiModuleConf(LscEnv::NAME));
         $envitem->setContent('');
         $this->esiInjection['marker'][$envitem->getId()] = $envitem;
@@ -535,7 +535,7 @@ class LiteSpeedCache extends Module
             $nb = $envitem->getInclude() . $nb; // must be first one
         }
 
-        $allPrivateItems = array();
+        $allPrivateItems = [];
         // last adding esi:inline, which needs to be in front of esi:include
         foreach ($this->esiInjection['marker'] as $item) {
             $inline = $item->getInline();
@@ -586,7 +586,7 @@ class LiteSpeedCache extends Module
             $err |= 2;
         }
 
-        $esiParam = array('pt' => $pt, 'm' => $m, 'f' => $f);
+        $esiParam = ['pt' => $pt, 'm' => $m, 'f' => $f];
         if ($f == 'widget' && isset($params['hook'])) {
             $esiParam['h'] = $params['hook'];
         } elseif ($f == 'widget_block') {
@@ -658,7 +658,7 @@ class LiteSpeedCache extends Module
         $m = $module->name;
         $pt = LiteSpeedCacheEsiItem::ESI_RENDERWIDGET;
 
-        $esiParam = array('pt' => $pt, 'm' => $m, 'h' => $hook_name);
+        $esiParam = ['pt' => $pt, 'm' => $m, 'h' => $hook_name];
         $conf = $lsc->config->canInjectEsi($m, $esiParam);
         if ($conf == false) {
             return false;
@@ -681,7 +681,7 @@ class LiteSpeedCache extends Module
         $m = $module->name;
         $pt = LiteSpeedCacheEsiItem::ESI_CALLHOOK;
 
-        $esiParam = array('pt' => $pt, 'm' => $m, 'mt' => $method);
+        $esiParam = ['pt' => $pt, 'm' => $m, 'mt' => $method];
         $conf = $lsc->config->canInjectEsi($m, $esiParam);
         if ($conf == false) {
             return false;
@@ -784,7 +784,7 @@ class LiteSpeedCache extends Module
             $tab = new Tab();
             $tab->active = 1;
             $tab->class_name = $t['class_name'];
-            $tab->name = array();
+            $tab->name = [];
             foreach (Language::getLanguages(true) as $lang) {
                 $tab->name[$lang['id_lang']] = $t['name'];
             }
@@ -799,33 +799,33 @@ class LiteSpeedCache extends Module
     private function initTabs()
     {
         $root_node = version_compare(_PS_VERSION_, '1.7.1.0', '>=') ? 'AdminAdvancedParameters' : 0;
-        $definedtabs = array(
-            array(
+        $definedtabs = [
+            [
                 'class_name' => 'AdminLiteSpeedCache',
                 'name' => $this->l('LiteSpeed Cache'), // this will use the default admin lang
                 'visible' => 1,
                 'icon' => 'flash_on',
                 'ParentClassName' => $root_node,
-            ),
-            array(
+            ],
+            [
                 'class_name' => 'AdminLiteSpeedCacheManage',
                 'name' => $this->l('Manage'),
                 'visible' => 1,
                 'ParentClassName' => 'AdminLiteSpeedCache',
-            ),
-            array(
+            ],
+            [
                 'class_name' => 'AdminLiteSpeedCacheConfig',
                 'name' => $this->l('Configuration'),
                 'visible' => 1,
                 'ParentClassName' => 'AdminLiteSpeedCache',
-            ),
-            array(
+            ],
+            [
                 'class_name' => 'AdminLiteSpeedCacheCustomize',
                 'name' => $this->l('Customization'),
                 'visible' => 1,
                 'ParentClassName' => 'AdminLiteSpeedCache',
-            ),
-        );
+            ],
+        ];
 
         return $definedtabs;
     }

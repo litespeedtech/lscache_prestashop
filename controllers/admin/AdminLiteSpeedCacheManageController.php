@@ -67,7 +67,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
                     . $this->l('Please contact your sysadmin or your host to get a valid LiteSpeed license.');
         }
 
-        $this->labels = array(
+        $this->labels = [
             'home' => $this->l('Home Page'),
             '404' => $this->l('All 404 Pages'),
             'search' => $this->l('All Categories and Products Pages'),
@@ -83,7 +83,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             'cms0' => $this->l('CMS'),
             'shop0' => $this->l('Shop'),
             'affectall' => $this->l('This will affect all shops'),
-        );
+        ];
 
         // is_shop_level -1: not multishop, 0: multishop global, 1: multishop shop or group
     }
@@ -91,17 +91,17 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
     public function initPageHeaderToolbar()
     {
         if ($this->is_shop_level !== 1) {
-            $this->page_header_toolbar_btn['purge_shops'] = array(
+            $this->page_header_toolbar_btn['purge_shops'] = [
                 'href' => self::$currentIndex . '&purge_shops&token=' . $this->token,
                 'desc' => $this->l('Flush All PrestaShop Pages'),
                 'icon' => 'process-icon-delete',
-            );
-            $this->page_header_toolbar_btn['purge_all'] = array(
+            ];
+            $this->page_header_toolbar_btn['purge_all'] = [
                 'href' => self::$currentIndex . '&purge_all&token=' . $this->token,
                 'desc' => $this->l('Flush Entire Cache Storage'),
                 'icon' => 'process-icon-delete',
                 'class' => 'btn-warning',
-            );
+            ];
         }
         parent::initPageHeaderToolbar();
     }
@@ -137,8 +137,8 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
 
     private function processPurgeSelection()
     {
-        $tags = array();
-        $info = array();
+        $tags = [];
+        $info = [];
         if (Tools::getValue('cbPurge_home')) {
             $tags[] = Conf::TAG_HOME;
             $info[] = $this->labels['home'];
@@ -223,7 +223,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         $pattern = "/[\s,]+/";
         $id = Tools::getValue('purgeids');
         $ids = preg_split($pattern, $id, null, PREG_SPLIT_NO_EMPTY);
-        $tags = array();
+        $tags = [];
         $hasError = false;
         if (empty($ids)) {
             $hasError = true;
@@ -252,7 +252,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
     private function doPurge($tags, $key = 'public')
     {
         if (LiteSpeedCache::isActive() || $tags == '*') {
-            $params = array('from' => 'AdminLiteSpeedCacheManage', $key => $tags);
+            $params = ['from' => 'AdminLiteSpeedCacheManage', $key => $tags];
             Hook::exec('litespeedCachePurge', $params);
 
             return true;
@@ -283,33 +283,33 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
     {
         $title = $this->l('Purge by Selection');
         $form = $this->newFieldForm($title, 'list-ul', $title);
-        $cbPurge = array(
+        $cbPurge = [
             'type' => 'checkbox',
             'label' => $this->l('Select All Pages You Want to Purge'),
             'name' => 'cbPurge',
-            'values' => array(
-                'query' => array(
-                    array('id' => 'home', 'name' => $this->labels['home']),
-                    array('id' => '404', 'name' => $this->labels['404']),
-                    array('id' => 'search', 'name' => $this->labels['search']),
-                    array('id' => 'brand', 'name' => $this->labels['brand']),
-                    array('id' => 'supplier', 'name' => $this->labels['supplier']),
-                    array('id' => 'sitemap', 'name' => $this->labels['sitemap']),
-                    array('id' => 'cms', 'name' => $this->labels['cms']),
-                    array('id' => 'priv', 'name' => $this->labels['priv']),
-                ),
-                'id' => 'id', 'name' => 'name', ),
-        );
-        $selCat = array(
+            'values' => [
+                'query' => [
+                    ['id' => 'home', 'name' => $this->labels['home']],
+                    ['id' => '404', 'name' => $this->labels['404']],
+                    ['id' => 'search', 'name' => $this->labels['search']],
+                    ['id' => 'brand', 'name' => $this->labels['brand']],
+                    ['id' => 'supplier', 'name' => $this->labels['supplier']],
+                    ['id' => 'sitemap', 'name' => $this->labels['sitemap']],
+                    ['id' => 'cms', 'name' => $this->labels['cms']],
+                    ['id' => 'priv', 'name' => $this->labels['priv']],
+                ],
+                'id' => 'id', 'name' => 'name', ],
+        ];
+        $selCat = [
             'type' => 'categories',
             'label' => $this->l('Select Categories'),
             'name' => 'rcats',
-            'tree' => array(
+            'tree' => [
                 'root_category' => 1,
                 'id' => 'id_category',
                 'name' => 'name_category',
-            ),
-        );
+            ],
+        ];
         if ($this->is_shop_level !== -1) {
             $cbPurge['hint'] = $this->labels['affectall'];
             $selCat['hint'] = $this->labels['affectall'];
@@ -328,7 +328,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         $helper->submit_action = 'submitPurgeSelection';
         $helper->currentIndex = self::$currentIndex;
 
-        return $helper->generateForm(array(array('form' => $form)));
+        return $helper->generateForm([['form' => $form]]);
     }
 
     private function renderPurgeId()
@@ -339,32 +339,32 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
                 . $this->l('You need to know the exact IDs if you want to use this function.') . ' '
                 . $this->l('No extra validation on the ID value.');
         $form = $this->newFieldForm($title, 'list-ol', $title, $desc);
-        $query = array(
-            array('purgeby' => 'prod', 'name' => $this->labels['prod0']),
-            array('purgeby' => 'cat', 'name' => $this->labels['cat0']),
-            array('purgeby' => 'brand', 'name' => $this->labels['brand0']),
-            array('purgeby' => 'supplier', 'name' => $this->labels['supplier0']),
-            array('purgeby' => 'cms', 'name' => $this->labels['cms0']),
-        );
-        $textareaIds = array(
+        $query = [
+            ['purgeby' => 'prod', 'name' => $this->labels['prod0']],
+            ['purgeby' => 'cat', 'name' => $this->labels['cat0']],
+            ['purgeby' => 'brand', 'name' => $this->labels['brand0']],
+            ['purgeby' => 'supplier', 'name' => $this->labels['supplier0']],
+            ['purgeby' => 'cms', 'name' => $this->labels['cms0']],
+        ];
+        $textareaIds = [
             'type' => 'textarea',
             'class' => 'input',
             'desc' => $this->l('You can enter multiple IDs by using a comma-delimited string.'),
             'label' => $this->l('Enter the IDs of the Pages You Want to Purge'),
             'name' => 'purgeids',
-        );
+        ];
         if ($this->is_shop_level !== -1) {
-            $query[] = array('purgeby' => 'shop', 'name' => $this->labels['shop0']);
+            $query[] = ['purgeby' => 'shop', 'name' => $this->labels['shop0']];
             $textareaIds['hint'] = $this->labels['affectall'];
         }
 
-        $form['input'][] = array(
+        $form['input'][] = [
             'type' => 'select',
             'label' => $this->l('Select ID Type'),
             'name' => 'purgeby',
             'required' => false,
-            'options' => array('query' => $query, 'id' => 'purgeby', 'name' => 'name'),
-        );
+            'options' => ['query' => $query, 'id' => 'purgeby', 'name' => 'name'],
+        ];
 
         $form['input'][] = $textareaIds;
 
@@ -381,23 +381,23 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
 
         $cur_purgeby = isset($this->current_values['purgeby']) ? $this->current_values['purgeby'] : '';
         $cur_ids = isset($this->current_values['purgeids']) ? $this->current_values['purgeids'] : '';
-        $helper->tpl_vars = array(
-            'fields_value' => array('purgeby' => $cur_purgeby, 'purgeids' => $cur_ids),
-        );
+        $helper->tpl_vars = [
+            'fields_value' => ['purgeby' => $cur_purgeby, 'purgeids' => $cur_ids],
+        ];
 
-        return $helper->generateForm(array(array('form' => $form)));
+        return $helper->generateForm([['form' => $form]]);
     }
 
     private function newFieldForm($title, $icon, $submit_title, $desc = '')
     {
-        $form = array(
-            'legend' => array('title' => $title, 'icon' => "icon-$icon"),
-            'submit' => array('icon' => 'process-icon-delete', 'title' => $submit_title),
-        );
+        $form = [
+            'legend' => ['title' => $title, 'icon' => "icon-$icon"],
+            'submit' => ['icon' => 'process-icon-delete', 'title' => $submit_title],
+        ];
         if ($desc) {
             $form['description'] = $desc;
         }
-        $form['input'] = array();
+        $form['input'] = [];
 
         return $form;
     }

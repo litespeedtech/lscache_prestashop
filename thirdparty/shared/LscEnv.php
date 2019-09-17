@@ -31,11 +31,11 @@ class LscEnv extends LscIntegration
 
     protected function init()
     {
-        $confData = array(
+        $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => LiteSpeedCacheConfig::TAG_ENV,
             EsiConf::FLD_ASVAR => 1,
-        );
+        ];
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
 
         return $this->registerEsiModule();
@@ -44,7 +44,7 @@ class LscEnv extends LscIntegration
     public static function isUsed($name)
     {
         // always used
-        return ($name == self::NAME);
+        return $name == self::NAME;
     }
 }
 
