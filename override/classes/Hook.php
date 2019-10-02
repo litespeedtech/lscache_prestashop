@@ -36,6 +36,14 @@ class Hook extends HookCore
             // No logic added here. This is to print out all hook events, for module customization,
             // to add purge or tagging event hook
             $mesg = '  in hook coreCallHook ' . get_class($module) . ' - ' . $method;
+            if ($method == 'hooklitespeedEsiBegin') {
+                $mesg .= ' params m=' . $params['m'] . ' field=' . $params['field'];
+                if (isset($params['hook']))
+                    $mesg .= ' hook=' . $params['hook'];
+                if (isset($params['tpl']))
+                    $mesg .= ' tpl=' . $params['tpl'];
+            }
+
             LiteSpeedCacheLog::log($mesg, LiteSpeedCacheLog::LEVEL_HOOK_DETAIL);
         }
 

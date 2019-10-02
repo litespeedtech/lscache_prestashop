@@ -80,7 +80,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache'; // self::MODULE_NAME was rejected by validator
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '1.2.6'; // validator does not allow const here
+        $this->version = '1.2.7'; // validator does not allow const here
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
@@ -164,7 +164,7 @@ class LiteSpeedCache extends Module
         $controllerClass = $params['controller_class'];
 
         if (_LITESPEED_DEBUG_ > 0) {
-            $notprinted = ['AdminDashboardController', 'AdminGamificationController'];
+            $notprinted = ['AdminDashboardController', 'AdminGamificationController', 'AdminAjaxFaviconBOController'];
             if (in_array($controllerClass, $notprinted)) {
                 LiteSpeedCacheLog::setDebugLevel(0); // disable logging for current request
             }
@@ -503,9 +503,7 @@ class LiteSpeedCache extends Module
 
                     return $esiInclude;
                 },
-                $buf,
-                -1,
-                $count
+                $buf
             );
         } else {
             // log here, shouldn't happen

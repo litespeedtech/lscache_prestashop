@@ -170,7 +170,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             return;
         }
 
-        $guest = ($this->current_values[Conf::CFG_GUESTMODE] == 1);
+        $guest = ($this->current_values[Conf::CFG_GUESTMODE] == 1); // only test if it has guestmode=1, for option=2, will handle in code, not htaccess
         $mobile = $this->current_values[Conf::CFG_DIFFMOBILE];
         if ($guest && ($this->original_values[Conf::CFG_DIFFMOBILE] != $mobile)) {
             $this->changed |= self::BMC_HTACCESS_UPDATE;

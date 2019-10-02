@@ -49,12 +49,14 @@ class LscGdprPro extends LscIntegration
 
     protected function JSKeyProcess($jskey)
     {
+        //LSLog::log(__FUNCTION__ . 'GDPR JSKeyProcess key ' . $jskey, LSLog::LEVEL_TEMPORARY);
         if ($jskey != 'gdprSettings:showWindow') {
             //something wrong, should not happen
             LSLog::log(__FUNCTION__ . ' unexpected key ' . $jskey, LSLog::LEVEL_EXCEPTION);
 
             return '';
         }
+    // LSLog::log(__FUNCTION__ . 'GDPR JSKeyProcess context cookie  gdpr_windows_was_opened ' . print_r(Context::getContext()->cookie, 1));
         $data = !Context::getContext()->cookie->gdpr_windows_was_opened;
 
         return json_encode($data);

@@ -208,7 +208,7 @@ class LiteSpeedCacheCore
             $this->cacheTags[] = $tag;
         }
 
-        return count($this->cacheTags) > $old;
+        return (count($this->cacheTags) > $old);
     }
 
     // return 1: added, 0: already exists, 2: already has purgeall
@@ -325,11 +325,9 @@ class LiteSpeedCacheCore
             return;
         }
         $resources = explode('/', $_REQUEST['url']);
-        if (empty($resources) || count($resources) != 2 || (int) ($resources[1]) != $resources[1]) {
-            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_WEBSERVICE_DETAIL) {
+        if (empty($resources) || count($resources) != 2 || intval($resources[1]) != $resources[1]) {
+            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_WEBSERVICE_DETAIL)
                 LSLog::log("WebService Purge - Ignored $method " . var_export($resources, 1), LSLog::LEVEL_WEBSERVICE_DETAIL);
-            }
-
             return;
         }
 
@@ -491,6 +489,10 @@ class LiteSpeedCacheCore
             case 'actionauthentication':
             case 'actioncustomeraccountadd':
                 $tags['priv'] = ['*'];
+                break;
+
+            case 'actionclearcache':
+                $tags['pub'] = ['*'];
                 break;
 
             case 'actionproductadd':
