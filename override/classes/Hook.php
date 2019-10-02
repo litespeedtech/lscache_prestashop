@@ -38,10 +38,12 @@ class Hook extends HookCore
             $mesg = '  in hook coreCallHook ' . get_class($module) . ' - ' . $method;
             if ($method == 'hooklitespeedEsiBegin') {
                 $mesg .= ' params m=' . $params['m'] . ' field=' . $params['field'];
-                if (isset($params['hook']))
+                if (isset($params['hook'])) {
                     $mesg .= ' hook=' . $params['hook'];
-                if (isset($params['tpl']))
+                }
+                if (isset($params['tpl'])) {
                     $mesg .= ' tpl=' . $params['tpl'];
+                }
             }
 
             LiteSpeedCacheLog::log($mesg, LiteSpeedCacheLog::LEVEL_HOOK_DETAIL);

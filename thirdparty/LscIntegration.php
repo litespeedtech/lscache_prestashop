@@ -54,40 +54,6 @@ abstract class LscIntegration
         }
     }
 
-    protected function addJsDef($jsk, $proc)
-    {
-        if (!isset(self::$integrated['jsdef'])) {
-            self::$integrated['jsdef'] = [];
-            self::$integrated['jsloc'] = [];
-        }
-        self::$integrated['jsdef'][$jsk] = ['proc' => $proc];
-        $locator = explode(':', $jsk);
-        $cur = &self::$integrated['jsloc'];
-        while ($key = array_shift($locator)) {
-            if (!empty($locator)) {
-                $cur[$key] = [];
-                $cur = &$cur[$key];
-            } else {
-                $cur[$key] = $jsk;
-            }
-        }
-    }
-
-    protected function registerEsiModule()
-    {
-        if ($this->esiConf && ($this->esiConf instanceof LiteSpeedCacheEsiModConf)) {
-            LiteSpeedCacheConfig::getInstance()->registerEsiModule($this->esiConf);
-
-            return true;
-        } else {
-            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_NOTICE) {
-                LSLog::log(__FUNCTION__ . 'something wrong', LSLog::LEVEL_NOTICE);
-            }
-
-            return false;
-        }
-    }
-
     public static function filterJSDef0(&$jsDef, &$injected)
     {
         if (!isset(self::$integrated['jsloc']) || !is_array($jsDef)) {
@@ -117,49 +83,6 @@ abstract class LscIntegration
         }
 
         return $replaced;
-    }
-
-    protected static function filterCurrentJSKeyVal($key, &$val, &$injected, &$log)
-    {
-        $def = &self::$integrated['jsdef'];
-        if (!isset($def[$key])) {
-            return false;
-        }
-        if (!isset($def[$key]['replace'])) {
-            $proc = $def[$key]['proc'];
-            $esiParam = ['pt' => LiteSpeedCacheEsiItem::ESI_JSDEF,
-                'm' => $proc::NAME,
-                'jsk' => $key,
-            ];
-            $log .= $proc::NAME . ':' . $key . ' ';
-
-            $item = new LiteSpeedCacheEsiItem($esiParam, $proc->esiConf);
-            $id = $item->getId();
-            $injected[$id] = $item;
-
-            // replacement, hardcoded
-            $def[$key]['replace'] = '_LSCESIJS-' . $id . '-START__LSCESIEND_';
-            $def[$key]['value'] = json_encode($val); // original
-        }
-        $val = $def[$key]['replace'];
-
-        return true;
-    }
-
-    private static function locateJSKey($key, &$js, &$loc, &$injected, &$log)
-    {
-        if (!isset($loc[$key])) {
-            return null;
-        }
-        if (is_array($loc[$key]) && is_array($js)) {
-            $loc = &$loc[$key];
-            foreach ($js as $key2 => &$js2) {
-                self::locateJSKey($key2, $js2, $loc, $injected, $log);
-            }
-        } else {
-            $curkey = $loc[$key];
-            self::filterCurrentJSKeyVal($curkey, $js, $injected, $log);
-        }
     }
 
     public static function filterJSDef(&$jsDef)
@@ -217,5 +140,82 @@ abstract class LscIntegration
         $item->setFailed();
     }
 
+    protected function addJsDef($jsk, $proc)
+    {
+        if (!isset(self::$integrated['jsdef'])) {
+            self::$integrated['jsdef'] = [];
+            self::$integrated['jsloc'] = [];
+        }
+        self::$integrated['jsdef'][$jsk] = ['proc' => $proc];
+        $locator = explode(':', $jsk);
+        $cur = &self::$integrated['jsloc'];
+        while ($key = array_shift($locator)) {
+            if (!empty($locator)) {
+                $cur[$key] = [];
+                $cur = &$cur[$key];
+            } else {
+                $cur[$key] = $jsk;
+            }
+        }
+    }
+
+    protected function registerEsiModule()
+    {
+        if ($this->esiConf && ($this->esiConf instanceof LiteSpeedCacheEsiModConf)) {
+            LiteSpeedCacheConfig::getInstance()->registerEsiModule($this->esiConf);
+
+            return true;
+        } else {
+            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_NOTICE) {
+                LSLog::log(__FUNCTION__ . 'something wrong', LSLog::LEVEL_NOTICE);
+            }
+
+            return false;
+        }
+    }
+
+    protected static function filterCurrentJSKeyVal($key, &$val, &$injected, &$log)
+    {
+        $def = &self::$integrated['jsdef'];
+        if (!isset($def[$key])) {
+            return false;
+        }
+        if (!isset($def[$key]['replace'])) {
+            $proc = $def[$key]['proc'];
+            $esiParam = ['pt' => LiteSpeedCacheEsiItem::ESI_JSDEF,
+                'm' => $proc::NAME,
+                'jsk' => $key,
+            ];
+            $log .= $proc::NAME . ':' . $key . ' ';
+
+            $item = new LiteSpeedCacheEsiItem($esiParam, $proc->esiConf);
+            $id = $item->getId();
+            $injected[$id] = $item;
+
+            // replacement, hardcoded
+            $def[$key]['replace'] = '_LSCESIJS-' . $id . '-START__LSCESIEND_';
+            $def[$key]['value'] = json_encode($val); // original
+        }
+        $val = $def[$key]['replace'];
+
+        return true;
+    }
+
     abstract protected function init();
+
+    private static function locateJSKey($key, &$js, &$loc, &$injected, &$log)
+    {
+        if (!isset($loc[$key])) {
+            return null;
+        }
+        if (is_array($loc[$key]) && is_array($js)) {
+            $loc = &$loc[$key];
+            foreach ($js as $key2 => &$js2) {
+                self::locateJSKey($key2, $js2, $loc, $injected, $log);
+            }
+        } else {
+            $curkey = $loc[$key];
+            self::filterCurrentJSKeyVal($curkey, $js, $injected, $log);
+        }
+    }
 }

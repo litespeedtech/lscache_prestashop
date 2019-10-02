@@ -69,9 +69,15 @@ class LiteSpeedCacheLog
 
     protected $prefix;
 
+    protected static $instance = null;
+
     private $isDebug = 0;
 
-    protected static $instance = null;
+    protected function __construct()
+    {
+        preg_match("/\d{6}/", microtime(), $msec);
+        $this->prefix = '[' . $_SERVER['REMOTE_ADDR'] . ':' . $_SERVER['REMOTE_PORT'] . ':' . $msec[0] . ']';
+    }
 
     public static function getInstance()
     {
@@ -82,10 +88,14 @@ class LiteSpeedCacheLog
         return self::$instance;
     }
 
-    protected function __construct()
+    public static function setDebugLevel($debugLevel)
     {
-        preg_match("/\d{6}/", microtime(), $msec);
-        $this->prefix = '[' . $_SERVER['REMOTE_ADDR'] . ':' . $_SERVER['REMOTE_PORT'] . ':' . $msec[0] . ']';
+        self::getInstance()->isDebug = $debugLevel;
+    }
+
+    public static function log($mesg, $debugLevel = 9)
+    {
+        self::getInstance()->logDebug($mesg, $debugLevel);
     }
 
     protected function getLogger()
@@ -127,15 +137,5 @@ class LiteSpeedCacheLog
             }
             $this->getLogger()->logDebug($this->prefix . ' (' . $debugLevel . ') ' . $mesg);
         }
-    }
-
-    public static function setDebugLevel($debugLevel)
-    {
-        self::getInstance()->isDebug = $debugLevel;
-    }
-
-    public static function log($mesg, $debugLevel = 9)
-    {
-        self::getInstance()->logDebug($mesg, $debugLevel);
     }
 }

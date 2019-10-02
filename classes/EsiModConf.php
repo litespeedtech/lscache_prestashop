@@ -153,20 +153,6 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         return $this->data[self::FLD_PRIV] != null;
     }
 
-    private function getFieldValue($field, $isbool = false, $splitClean = false)
-    {
-        $value = (isset($this->data[$field])) ? $this->data[$field] : '';
-        if ($isbool) {
-            $value = ($value) ? true : false;
-        }
-        if ($splitClean && $value) {
-            $dv = preg_split("/[\s,]+/", $value, null, PREG_SPLIT_NO_EMPTY);
-            $value = implode(', ', $dv);
-        }
-
-        return $value;
-    }
-
     public function getTTL()
     {
         return isset($this->data[self::FLD_TTL]) ?
@@ -252,6 +238,20 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     public function isCustomized()
     {
         return $this->type == self::TYPE_CUSTOMIZED;
+    }
+
+    private function getFieldValue($field, $isbool = false, $splitClean = false)
+    {
+        $value = (isset($this->data[$field])) ? $this->data[$field] : '';
+        if ($isbool) {
+            $value = ($value) ? true : false;
+        }
+        if ($splitClean && $value) {
+            $dv = preg_split("/[\s,]+/", $value, null, PREG_SPLIT_NO_EMPTY);
+            $value = implode(', ', $dv);
+        }
+
+        return $value;
     }
 
     private function checkInjection($field, $value)

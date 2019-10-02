@@ -66,24 +66,6 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         $this->init();
     }
 
-    private function envChanged()
-    {
-        if ($this->vd['vv']['ov'] !== $this->vd['vv']['nv']) {
-            return true;
-        }
-        if ($this->status & self::BM_IS_GUEST) {
-            if (($this->vd['cv']['ov'] === null)
-                && (($this->vd['vv']['nv'] === 'guest' && $this->vd['cv']['nv'] === null)
-                    || ($this->vd['vv']['nv'] === 'guestm' && $this->vd['cv']['nv'] === 'mobile~1~'))) {
-                return false;
-            } else {
-                return true;
-            }
-        } else { // non guest
-            return $this->vd['cv']['ov'] !== $this->vd['cv']['nv'];
-        }
-    }
-
     public static function setVary()
     {
         // this will only be called when all vary value determined
@@ -100,6 +82,24 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         }
 
         return $changed;
+    }
+
+    private function envChanged()
+    {
+        if ($this->vd['vv']['ov'] !== $this->vd['vv']['nv']) {
+            return true;
+        }
+        if ($this->status & self::BM_IS_GUEST) {
+            if (($this->vd['cv']['ov'] === null)
+                && (($this->vd['vv']['nv'] === 'guest' && $this->vd['cv']['nv'] === null)
+                    || ($this->vd['vv']['nv'] === 'guestm' && $this->vd['cv']['nv'] === 'mobile~1~'))) {
+                return false;
+            } else {
+                return true;
+            }
+        } else { // non guest
+            return $this->vd['cv']['ov'] !== $this->vd['cv']['nv'];
+        }
     }
 
     private function getPrivateId()

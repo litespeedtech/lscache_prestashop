@@ -30,6 +30,15 @@ class LscCompareProduct extends LscIntegration
 {
     const NAME = 'lsc_compareproduct';
 
+    public static function isUsed($name)
+    {
+        $res = ($name == self::NAME)
+            && Configuration::get('PS_COMPARATOR_MAX_ITEM')
+            && method_exists('CompareProduct', 'getCompareProducts');
+
+        return $res;
+    }
+
     protected function init()
     {
         $confData = [
@@ -73,15 +82,6 @@ class LscCompareProduct extends LscIntegration
         }
 
         return "$countVal";
-    }
-
-    public static function isUsed($name)
-    {
-        $res = ($name == self::NAME)
-            && Configuration::get('PS_COMPARATOR_MAX_ITEM')
-            && method_exists('CompareProduct', 'getCompareProducts');
-
-        return $res;
     }
 }
 

@@ -29,47 +29,6 @@ class LiteSpeedCacheHelper
 {
     private static $internal = [];
 
-    private static function initInternals()
-    {
-        $ctx = Context::getContext();
-        $cookie = $ctx->cookie;
-        $config = Conf::getInstance();
-
-        $defaultParam = ['s' => $ctx->shop->id];
-        if (isset($cookie->iso_code_country)) {
-            $defaultParam['ct'] = $cookie->iso_code_country;
-        }
-        if (isset($cookie->id_currency)) {
-            $defaultParam['c'] = $cookie->id_currency;
-        }
-        if (isset($cookie->id_lang)) {
-            $defaultParam['l'] = $cookie->id_lang;
-        }
-        if ($config->get(Conf::CFG_DIFFMOBILE)) {
-            $defaultParam['mobi'] = $ctx->getMobileDevice() ? 1 : 0;
-        }
-
-        self::$internal['pub_ttl'] = $config->get(Conf::CFG_PUBLIC_TTL);
-        self::$internal['priv_ttl'] = $config->get(Conf::CFG_PRIVATE_TTL);
-
-        $unique = str_split(md5(_PS_ROOT_DIR_));
-        $prefix = 'PS' . implode('', array_slice($unique, 0, 5)); // take 5 char
-        self::$internal['tag_prefix'] = $prefix;
-        self::$internal['cache_dir'] = _PS_CACHE_DIR_ . LiteSpeedCache::MODULE_NAME;
-
-        $tag0 = $prefix; // for purge all PS cache
-        $tag1 = $prefix . '_' . Conf::TAG_PREFIX_SHOP . $defaultParam['s']; // for purge one shop
-        self::$internal['tag_shared_pub'] = $tag0 . ',' . $tag1;
-        self::$internal['tag_shared_priv'] = 'public:' . $prefix . '_PRIV'; // in private cache, use public:prefix_PRIV
-
-        if (LiteSpeedCache::canInjectEsi() || LiteSpeedCache::isCacheable() || LiteSpeedCache::isEsiRequest()) {
-            // For some purge events, it may not load from dispatcher, getModuleLink will fail
-            $esiurl = $ctx->link->getModuleLink(LiteSpeedCache::MODULE_NAME, 'esi', $defaultParam);
-            self::$internal['esi_base_url'] = self::getRelativeUri($esiurl);
-            self::$internal['cache_entry'] = $prefix . md5(self::$internal['esi_base_url']);
-        }
-    }
-
     public static function getRelativeUri($url)
     {
         if (($pos0 = strpos($url, '://')) !== false) {
@@ -185,58 +144,6 @@ class LiteSpeedCacheHelper
     public static function getCacheEntry()
     {
         return self::getInternalValue('cache_entry');
-    }
-
-    private static function getInternalValue($field)
-    {
-        if (!isset(self::$internal[$field])) {
-            self::initInternals();
-        }
-
-        return self::$internal[$field];
-    }
-
-    // validator does not allow to use file_get_contents, so use this workaround.
-    protected static function getFileContent($filepath)
-    {
-        $contents = '';
-        $len = @filesize($filepath);
-        if ($len) {
-            $h = @fopen($filepath, 'rb');
-            $contents = @fread($h, $len);
-            @fclose($h);
-        }
-
-        return $contents;
-    }
-
-    private static function genHtAccessContent($guestMode, $mobileView)
-    {
-        $ls = [];
-        $ls[] = '### LITESPEED_CACHE_START - Do not remove this line, LSCache plugin will automatically update it';
-        $ls[] = '# automatically genereated by LiteSpeedCache plugin: '
-        . 'https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps';
-        $ls[] = '<IfModule LiteSpeed>';
-        $ls[] = 'CacheLookup on';
-        if ($guestMode) {
-            $ls[] = 'RewriteEngine on';
-            if ($mobileView) {
-                $ls[] = 'RewriteCond %{HTTP_COOKIE} !PrestaShop-';
-                $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "phone|mobile|android|Opera Mini" [NC]';
-                $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=guestm]';
-                $ls[] = 'RewriteCond %{HTTP_COOKIE} !PrestaShop-';
-                $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "!(phone|mobile|android|Opera Mini)" [NC]';
-                $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=guest]';
-            } else {
-                $ls[] = 'RewriteCond %{HTTP_COOKIE} !PrestaShop-';
-                $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=guest]';
-            }
-        }
-        $ls[] = '</IfModule>';
-        $ls[] = '### LITESPEED_CACHE_END';
-        $newcontent = implode("\n", $ls) . "\n";
-
-        return $newcontent;
     }
 
     public static function htAccessBackup($suffix)
@@ -387,5 +294,98 @@ class LiteSpeedCacheHelper
         // possible string "on,crawler,esi", will enforce checking in future
         return (isset($_SERVER['X-LSCACHE']) && $_SERVER['X-LSCACHE']) // for lsws
                 || (isset($_SERVER['HTTP_X_LSCACHE']) && $_SERVER['HTTP_X_LSCACHE']);  // lslb
+    }
+
+    // validator does not allow to use file_get_contents, so use this workaround.
+    protected static function getFileContent($filepath)
+    {
+        $contents = '';
+        $len = @filesize($filepath);
+        if ($len) {
+            $h = @fopen($filepath, 'rb');
+            $contents = @fread($h, $len);
+            @fclose($h);
+        }
+
+        return $contents;
+    }
+
+    private static function initInternals()
+    {
+        $ctx = Context::getContext();
+        $cookie = $ctx->cookie;
+        $config = Conf::getInstance();
+
+        $defaultParam = ['s' => $ctx->shop->id];
+        if (isset($cookie->iso_code_country)) {
+            $defaultParam['ct'] = $cookie->iso_code_country;
+        }
+        if (isset($cookie->id_currency)) {
+            $defaultParam['c'] = $cookie->id_currency;
+        }
+        if (isset($cookie->id_lang)) {
+            $defaultParam['l'] = $cookie->id_lang;
+        }
+        if ($config->get(Conf::CFG_DIFFMOBILE)) {
+            $defaultParam['mobi'] = $ctx->getMobileDevice() ? 1 : 0;
+        }
+
+        self::$internal['pub_ttl'] = $config->get(Conf::CFG_PUBLIC_TTL);
+        self::$internal['priv_ttl'] = $config->get(Conf::CFG_PRIVATE_TTL);
+
+        $unique = str_split(md5(_PS_ROOT_DIR_));
+        $prefix = 'PS' . implode('', array_slice($unique, 0, 5)); // take 5 char
+        self::$internal['tag_prefix'] = $prefix;
+        self::$internal['cache_dir'] = _PS_CACHE_DIR_ . LiteSpeedCache::MODULE_NAME;
+
+        $tag0 = $prefix; // for purge all PS cache
+        $tag1 = $prefix . '_' . Conf::TAG_PREFIX_SHOP . $defaultParam['s']; // for purge one shop
+        self::$internal['tag_shared_pub'] = $tag0 . ',' . $tag1;
+        self::$internal['tag_shared_priv'] = 'public:' . $prefix . '_PRIV'; // in private cache, use public:prefix_PRIV
+
+        if (LiteSpeedCache::canInjectEsi() || LiteSpeedCache::isCacheable() || LiteSpeedCache::isEsiRequest()) {
+            // For some purge events, it may not load from dispatcher, getModuleLink will fail
+            $esiurl = $ctx->link->getModuleLink(LiteSpeedCache::MODULE_NAME, 'esi', $defaultParam);
+            self::$internal['esi_base_url'] = self::getRelativeUri($esiurl);
+            self::$internal['cache_entry'] = $prefix . md5(self::$internal['esi_base_url']);
+        }
+    }
+
+    private static function getInternalValue($field)
+    {
+        if (!isset(self::$internal[$field])) {
+            self::initInternals();
+        }
+
+        return self::$internal[$field];
+    }
+
+    private static function genHtAccessContent($guestMode, $mobileView)
+    {
+        $ls = [];
+        $ls[] = '### LITESPEED_CACHE_START - Do not remove this line, LSCache plugin will automatically update it';
+        $ls[] = '# automatically genereated by LiteSpeedCache plugin: '
+        . 'https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps';
+        $ls[] = '<IfModule LiteSpeed>';
+        $ls[] = 'CacheLookup on';
+        if ($guestMode) {
+            $ls[] = 'RewriteEngine on';
+            if ($mobileView) {
+                $ls[] = 'RewriteCond %{HTTP_COOKIE} !PrestaShop-';
+                $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "phone|mobile|android|Opera Mini" [NC]';
+                $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=guestm]';
+                $ls[] = 'RewriteCond %{HTTP_COOKIE} !PrestaShop-';
+                $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "!(phone|mobile|android|Opera Mini)" [NC]';
+                $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=guest]';
+            } else {
+                $ls[] = 'RewriteCond %{HTTP_COOKIE} !PrestaShop-';
+                $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=guest]';
+            }
+        }
+        $ls[] = '</IfModule>';
+        $ls[] = '### LITESPEED_CACHE_END';
+        $newcontent = implode("\n", $ls) . "\n";
+
+        return $newcontent;
     }
 }

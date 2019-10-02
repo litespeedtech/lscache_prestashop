@@ -56,7 +56,7 @@ class LscGdprPro extends LscIntegration
 
             return '';
         }
-    // LSLog::log(__FUNCTION__ . 'GDPR JSKeyProcess context cookie  gdpr_windows_was_opened ' . print_r(Context::getContext()->cookie, 1));
+        // LSLog::log(__FUNCTION__ . 'GDPR JSKeyProcess context cookie  gdpr_windows_was_opened ' . print_r(Context::getContext()->cookie, 1));
         $data = !Context::getContext()->cookie->gdpr_windows_was_opened;
 
         return json_encode($data);

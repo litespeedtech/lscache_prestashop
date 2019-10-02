@@ -208,7 +208,7 @@ class LiteSpeedCacheCore
             $this->cacheTags[] = $tag;
         }
 
-        return (count($this->cacheTags) > $old);
+        return count($this->cacheTags) > $old;
     }
 
     // return 1: added, 0: already exists, 2: already has purgeall
@@ -238,6 +238,133 @@ class LiteSpeedCacheCore
         return $returnCode;
     }
 
+    public function purgeByTags($tags, $isPrivate, $from)
+    {
+        if ($from && _LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
+            LSLog::log('purgeByTags from ' . $from, LSLog::LEVEL_PURGE_EVENT);
+        }
+        $this->addPurgeTags($tags, $isPrivate);
+    }
+
+    public function purgeByCatchAllMethod($method, $args)
+    {
+        $tags = $this->getPurgeTagsByHookMethod($method, $args);
+        if (empty($tags)) {
+            if (($tags === null)
+                && (strcasecmp($method, 'hookaddWebserviceResources') != 0)
+                && (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED)) {
+                LSLog::log('Unexpected hook function called' . $method, LSLog::LEVEL_UNEXPECTED);
+            }
+
+            return;
+        }
+
+        if (!defined('_LITESPEED_CALLBACK_')) {
+            define('_LITESPEED_CALLBACK_', 1);
+            ob_start('LiteSpeedCache::callbackOutputFilter');
+        }
+
+        $res = 0;
+        if (!empty($tags['pub'])) {
+            $res |= $this->addPurgeTags($tags['pub'], false);
+        }
+        if (!empty($tags['priv'])) {
+            $res |= $this->addPurgeTags($tags['priv'], true);
+        }
+        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
+            LSLog::log('purgeByCatchAll ' . $method . ' res=' . $res, LSLog::LEVEL_PURGE_EVENT);
+        }
+    }
+
+    public function purgeEntireStorage($from)
+    {
+        $purgeHeader = self::LSHEADER_PURGE . ': *';
+        header($purgeHeader);
+        LiteSpeedCacheHelper::clearInternalCache();
+        LSLog::log('Set header ' . $purgeHeader . ' (' . $from . ')', LSLog::LEVEL_FORCE);
+    }
+
+    public function checkSpecificPrices($specific_prices)
+    {
+        // LSLog::log('specific price ' . var_export($specific_prices, 1));
+        if ($specific_prices['from'] == $specific_prices['to'] && $specific_prices['to'] == '0000-00-00 00:00:00') {
+            // no date range
+            return;
+        }
+        if (is_array($specific_prices) && isset($specific_prices['to'])) {
+            $this->specificPrices[] = ['from' => $specific_prices['from'],
+                'to' => $specific_prices['to'],
+            ];
+        }
+    }
+
+    public function setCacheControlHeader()
+    {
+        if (headers_sent()) {
+            return;
+        }
+
+        $headers = [];
+        if (($purgeHeader = $this->getPurgeHeader()) != '') {
+            $headers[] = $purgeHeader;
+        }
+
+        $cacheControlHeader = '';
+        $ccflag = LSC::getCCFlag();
+
+        if ((($ccflag & LSC::CCBM_NOT_CACHEABLE) == 0) && (($ccflag & LSC::CCBM_CACHEABLE) != 0)) {
+            $prefix = LiteSpeedCacheHelper::getTagPrefix();
+            $tags = [];
+            $ttl = (($ccflag & LSC::CCBM_ESI_REQ) == 0) ? '' : $this->esiTtl;
+            if ($ttl == '') {
+                $ttl = (($ccflag & LSC::CCBM_PRIVATE) == 0) ?
+                    $this->config->get(Conf::CFG_PUBLIC_TTL) : $this->config->get(Conf::CFG_PRIVATE_TTL);
+            }
+            $ttl = $this->adjustTtlBySpecificPrices($ttl);
+
+            if (($ccflag & LSC::CCBM_PRIVATE) == 0) {
+                $cacheControlHeader .= 'public,max-age=' . $ttl;
+                $tags[] = $prefix; // for purge all PS cache
+                $shopId = Context::getContext()->shop->id; // todo: should have in env
+                $tags[] = $prefix . '_' . Conf::TAG_PREFIX_SHOP . $shopId; // for purge one shop
+            } else {
+                $cacheControlHeader .= 'private,no-vary,max-age=' . $ttl;
+                $tags[] = 'public:' . $prefix . '_PRIV'; // in private cache, use public:tag_name_PRIV
+            }
+
+            foreach ($this->cacheTags as $tag) {
+                $tags[] = $prefix . '_' . $tag;
+            }
+
+            $headers[] = self::LSHEADER_CACHE_TAG . ': ' . implode(',', $tags);
+
+            if (($ccflag & LSC::CCBM_GUEST) != 0) {
+                $guestmode = $this->config->get(Conf::CFG_GUESTMODE);
+                if ($guestmode == 0 || $guestmode == 2) {
+                    // if disabled (shouldnot happen, meaning htaccess out of sync), or first page only
+                    $headers[] = 'LSC-Cookie: PrestaShop-lsc=guest';  //set pass-through cookie
+                }
+            }
+        } else {
+            $cacheControlHeader = 'no-cache';
+        }
+        if (($ccflag & LSC::CCBM_ESI_ON) != 0) {
+            $cacheControlHeader .= ',esi=on';
+        }
+        if (($ccflag & LSC::CCBM_VARY_CHANGED) && ($ccflag & LSC::CCBM_ESI_REQ)) {
+            $cacheControlHeader .= ',reload-after';
+        }
+
+        $headers[] = self::LSHEADER_CACHE_CONTROL . ': ' . $cacheControlHeader;
+
+        foreach ($headers as $header) {
+            header($header);
+        }
+        if (defined('_LITESPEED_DEBUG_') && _LITESPEED_DEBUG_ >= LSLog::LEVEL_SETHEADER) {
+            LSLog::log('SetHeader ' . implode("\n", $headers), LSLog::LEVEL_SETHEADER);
+        }
+    }
+
     private function isNewPurgeTag($tag, $isPrivate)
     {
         $type = $isPrivate ? 'priv' : 'pub';
@@ -248,14 +375,6 @@ class LiteSpeedCacheCore
         } else {
             return true;
         }
-    }
-
-    public function purgeByTags($tags, $isPrivate, $from)
-    {
-        if ($from && _LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
-            LSLog::log('purgeByTags from ' . $from, LSLog::LEVEL_PURGE_EVENT);
-        }
-        $this->addPurgeTags($tags, $isPrivate);
     }
 
     private function getPurgeTagsByProduct($id_product, $product, $isupdate)
@@ -325,9 +444,11 @@ class LiteSpeedCacheCore
             return;
         }
         $resources = explode('/', $_REQUEST['url']);
-        if (empty($resources) || count($resources) != 2 || intval($resources[1]) != $resources[1]) {
-            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_WEBSERVICE_DETAIL)
+        if (empty($resources) || count($resources) != 2 || (int) ($resources[1]) != $resources[1]) {
+            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_WEBSERVICE_DETAIL) {
                 LSLog::log("WebService Purge - Ignored $method " . var_export($resources, 1), LSLog::LEVEL_WEBSERVICE_DETAIL);
+            }
+
             return;
         }
 
@@ -444,36 +565,6 @@ class LiteSpeedCacheCore
         }
 
         return $tags;
-    }
-
-    public function purgeByCatchAllMethod($method, $args)
-    {
-        $tags = $this->getPurgeTagsByHookMethod($method, $args);
-        if (empty($tags)) {
-            if (($tags === null)
-                && (strcasecmp($method, 'hookaddWebserviceResources') != 0)
-                && (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED)) {
-                LSLog::log('Unexpected hook function called' . $method, LSLog::LEVEL_UNEXPECTED);
-            }
-
-            return;
-        }
-
-        if (!defined('_LITESPEED_CALLBACK_')) {
-            define('_LITESPEED_CALLBACK_', 1);
-            ob_start('LiteSpeedCache::callbackOutputFilter');
-        }
-
-        $res = 0;
-        if (!empty($tags['pub'])) {
-            $res |= $this->addPurgeTags($tags['pub'], false);
-        }
-        if (!empty($tags['priv'])) {
-            $res |= $this->addPurgeTags($tags['priv'], true);
-        }
-        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
-            LSLog::log('purgeByCatchAll ' . $method . ' res=' . $res, LSLog::LEVEL_PURGE_EVENT);
-        }
     }
 
     private function getPurgeTagsByHookMethod($method, $args)
@@ -603,28 +694,6 @@ class LiteSpeedCacheCore
         return $purgeHeader;
     }
 
-    public function purgeEntireStorage($from)
-    {
-        $purgeHeader = self::LSHEADER_PURGE . ': *';
-        header($purgeHeader);
-        LiteSpeedCacheHelper::clearInternalCache();
-        LSLog::log('Set header ' . $purgeHeader . ' (' . $from . ')', LSLog::LEVEL_FORCE);
-    }
-
-    public function checkSpecificPrices($specific_prices)
-    {
-        // LSLog::log('specific price ' . var_export($specific_prices, 1));
-        if ($specific_prices['from'] == $specific_prices['to'] && $specific_prices['to'] == '0000-00-00 00:00:00') {
-            // no date range
-            return;
-        }
-        if (is_array($specific_prices) && isset($specific_prices['to'])) {
-            $this->specificPrices[] = ['from' => $specific_prices['from'],
-                'to' => $specific_prices['to'],
-            ];
-        }
-    }
-
     private function adjustTtlBySpecificPrices($ttl)
     {
         if (empty($this->specificPrices)) {
@@ -659,72 +728,5 @@ class LiteSpeedCacheCore
         }
 
         return $ttl;
-    }
-
-    public function setCacheControlHeader()
-    {
-        if (headers_sent()) {
-            return;
-        }
-
-        $headers = [];
-        if (($purgeHeader = $this->getPurgeHeader()) != '') {
-            $headers[] = $purgeHeader;
-        }
-
-        $cacheControlHeader = '';
-        $ccflag = LSC::getCCFlag();
-
-        if ((($ccflag & LSC::CCBM_NOT_CACHEABLE) == 0) && (($ccflag & LSC::CCBM_CACHEABLE) != 0)) {
-            $prefix = LiteSpeedCacheHelper::getTagPrefix();
-            $tags = [];
-            $ttl = (($ccflag & LSC::CCBM_ESI_REQ) == 0) ? '' : $this->esiTtl;
-            if ($ttl == '') {
-                $ttl = (($ccflag & LSC::CCBM_PRIVATE) == 0) ?
-                    $this->config->get(Conf::CFG_PUBLIC_TTL) : $this->config->get(Conf::CFG_PRIVATE_TTL);
-            }
-            $ttl = $this->adjustTtlBySpecificPrices($ttl);
-
-            if (($ccflag & LSC::CCBM_PRIVATE) == 0) {
-                $cacheControlHeader .= 'public,max-age=' . $ttl;
-                $tags[] = $prefix; // for purge all PS cache
-                $shopId = Context::getContext()->shop->id; // todo: should have in env
-                $tags[] = $prefix . '_' . Conf::TAG_PREFIX_SHOP . $shopId; // for purge one shop
-            } else {
-                $cacheControlHeader .= 'private,no-vary,max-age=' . $ttl;
-                $tags[] = 'public:' . $prefix . '_PRIV'; // in private cache, use public:tag_name_PRIV
-            }
-
-            foreach ($this->cacheTags as $tag) {
-                $tags[] = $prefix . '_' . $tag;
-            }
-
-            $headers[] = self::LSHEADER_CACHE_TAG . ': ' . implode(',', $tags);
-
-            if (($ccflag & LSC::CCBM_GUEST) != 0) {
-                $guestmode = $this->config->get(Conf::CFG_GUESTMODE);
-                if ($guestmode == 0 || $guestmode == 2) {
-                    // if disabled (shouldnot happen, meaning htaccess out of sync), or first page only
-                    $headers[] = 'LSC-Cookie: PrestaShop-lsc=guest';  //set pass-through cookie
-                }
-            }
-        } else {
-            $cacheControlHeader = 'no-cache';
-        }
-        if (($ccflag & LSC::CCBM_ESI_ON) != 0) {
-            $cacheControlHeader .= ',esi=on';
-        }
-        if (($ccflag & LSC::CCBM_VARY_CHANGED) && ($ccflag & LSC::CCBM_ESI_REQ)) {
-            $cacheControlHeader .= ',reload-after';
-        }
-
-        $headers[] = self::LSHEADER_CACHE_CONTROL . ': ' . $cacheControlHeader;
-
-        foreach ($headers as $header) {
-            header($header);
-        }
-        if (defined('_LITESPEED_DEBUG_') && _LITESPEED_DEBUG_ >= LSLog::LEVEL_SETHEADER) {
-            LSLog::log('SetHeader ' . implode("\n", $headers), LSLog::LEVEL_SETHEADER);
-        }
     }
 }

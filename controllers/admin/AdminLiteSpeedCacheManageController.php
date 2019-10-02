@@ -121,6 +121,21 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         return parent::postProcess();
     }
 
+    public function renderView()
+    {
+        if ($this->license_disabled) {
+            $this->warnings[] = $this->l('No action taken.') . ' '
+                    . $this->l('No LiteSpeed Server with LSCache available.');
+
+            return false;
+        }
+
+        $html = $this->renderPurgeSelection();
+        $html .= $this->renderPurgeId();
+
+        return $html;
+    }
+
     private function processPurgeAll()
     {
         if ($this->doPurge(1, 'ALL')) {
@@ -262,21 +277,6 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
                 . $this->l('This Module is not enabled. Only action allowed is Flush All Prestashop Pages.');
 
         return false;
-    }
-
-    public function renderView()
-    {
-        if ($this->license_disabled) {
-            $this->warnings[] = $this->l('No action taken.') . ' '
-                    . $this->l('No LiteSpeed Server with LSCache available.');
-
-            return false;
-        }
-
-        $html = $this->renderPurgeSelection();
-        $html .= $this->renderPurgeId();
-
-        return $html;
     }
 
     private function renderPurgeSelection()

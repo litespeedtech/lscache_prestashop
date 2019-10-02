@@ -26,16 +26,6 @@ use LiteSpeedCacheConfig as Conf;
 
 class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 {
-    private $config;
-
-    private $is_shop_level; // -1: not multishop, 0: multishop global, 1: multishop shop
-
-    private $labels;
-
-    private $current_values;
-
-    private $license_disabled;
-
     // BITMASK for changed
     const BMC_SHOP = 1; // change for shop
 
@@ -50,6 +40,15 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
     const BMC_DONE_PURGE = 32; // already purged
 
     const BMC_HTACCESS_UPDATE = 64;
+    private $config;
+
+    private $is_shop_level; // -1: not multishop, 0: multishop global, 1: multishop shop
+
+    private $labels;
+
+    private $current_values;
+
+    private $license_disabled;
 
     private $original_values;
 
@@ -130,6 +129,163 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         }
 
         return parent::postProcess();
+    }
+
+    public function renderView()
+    {
+        $disabled = ($this->is_shop_level == 1);
+        if ($disabled) {
+            $this->informations[] = $this->l('Some settings can only be set at the global level.');
+        }
+
+        $secs = $this->l('seconds');
+        $s = ' - '; // spacer
+        $fg = $this->newFieldForm($this->l('General'), 'cogs');
+        $fg['input'][] = $this->addInputSwitch(Conf::CFG_ENABLED, $this->labels[Conf::CFG_ENABLED], '', $disabled);
+        $fg['input'][] = $this->addInputText(
+            Conf::CFG_PUBLIC_TTL,
+            $this->labels[Conf::CFG_PUBLIC_TTL],
+            $this->l('Default timeout for publicly cached pages.') . ' ' . $this->l('Recommended value is 86400.'),
+            $secs
+        );
+        $fg['input'][] = $this->addInputText(
+            Conf::CFG_PRIVATE_TTL,
+            $this->labels[Conf::CFG_PRIVATE_TTL],
+            $this->l('Default timeout for private cache ESI blocks. Suggested value is 1800. Must be less than 7200.'),
+            $secs
+        );
+        $fg['input'][] = $this->addInputText(
+            Conf::CFG_HOME_TTL,
+            $this->labels[Conf::CFG_HOME_TTL],
+            $this->l('Default timeout for the home page.') . ' '
+            . $this->l('If you have random displayed items, you can have shorter TTL to make it refresh more often.'),
+            $secs
+        );
+        $fg['input'][] = $this->addInputText(
+            Conf::CFG_404_TTL,
+            $this->labels[Conf::CFG_404_TTL],
+            $this->l('Default timeout for all 404 (Not found) pages. 0 will disable caching for 404 pages.'),
+            $secs
+        );
+        $fg['input'][] = $this->addInputSwitch(
+            Conf::CFG_DIFFMOBILE,
+            $this->labels[Conf::CFG_DIFFMOBILE],
+            $this->l('Enable this if you have a separate mobile theme.'),
+            $disabled
+        );
+
+        $custgrpOptions = [
+            ['id' => 0, 'name' => $this->l('No') . $s . $this->l('Everyone shares the same view')],
+            ['id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Each group has its own view')],
+            ['id' => 2, 'name' => $this->l('Two views') . $s .
+                $this->l('One for all logged-in users and another for logged-out users'), ],
+        ];
+        $fg['input'][] = $this->addInputSelect(
+            Conf::CFG_DIFFCUSTGRP,
+            $this->labels[Conf::CFG_DIFFCUSTGRP],
+            $custgrpOptions,
+            $this->l('Enable this option if there is different pricing based on customer groups.')
+        );
+
+        $flushprodOptions = [
+            ['id' => 0, 'name' => $this->l('Flush product when quantity or stock status change, flush categories only when stock status changes')],
+            ['id' => 1, 'name' => $this->l('Flush product and categories only when stock status changes')],
+            ['id' => 2, 'name' => $this->l('Flush product when stock status changes, do not flush categories when stock status or quantity change')],
+            ['id' => 3, 'name' => $this->l('Always flush product and categories when quantity or stock status change')],
+        ];
+        $fg['input'][] = $this->addInputSelect(
+            Conf::CFG_FLUSH_PRODCAT,
+            $this->labels[Conf::CFG_FLUSH_PRODCAT],
+            $flushprodOptions,
+            $this->l('Determines how changes in product quantity and stock status affect product pages and their associated category pages.'),
+            $disabled
+        );
+
+        $guestOptions = [
+            ['id' => 0, 'name' => $this->l('No') . $s . $this->l('No default guest view')],
+            ['id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Has default guest view')],
+            ['id' => 2, 'name' => $this->l('First Page Only') . $s .
+                $this->l('Only first page will show the default guest view'), ],
+        ];
+        $fg['input'][] = $this->addInputSelect(
+            Conf::CFG_GUESTMODE,
+            $this->labels[Conf::CFG_GUESTMODE],
+            $guestOptions,
+            $this->l('This will speed up the first page view for new visitors by serving the default view.') . ' '
+            . $this->l('Robots will get an instant response without hitting the backend.') . ' '
+            . $this->l('If you have different views based on GeoIP,') . ' '
+            . $this->l('select "First Page Only" to make sure the second page will have the correct view.'),
+            $disabled
+        );
+
+        $formUser = $this->newFieldForm(
+            $this->l('User-Defined Cache Rules'),
+            'cogs',
+            $disabled ? $this->l('These settings can only be set at the global level.') :
+                $this->l('Only need to set it NOT-CACHEABLE if a page is being cached by default.')
+        );
+        $formUser['input'][] = $this->addInputTextArea(
+            Conf::CFG_NOCACHE_VAR,
+            $this->labels[Conf::CFG_NOCACHE_VAR],
+            $this->l('Comma-separated list of GET variables that prevents caching URLs within Cacheable Routes.'),
+            $disabled
+        );
+        $formUser['input'][] = $this->addInputTextArea(
+            Conf::CFG_NOCACHE_URL,
+            $this->labels[Conf::CFG_NOCACHE_URL],
+            $this->l('List of relative URLs contained in Cacheable Routes to be excluded from caching.') . ' '
+            . $this->l('They start with "/" and don\’t include the domain name.') . ' '
+            . $this->l('Partial matches can be performed by adding an "*" to the end of a URL.') . ' '
+            . $this->l('Enter one relative URL per line.'),
+            $disabled
+        );
+
+        $formDev = $this->newFieldForm($this->l('Developer Testing'), 'stethoscope');
+        $formDev['input'][] = $this->addInputTextArea(
+            Conf::CFG_ALLOW_IPS,
+            $this->labels[Conf::CFG_ALLOW_IPS],
+            $this->l('Limit LiteSpeed Cache to specified IPs. (Space or comma separated.)') . ' '
+            . $this->l('Allows cache testing on a live site. If empty, cache will be served to everyone.'),
+            $disabled
+        );
+        $formDev['input'][] = $this->addInputSwitch(
+            Conf::CFG_DEBUG,
+            $this->labels[Conf::CFG_DEBUG],
+            $this->l('Prints additional information to "lscache.log." Turn off for production use.'),
+            $disabled
+        );
+        $formDev['input'][] = $this->addInputTextArea(
+            Conf::CFG_DEBUG_IPS,
+            $this->labels[Conf::CFG_DEBUG_IPS],
+            $this->l('Only log activities from specified IPs. (Space or comma separated.)') . ' '
+            . $this->l('If empty, all activities will be logged. Only effective when debug log is enabled.'),
+            $disabled
+        );
+        $formDev['input'][] = $this->addInputText(
+            Conf::CFG_DEBUG_LEVEL,
+            $this->labels[Conf::CFG_DEBUG_LEVEL],
+            $this->l('Specifies log level ranging from 1 to 10. The higher the value, the more detailed the output.'),
+            '',
+            false,
+            $disabled
+        );
+
+        $forms = [['form' => $fg], ['form' => $formUser], ['form' => $formDev]];
+
+        $helper = new HelperForm();
+        $helper->show_toolbar = false;
+        $helper->languages = $this->getLanguages();
+        $helper->name_controller = $this->controller_name;
+        $helper->token = $this->token;
+        $helper->default_form_language = $this->default_form_language;
+        $helper->allow_employee_form_lang = $this->allow_employee_form_lang;
+        $helper->identifier = $this->identifier;
+        $helper->submit_action = 'submitConfig';
+        $helper->currentIndex = self::$currentIndex;
+
+        $helper->tpl_vars = ['fields_value' => $this->current_values];
+
+        return $helper->generateForm($forms);
     }
 
     private function processConfigSave()
@@ -416,163 +572,6 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         }
 
         $this->current_values[$name] = $postVal;
-    }
-
-    public function renderView()
-    {
-        $disabled = ($this->is_shop_level == 1);
-        if ($disabled) {
-            $this->informations[] = $this->l('Some settings can only be set at the global level.');
-        }
-
-        $secs = $this->l('seconds');
-        $s = ' - '; // spacer
-        $fg = $this->newFieldForm($this->l('General'), 'cogs');
-        $fg['input'][] = $this->addInputSwitch(Conf::CFG_ENABLED, $this->labels[Conf::CFG_ENABLED], '', $disabled);
-        $fg['input'][] = $this->addInputText(
-            Conf::CFG_PUBLIC_TTL,
-            $this->labels[Conf::CFG_PUBLIC_TTL],
-            $this->l('Default timeout for publicly cached pages.') . ' ' . $this->l('Recommended value is 86400.'),
-            $secs
-        );
-        $fg['input'][] = $this->addInputText(
-            Conf::CFG_PRIVATE_TTL,
-            $this->labels[Conf::CFG_PRIVATE_TTL],
-            $this->l('Default timeout for private cache ESI blocks. Suggested value is 1800. Must be less than 7200.'),
-            $secs
-        );
-        $fg['input'][] = $this->addInputText(
-            Conf::CFG_HOME_TTL,
-            $this->labels[Conf::CFG_HOME_TTL],
-            $this->l('Default timeout for the home page.') . ' '
-            . $this->l('If you have random displayed items, you can have shorter TTL to make it refresh more often.'),
-            $secs
-        );
-        $fg['input'][] = $this->addInputText(
-            Conf::CFG_404_TTL,
-            $this->labels[Conf::CFG_404_TTL],
-            $this->l('Default timeout for all 404 (Not found) pages. 0 will disable caching for 404 pages.'),
-            $secs
-        );
-        $fg['input'][] = $this->addInputSwitch(
-            Conf::CFG_DIFFMOBILE,
-            $this->labels[Conf::CFG_DIFFMOBILE],
-            $this->l('Enable this if you have a separate mobile theme.'),
-            $disabled
-        );
-
-        $custgrpOptions = [
-            ['id' => 0, 'name' => $this->l('No') . $s . $this->l('Everyone shares the same view')],
-            ['id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Each group has its own view')],
-            ['id' => 2, 'name' => $this->l('Two views') . $s .
-                $this->l('One for all logged-in users and another for logged-out users'), ],
-        ];
-        $fg['input'][] = $this->addInputSelect(
-            Conf::CFG_DIFFCUSTGRP,
-            $this->labels[Conf::CFG_DIFFCUSTGRP],
-            $custgrpOptions,
-            $this->l('Enable this option if there is different pricing based on customer groups.')
-        );
-
-        $flushprodOptions = [
-            ['id' => 0, 'name' => $this->l('Flush product when quantity or stock status change, flush categories only when stock status changes')],
-            ['id' => 1, 'name' => $this->l('Flush product and categories only when stock status changes')],
-            ['id' => 2, 'name' => $this->l('Flush product when stock status changes, do not flush categories when stock status or quantity change')],
-            ['id' => 3, 'name' => $this->l('Always flush product and categories when quantity or stock status change')],
-        ];
-        $fg['input'][] = $this->addInputSelect(
-            Conf::CFG_FLUSH_PRODCAT,
-            $this->labels[Conf::CFG_FLUSH_PRODCAT],
-            $flushprodOptions,
-            $this->l('Determines how changes in product quantity and stock status affect product pages and their associated category pages.'),
-            $disabled
-        );
-
-        $guestOptions = [
-            ['id' => 0, 'name' => $this->l('No') . $s . $this->l('No default guest view')],
-            ['id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Has default guest view')],
-            ['id' => 2, 'name' => $this->l('First Page Only') . $s .
-                $this->l('Only first page will show the default guest view'), ],
-        ];
-        $fg['input'][] = $this->addInputSelect(
-            Conf::CFG_GUESTMODE,
-            $this->labels[Conf::CFG_GUESTMODE],
-            $guestOptions,
-            $this->l('This will speed up the first page view for new visitors by serving the default view.') . ' '
-            . $this->l('Robots will get an instant response without hitting the backend.') . ' '
-            . $this->l('If you have different views based on GeoIP,') . ' '
-            . $this->l('select "First Page Only" to make sure the second page will have the correct view.'),
-            $disabled
-        );
-
-        $formUser = $this->newFieldForm(
-            $this->l('User-Defined Cache Rules'),
-            'cogs',
-            $disabled ? $this->l('These settings can only be set at the global level.') :
-                $this->l('Only need to set it NOT-CACHEABLE if a page is being cached by default.')
-        );
-        $formUser['input'][] = $this->addInputTextArea(
-            Conf::CFG_NOCACHE_VAR,
-            $this->labels[Conf::CFG_NOCACHE_VAR],
-            $this->l('Comma-separated list of GET variables that prevents caching URLs within Cacheable Routes.'),
-            $disabled
-        );
-        $formUser['input'][] = $this->addInputTextArea(
-            Conf::CFG_NOCACHE_URL,
-            $this->labels[Conf::CFG_NOCACHE_URL],
-            $this->l('List of relative URLs contained in Cacheable Routes to be excluded from caching.') . ' '
-            . $this->l('They start with "/" and don\’t include the domain name.') . ' '
-            . $this->l('Partial matches can be performed by adding an "*" to the end of a URL.') . ' '
-            . $this->l('Enter one relative URL per line.'),
-            $disabled
-        );
-
-        $formDev = $this->newFieldForm($this->l('Developer Testing'), 'stethoscope');
-        $formDev['input'][] = $this->addInputTextArea(
-            Conf::CFG_ALLOW_IPS,
-            $this->labels[Conf::CFG_ALLOW_IPS],
-            $this->l('Limit LiteSpeed Cache to specified IPs. (Space or comma separated.)') . ' '
-            . $this->l('Allows cache testing on a live site. If empty, cache will be served to everyone.'),
-            $disabled
-        );
-        $formDev['input'][] = $this->addInputSwitch(
-            Conf::CFG_DEBUG,
-            $this->labels[Conf::CFG_DEBUG],
-            $this->l('Prints additional information to "lscache.log." Turn off for production use.'),
-            $disabled
-        );
-        $formDev['input'][] = $this->addInputTextArea(
-            Conf::CFG_DEBUG_IPS,
-            $this->labels[Conf::CFG_DEBUG_IPS],
-            $this->l('Only log activities from specified IPs. (Space or comma separated.)') . ' '
-            . $this->l('If empty, all activities will be logged. Only effective when debug log is enabled.'),
-            $disabled
-        );
-        $formDev['input'][] = $this->addInputText(
-            Conf::CFG_DEBUG_LEVEL,
-            $this->labels[Conf::CFG_DEBUG_LEVEL],
-            $this->l('Specifies log level ranging from 1 to 10. The higher the value, the more detailed the output.'),
-            '',
-            false,
-            $disabled
-        );
-
-        $forms = [['form' => $fg], ['form' => $formUser], ['form' => $formDev]];
-
-        $helper = new HelperForm();
-        $helper->show_toolbar = false;
-        $helper->languages = $this->getLanguages();
-        $helper->name_controller = $this->controller_name;
-        $helper->token = $this->token;
-        $helper->default_form_language = $this->default_form_language;
-        $helper->allow_employee_form_lang = $this->allow_employee_form_lang;
-        $helper->identifier = $this->identifier;
-        $helper->submit_action = 'submitConfig';
-        $helper->currentIndex = self::$currentIndex;
-
-        $helper->tpl_vars = ['fields_value' => $this->current_values];
-
-        return $helper->generateForm($forms);
     }
 
     private function addInputText($name, $label, $desc, $suffix = '', $required = true, $disabled = false)

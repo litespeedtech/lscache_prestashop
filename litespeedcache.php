@@ -35,14 +35,6 @@ require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/VaryCookie.php';
 
 class LiteSpeedCache extends Module
 {
-    private $cache;
-
-    private $config;
-
-    private $esiInjection;
-
-    private static $ccflag = 0; // cache control flag
-
     const MODULE_NAME = 'litespeedcache';
 
     //BITMASK for Cache Control Flag
@@ -74,6 +66,13 @@ class LiteSpeedCache extends Module
 
     // ESI MARKER
     const ESI_MARKER_END = '_LSCESIEND_';
+    private $cache;
+
+    private $config;
+
+    private $esiInjection;
+
+    private static $ccflag = 0; // cache control flag
 
     public function __construct()
     {
@@ -110,6 +109,18 @@ class LiteSpeedCache extends Module
         }
         if (!defined('_LITESPEED_DEBUG_')) {
             define('_LITESPEED_DEBUG_', 0);
+        }
+    }
+
+    // this is catchall function for purge events
+    public function __call($method, $args)
+    {
+        if (self::isActive()) {
+            $keys = array_keys($args);
+            if (count($keys) == 1 && $keys[0] == 0) {
+                $args = $args[0];
+            }
+            $this->cache->purgeByCatchAllMethod($method, $args);
         }
     }
 
@@ -151,11 +162,6 @@ class LiteSpeedCache extends Module
     public function setEsiOn()
     {
         self::$ccflag |= self::CCBM_ESI_ON;
-    }
-
-    private static function myInstance()
-    {
-        return Module::getInstanceByName(self::MODULE_NAME);
     }
 
     public function hookActionDispatcher($params)
@@ -247,18 +253,6 @@ class LiteSpeedCache extends Module
         }
     }
 
-    // this is catchall function for purge events
-    public function __call($method, $args)
-    {
-        if (self::isActive()) {
-            $keys = array_keys($args);
-            if (count($keys) == 1 && $keys[0] == 0) {
-                $args = $args[0];
-            }
-            $this->cache->purgeByCatchAllMethod($method, $args);
-        }
-    }
-
     /* our own hook
      * Required field $params['from']
      * $params['public'] & $params['private'] one has to exist, array of tags
@@ -344,48 +338,6 @@ class LiteSpeedCache extends Module
         }
     }
 
-    // return status
-    private function checkDispatcher($controllerType, $controllerClass)
-    {
-        if (!self::isActiveForUser()) { // check for ip restriction
-            return 'not active';
-        }
-
-        if (!defined('_LITESPEED_CALLBACK_')) {
-            define('_LITESPEED_CALLBACK_', 1);
-            ob_start('LiteSpeedCache::callbackOutputFilter');
-        }
-
-        // 3rd party integration init needs to be before checkRoute
-        include_once _PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php';
-
-        if ($controllerType == DispatcherCore::FC_FRONT) {
-            self::$ccflag |= self::CCBM_FRONT_CONTROLLER;
-        }
-        if ($controllerClass == 'litespeedcacheesiModuleFrontController') {
-            self::$ccflag |= self::CCBM_ESI_REQ;
-
-            return 'esi request';
-        }
-
-        // here also check purge controller
-        if (($reason = $this->cache->isCacheableRoute($controllerType, $controllerClass)) != '') {
-            $this->setNotCacheable($reason);
-
-            return $reason;
-        }
-
-        if (isset($_SERVER['LSCACHE_VARY_VALUE'])
-            && ($_SERVER['LSCACHE_VARY_VALUE'] == 'guest' || $_SERVER['LSCACHE_VARY_VALUE'] == 'guestm')) {
-            self::$ccflag |= self::CCBM_CACHEABLE | self::CCBM_GUEST; // no ESI allowed
-            return 'cacheable guest';
-        }
-
-        self::$ccflag |= (self::CCBM_CACHEABLE | self::CCBM_CAN_INJECT_ESI);
-
-        return 'cacheable & allow esiInject';
-    }
-
     public function addCacheControlByEsiModule($item)
     {
         if (!self::isActive()) {
@@ -455,107 +407,6 @@ class LiteSpeedCache extends Module
          * //  file_put_contents($tname, $buffer);
          */
         return $buffer;
-    }
-
-    private function registerEsiMarker($params, $conf)
-    {
-        $item = new LiteSpeedCacheEsiItem($params, $conf);
-        $id = $item->getId();
-        if (!isset($this->esiInjection['marker'][$id])) {
-            $this->esiInjection['marker'][$id] = $item;
-        }
-
-        return '_LSCESI-' . $id . '-START_';
-    }
-
-    private function replaceEsiMarker($buf)
-    {
-        if (count($this->esiInjection['marker'])) {
-            // U :ungreedy s: dotall m: multiline
-            $nb = preg_replace_callback(
-                ['/_LSC(ESI)-(.+)-START_(.*)_LSCESIEND_/Usm',
-                    '/(\'|\")_LSCESIJS-(.+)-START__LSCESIEND_(\'|\")/Usm', ],
-                function ($m) {
-                    // inject ESI even it's not cacheable
-                    $id = $m[2];
-                    $lsc = self::myInstance();
-                    if (!isset($lsc->esiInjection['marker'][$id])) {
-                        $id = stripslashes($id);
-                    }
-                    if (!isset($lsc->esiInjection['marker'][$id])) {
-                        // should not happen
-                        if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_UNEXPECTED) {
-                            LiteSpeedCacheLog::log('Lost Injection ' . $id, LiteSpeedCacheLog::LEVEL_UNEXPECTED);
-                        }
-
-                        return '';
-                    }
-                    $item = $lsc->esiInjection['marker'][$id];
-                    $esiInclude = $item->getInclude();
-                    if ($esiInclude === false) {
-                        if ($item->getParam('pt') == $item::ESI_JSDEF) {
-                            LscIntegration::processJsDef($item); // content set inside
-                        } else {
-                            $item->setContent($m[3]);
-                        }
-                        $esiInclude = $item->getInclude();
-                    }
-
-                    return $esiInclude;
-                },
-                $buf
-            );
-        } else {
-            // log here, shouldn't happen
-            $nb = $buf;
-        }
-
-        $bufInline = '';
-        // Tools::getToken() is not really used for cacheable pages
-        // Tools::getToken(false) is used -------------- caninject
-        $static_token = Tools::getToken(false);
-        $tkparam = ['pt' => LiteSpeedCacheEsiItem::ESI_TOKEN, 'm' => LscToken::NAME, 'd' => 'static'];
-        $tkitem = new LiteSpeedCacheEsiItem($tkparam, $this->config->getEsiModuleConf(LscToken::NAME));
-        $tkitem->setContent($static_token);
-        // we always add to inline
-        $this->esiInjection['marker'][$tkitem->getId()] = $tkitem;
-
-        $envparam = ['pt' => LiteSpeedCacheEsiItem::ESI_ENV, 'm' => LscEnv::NAME];
-        $envitem = new LiteSpeedCacheEsiItem($envparam, $this->config->getEsiModuleConf(LscEnv::NAME));
-        $envitem->setContent('');
-        $this->esiInjection['marker'][$envitem->getId()] = $envitem;
-
-        if (self::isCacheable()) { // only if cacheable, do global replacement
-            if (strpos($nb, $static_token)) {
-                $tokenInc = $tkitem->getInclude();
-                $nb = str_replace($static_token, $tokenInc, $nb);
-            }
-            $nb = $envitem->getInclude() . $nb; // must be first one
-        }
-
-        $allPrivateItems = [];
-        // last adding esi:inline, which needs to be in front of esi:include
-        foreach ($this->esiInjection['marker'] as $item) {
-            $inline = $item->getInline();
-            if ($inline !== false) {
-                // for ajax call, it's possible no inline content
-                $bufInline .= $inline;
-                if ($item->getConf()->isPrivate()) {
-                    $allPrivateItems[] = $item;
-                }
-            }
-        }
-        if ($bufInline) {
-            if (!empty($allPrivateItems)) {
-                LiteSpeedCacheHelper::syncItemCache($allPrivateItems);
-            }
-            self::$ccflag |= self::CCBM_ESI_ON;
-        }
-        if ($bufInline && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_OUTPUT) {
-            LiteSpeedCacheLog::log('ESI inline output ' . $bufInline, LiteSpeedCacheLog::LEVEL_ESI_OUTPUT);
-        }
-
-        return $bufInline . $nb;
     }
 
     public function hookLitespeedEsiBegin($params)
@@ -691,18 +542,6 @@ class LiteSpeedCache extends Module
         return $lsc->registerEsiMarker($esiParam, $conf);
     }
 
-    // allow other plugins to set current response not cacheable
-    private function setNotCacheable($reason = '')
-    {
-        if (!self::isActive()) { // not check ip for force nocache
-            return;
-        }
-        self::$ccflag |= self::CCBM_NOT_CACHEABLE;
-        if ($reason && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_NOCACHE_REASON) {
-            LiteSpeedCacheLog::log(__FUNCTION__ . ' - ' . $reason, LiteSpeedCacheLog::LEVEL_NOCACHE_REASON);
-        }
-    }
-
     public function getContent()
     {
         Tools::redirectAdmin($this->context->link->getAdminLink('AdminLiteSpeedCacheConfig'));
@@ -740,6 +579,166 @@ class LiteSpeedCache extends Module
         Configuration::deleteByName(LiteSpeedCacheConfig::ENTRY_MODULE);
 
         return parent::uninstall();
+    }
+
+    private static function myInstance()
+    {
+        return Module::getInstanceByName(self::MODULE_NAME);
+    }
+
+    // return status
+    private function checkDispatcher($controllerType, $controllerClass)
+    {
+        if (!self::isActiveForUser()) { // check for ip restriction
+            return 'not active';
+        }
+
+        if (!defined('_LITESPEED_CALLBACK_')) {
+            define('_LITESPEED_CALLBACK_', 1);
+            ob_start('LiteSpeedCache::callbackOutputFilter');
+        }
+
+        // 3rd party integration init needs to be before checkRoute
+        include_once _PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php';
+
+        if ($controllerType == DispatcherCore::FC_FRONT) {
+            self::$ccflag |= self::CCBM_FRONT_CONTROLLER;
+        }
+        if ($controllerClass == 'litespeedcacheesiModuleFrontController') {
+            self::$ccflag |= self::CCBM_ESI_REQ;
+
+            return 'esi request';
+        }
+
+        // here also check purge controller
+        if (($reason = $this->cache->isCacheableRoute($controllerType, $controllerClass)) != '') {
+            $this->setNotCacheable($reason);
+
+            return $reason;
+        }
+
+        if (isset($_SERVER['LSCACHE_VARY_VALUE'])
+            && ($_SERVER['LSCACHE_VARY_VALUE'] == 'guest' || $_SERVER['LSCACHE_VARY_VALUE'] == 'guestm')) {
+            self::$ccflag |= self::CCBM_CACHEABLE | self::CCBM_GUEST; // no ESI allowed
+            return 'cacheable guest';
+        }
+
+        self::$ccflag |= (self::CCBM_CACHEABLE | self::CCBM_CAN_INJECT_ESI);
+
+        return 'cacheable & allow esiInject';
+    }
+
+    private function registerEsiMarker($params, $conf)
+    {
+        $item = new LiteSpeedCacheEsiItem($params, $conf);
+        $id = $item->getId();
+        if (!isset($this->esiInjection['marker'][$id])) {
+            $this->esiInjection['marker'][$id] = $item;
+        }
+
+        return '_LSCESI-' . $id . '-START_';
+    }
+
+    private function replaceEsiMarker($buf)
+    {
+        if (count($this->esiInjection['marker'])) {
+            // U :ungreedy s: dotall m: multiline
+            $nb = preg_replace_callback(
+                ['/_LSC(ESI)-(.+)-START_(.*)_LSCESIEND_/Usm',
+                    '/(\'|\")_LSCESIJS-(.+)-START__LSCESIEND_(\'|\")/Usm', ],
+                function ($m) {
+                    // inject ESI even it's not cacheable
+                    $id = $m[2];
+                    $lsc = self::myInstance();
+                    if (!isset($lsc->esiInjection['marker'][$id])) {
+                        $id = stripslashes($id);
+                    }
+                    if (!isset($lsc->esiInjection['marker'][$id])) {
+                        // should not happen
+                        if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_UNEXPECTED) {
+                            LiteSpeedCacheLog::log('Lost Injection ' . $id, LiteSpeedCacheLog::LEVEL_UNEXPECTED);
+                        }
+
+                        return '';
+                    }
+                    $item = $lsc->esiInjection['marker'][$id];
+                    $esiInclude = $item->getInclude();
+                    if ($esiInclude === false) {
+                        if ($item->getParam('pt') == $item::ESI_JSDEF) {
+                            LscIntegration::processJsDef($item); // content set inside
+                        } else {
+                            $item->setContent($m[3]);
+                        }
+                        $esiInclude = $item->getInclude();
+                    }
+
+                    return $esiInclude;
+                },
+                $buf
+            );
+        } else {
+            // log here, shouldn't happen
+            $nb = $buf;
+        }
+
+        $bufInline = '';
+        // Tools::getToken() is not really used for cacheable pages
+        // Tools::getToken(false) is used -------------- caninject
+        $static_token = Tools::getToken(false);
+        $tkparam = ['pt' => LiteSpeedCacheEsiItem::ESI_TOKEN, 'm' => LscToken::NAME, 'd' => 'static'];
+        $tkitem = new LiteSpeedCacheEsiItem($tkparam, $this->config->getEsiModuleConf(LscToken::NAME));
+        $tkitem->setContent($static_token);
+        // we always add to inline
+        $this->esiInjection['marker'][$tkitem->getId()] = $tkitem;
+
+        $envparam = ['pt' => LiteSpeedCacheEsiItem::ESI_ENV, 'm' => LscEnv::NAME];
+        $envitem = new LiteSpeedCacheEsiItem($envparam, $this->config->getEsiModuleConf(LscEnv::NAME));
+        $envitem->setContent('');
+        $this->esiInjection['marker'][$envitem->getId()] = $envitem;
+
+        if (self::isCacheable()) { // only if cacheable, do global replacement
+            if (strpos($nb, $static_token)) {
+                $tokenInc = $tkitem->getInclude();
+                $nb = str_replace($static_token, $tokenInc, $nb);
+            }
+            $nb = $envitem->getInclude() . $nb; // must be first one
+        }
+
+        $allPrivateItems = [];
+        // last adding esi:inline, which needs to be in front of esi:include
+        foreach ($this->esiInjection['marker'] as $item) {
+            $inline = $item->getInline();
+            if ($inline !== false) {
+                // for ajax call, it's possible no inline content
+                $bufInline .= $inline;
+                if ($item->getConf()->isPrivate()) {
+                    $allPrivateItems[] = $item;
+                }
+            }
+        }
+        if ($bufInline) {
+            if (!empty($allPrivateItems)) {
+                LiteSpeedCacheHelper::syncItemCache($allPrivateItems);
+            }
+            self::$ccflag |= self::CCBM_ESI_ON;
+        }
+        if ($bufInline && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_OUTPUT) {
+            LiteSpeedCacheLog::log('ESI inline output ' . $bufInline, LiteSpeedCacheLog::LEVEL_ESI_OUTPUT);
+        }
+
+        return $bufInline . $nb;
+    }
+
+    // allow other plugins to set current response not cacheable
+    private function setNotCacheable($reason = '')
+    {
+        if (!self::isActive()) { // not check ip for force nocache
+            return;
+        }
+        self::$ccflag |= self::CCBM_NOT_CACHEABLE;
+        if ($reason && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_NOCACHE_REASON) {
+            LiteSpeedCacheLog::log(__FUNCTION__ . ' - ' . $reason, LiteSpeedCacheLog::LEVEL_NOCACHE_REASON);
+        }
     }
 
     private function installHooks()

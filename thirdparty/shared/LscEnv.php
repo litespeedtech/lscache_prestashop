@@ -29,6 +29,12 @@ class LscEnv extends LscIntegration
     // this is built-in for all PS versions
     const NAME = 'lsc_env';
 
+    public static function isUsed($name)
+    {
+        // always used
+        return $name == self::NAME;
+    }
+
     protected function init()
     {
         $confData = [
@@ -39,12 +45,6 @@ class LscEnv extends LscIntegration
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
 
         return $this->registerEsiModule();
-    }
-
-    public static function isUsed($name)
-    {
-        // always used
-        return $name == self::NAME;
     }
 }
 

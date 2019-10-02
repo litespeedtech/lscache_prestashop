@@ -124,64 +124,6 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         parent::initPageHeaderToolbar();
     }
 
-    private function initDisplayValues()
-    {
-        $data = $this->config->get(Conf::ENTRY_MODULE);
-        $this->config_values = [];
-        $this->default_ids = [];
-
-        foreach ($data as $id => $ci) {
-            $idata = $ci->getCustConfArray();
-            if ($idata['priv']) {
-                $idata['pubpriv'] = $this->l('Private');
-                $idata['badge_success'] = true;
-            } else {
-                $idata['pubpriv'] = $this->l('Public');
-                $idata['badge_danger'] = true;
-            }
-            if ($idata['type'] == EsiConf::TYPE_CUSTOMIZED) {
-                $idata['typeD'] = $this->l('Customized');
-            } else {
-                $this->default_ids[] = $id;
-                $idata['badge_warning'] = 1; // no edits allowed
-                $idata['typeD'] = ($idata['type'] == EsiConf::TYPE_BUILTIN) ?
-                        $this->l('Built-in') : $this->l('Integrated');
-            }
-            if ($idata['tipurl']) {
-                $this->warnings[] = $idata['name'] . ': <a href="' . $idata['tipurl']
-                    . '" target="_blank" rel="noopener noreferrer">' . $this->l('See online tips') . '</a>';
-                $idata['name'] .= ' (*)';
-            }
-            $this->config_values[$id] = $idata;
-        }
-
-        if ($this->display == 'edit' || $this->display == 'view') {
-            $name = $this->current_id;
-            $this->original_values = $this->config_values[$name];
-        } elseif ($this->display == 'add') {
-            $this->original_values = [
-                'id' => '',
-                'name' => '',
-                'priv' => 1,
-                'ttl' => 1800,
-                'tag' => '',
-                'events' => '',
-                'ctrl' => '',
-                'methods' => '',
-                'render' => '',
-                'asvar' => '',
-                'ie' => '',
-                'ce' => '',
-            ];
-        } else { // list
-            $this->original_values = $this->config_values;
-        }
-        if ($this->display != 'list') {
-            $this->getModuleOptions();
-        }
-        $this->current_values = $this->original_values;
-    }
-
     /**
      * Retrieve GET and POST value and translate them to actions.
      */
@@ -215,15 +157,6 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         } elseif (Tools::getIsset('view' . $t) && $this->current_id) {
             $this->display = 'view';
             $this->action = 'view';
-        }
-    }
-
-    protected function canDo($action)
-    {
-        if (method_exists($this, 'access')) { // 1.7 +
-            return $this->access($action);
-        } else {
-            return $this->tabAccess[$action] === '1';
         }
     }
 
@@ -269,193 +202,6 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         } else {
             parent::postProcess();
         }
-    }
-
-    private function validateInput($name)
-    {
-        //'id', 'priv', 'ttl', 'tag', 'events'
-        $postVal = trim(Tools::getValue($name));
-        $origVal = $this->original_values[$name];
-        $invalid = $this->l('Invalid value') . ': ' . $this->labels[$name];
-        $s = ' - '; // spacer
-        $invalidChars = $this->l('Invalid characters found.');
-        $splitPattern = '/[\s,]+/';
-
-        switch ($name) {
-            case 'id':
-                break;
-
-            case 'priv':
-            case 'asvar':
-            case 'ie':
-            case 'ce':
-                $postVal = (int) $postVal;
-                break;
-
-            case 'ttl':
-                if ($postVal === '') {
-                    // ok, will use default value
-                } elseif (!Validate::isUnsignedInt($postVal)) {
-                    $this->errors[] = $invalid;
-                } elseif ($postVal < 60) {
-                    $this->errors[] = $invalid . $s . $this->l('Must be greater than 60 seconds.');
-                } elseif ($this->current_values['priv'] == 1 && $postVal > 7200) {
-                    $this->errors[] = $invalid . $s . $this->l('Private TTL must be less than 7200 seconds.');
-                } else {
-                    $postVal = (int) $postVal;
-                }
-                break;
-
-            case 'tag':
-                if ($postVal === '') {
-                    // ok, will use default value
-                } elseif (preg_match('/^[a-zA-Z-_0-9]+$/', $postVal) !== 1) {
-                    $this->errors[] = $invalid . $s . $invalidChars;
-                }
-                break;
-
-            case 'events':
-                $clean = array_unique(preg_split($splitPattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
-                if (count($clean) == 0) {
-                    $postVal = '';
-                } else {
-                    foreach ($clean as $ci) {
-                        if (!preg_match('/^[a-zA-Z]+$/', $ci)) {
-                            $this->errors[] = $invalid . $s . $invalidChars;
-                        } elseif (Tools::strlen($ci) < 8) {
-                            $this->errors[] = $invalid . $s . $this->l('Event string usually starts with "action".');
-                        }
-                    }
-                    $postVal = implode(', ', $clean);
-                }
-                break;
-
-            case 'ctrl':
-                $clean = array_unique(preg_split($splitPattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
-                if (count($clean) == 0) {
-                    $postVal = '';
-                } else {
-                    foreach ($clean as $ci) {
-                        // allow ClassName?param1&param2
-                        if (!preg_match('/^([a-zA-Z_]+)(\?[a-zA-Z_0-9\-&]+)?$/', $ci, $m)) {
-                            $this->errors[] = $invalid . $s . $invalidChars;
-                        } /*elseif (!class_exists($m[1])) {
-                            $this->errors[] = $invalid . $s . ' ' . $m[1] . ' ' . $this->l('Invalid class name.');
-                        }*/
-                    }
-                    $postVal = implode(', ', $clean);
-                }
-                break;
-
-            case 'methods':
-                $clean = array_unique(preg_split($splitPattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
-                if (count($clean) == 0) {
-                    $postVal = '';
-                } else {
-                    foreach ($clean as $ci) {
-                        if (!preg_match('/^(\!)?([a-zA-Z_]+)$/', $ci, $m)) {
-                            $this->errors[] = $invalid . $s . $invalidChars;
-                        } else {
-                            // no further validation for now
-                        }
-                    }
-                    $postVal = implode(', ', $clean);
-                }
-                break;
-
-            case 'render':
-                $clean = array_unique(preg_split($splitPattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
-                if (count($clean) == 0) {
-                    $postVal = '';
-                } elseif (count($clean) == 1 && $clean[0] == '*') {
-                    $postVal = '*'; // allow * for all
-                } else {
-                    foreach ($clean as $ci) {
-                        if (!preg_match('/^(\!)?([a-zA-Z_]+)$/', $ci, $m)) {
-                            $this->errors[] = $invalid . $s . $invalidChars;
-                        } else {
-                            // no further validation for now
-                        }
-                    }
-                    $postVal = implode(', ', $clean);
-                }
-                break;
-        }
-
-        if ($postVal != $origVal) {
-            $this->changed |= 1;
-        }
-
-        $this->current_values[$name] = $postVal;
-    }
-
-    private function processFormSave()
-    {
-        $inputs = ['id', 'priv', 'ttl', 'tag', 'events', 'ctrl', 'methods', 'render', 'asvar', 'ie', 'ce'];
-        $this->changed = 0;
-        foreach ($inputs as $field) {
-            $this->validateInput($field);
-        }
-        if (count($this->errors)) {
-            return;
-        }
-
-        if ($this->changed == 0) {
-            $this->confirmations[] = $this->l('No changes detected. Nothing to save.');
-
-            return;
-        }
-        $this->saveModConfig($this->current_values);
-    }
-
-    private function saveModConfig($values)
-    {
-        $res = $this->config->saveModConfigValues($values, $this->action);
-        if ($res && ($this->display == 'add')) { // successfully added
-            $this->display = 'list';
-        }
-        $this->initDisplayValues();
-        if ($res == 1) {
-            $this->confirmations[] = $this->l('Settings saved.') . ' '
-                . $this->l('Please flush all cached pages.');
-        } elseif ($res == 2) {
-            $this->confirmations[] = $this->l('Settings saved and hooks updated') . ' '
-                . $this->l('Please flush all cached pages.');
-        } else {
-            $this->errors[] = $this->l('Fail to update the settings.');
-        }
-    }
-
-    private function getModuleOptions()
-    {
-        $moduleOptions = [];
-        // $is17 = version_compare(_PS_VERSION_, '1.7.0.0', '>=');
-        if ($this->display == 'edit' || $this->display == 'view') {
-            $name = $this->current_id;
-            $moduleOptions[] = [
-                'id' => $name,
-                'name' => "[$name] " . $this->config_values[$name]['name'],
-            ];
-        } elseif ($this->display == 'add') {
-            $list = [];
-            $modules = Module::getModulesInstalled();
-            $existing = array_keys($this->config_values);
-            foreach ($modules as $module) {
-                if (($module['active'] == 1)
-                    && (!in_array($module['name'], $existing))
-                    && ($tmp_instance = Module::getInstanceByName($module['name']))
-                ) {
-                    $list[$module['name']] = $tmp_instance->displayName;
-                }
-            }
-            natsort($list);
-            foreach ($list as $id => $name) {
-                $name = "[$id] $name";
-                $moduleOptions[] = ['id' => $id, 'name' => $name];
-            }
-        }
-
-        $this->module_options = $moduleOptions;
     }
 
     public function renderForm()
@@ -650,5 +396,259 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         $list = $helper->generateList($this->_list, $this->fields_list);
 
         return $list;
+    }
+
+    protected function canDo($action)
+    {
+        if (method_exists($this, 'access')) { // 1.7 +
+            return $this->access($action);
+        } else {
+            return $this->tabAccess[$action] === '1';
+        }
+    }
+
+    private function initDisplayValues()
+    {
+        $data = $this->config->get(Conf::ENTRY_MODULE);
+        $this->config_values = [];
+        $this->default_ids = [];
+
+        foreach ($data as $id => $ci) {
+            $idata = $ci->getCustConfArray();
+            if ($idata['priv']) {
+                $idata['pubpriv'] = $this->l('Private');
+                $idata['badge_success'] = true;
+            } else {
+                $idata['pubpriv'] = $this->l('Public');
+                $idata['badge_danger'] = true;
+            }
+            if ($idata['type'] == EsiConf::TYPE_CUSTOMIZED) {
+                $idata['typeD'] = $this->l('Customized');
+            } else {
+                $this->default_ids[] = $id;
+                $idata['badge_warning'] = 1; // no edits allowed
+                $idata['typeD'] = ($idata['type'] == EsiConf::TYPE_BUILTIN) ?
+                        $this->l('Built-in') : $this->l('Integrated');
+            }
+            if ($idata['tipurl']) {
+                $this->warnings[] = $idata['name'] . ': <a href="' . $idata['tipurl']
+                    . '" target="_blank" rel="noopener noreferrer">' . $this->l('See online tips') . '</a>';
+                $idata['name'] .= ' (*)';
+            }
+            $this->config_values[$id] = $idata;
+        }
+
+        if ($this->display == 'edit' || $this->display == 'view') {
+            $name = $this->current_id;
+            $this->original_values = $this->config_values[$name];
+        } elseif ($this->display == 'add') {
+            $this->original_values = [
+                'id' => '',
+                'name' => '',
+                'priv' => 1,
+                'ttl' => 1800,
+                'tag' => '',
+                'events' => '',
+                'ctrl' => '',
+                'methods' => '',
+                'render' => '',
+                'asvar' => '',
+                'ie' => '',
+                'ce' => '',
+            ];
+        } else { // list
+            $this->original_values = $this->config_values;
+        }
+        if ($this->display != 'list') {
+            $this->getModuleOptions();
+        }
+        $this->current_values = $this->original_values;
+    }
+
+    private function validateInput($name)
+    {
+        //'id', 'priv', 'ttl', 'tag', 'events'
+        $postVal = trim(Tools::getValue($name));
+        $origVal = $this->original_values[$name];
+        $invalid = $this->l('Invalid value') . ': ' . $this->labels[$name];
+        $s = ' - '; // spacer
+        $invalidChars = $this->l('Invalid characters found.');
+        $splitPattern = '/[\s,]+/';
+
+        switch ($name) {
+            case 'id':
+                break;
+
+            case 'priv':
+            case 'asvar':
+            case 'ie':
+            case 'ce':
+                $postVal = (int) $postVal;
+                break;
+
+            case 'ttl':
+                if ($postVal === '') {
+                    // ok, will use default value
+                } elseif (!Validate::isUnsignedInt($postVal)) {
+                    $this->errors[] = $invalid;
+                } elseif ($postVal < 60) {
+                    $this->errors[] = $invalid . $s . $this->l('Must be greater than 60 seconds.');
+                } elseif ($this->current_values['priv'] == 1 && $postVal > 7200) {
+                    $this->errors[] = $invalid . $s . $this->l('Private TTL must be less than 7200 seconds.');
+                } else {
+                    $postVal = (int) $postVal;
+                }
+                break;
+
+            case 'tag':
+                if ($postVal === '') {
+                    // ok, will use default value
+                } elseif (preg_match('/^[a-zA-Z-_0-9]+$/', $postVal) !== 1) {
+                    $this->errors[] = $invalid . $s . $invalidChars;
+                }
+                break;
+
+            case 'events':
+                $clean = array_unique(preg_split($splitPattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                if (count($clean) == 0) {
+                    $postVal = '';
+                } else {
+                    foreach ($clean as $ci) {
+                        if (!preg_match('/^[a-zA-Z]+$/', $ci)) {
+                            $this->errors[] = $invalid . $s . $invalidChars;
+                        } elseif (Tools::strlen($ci) < 8) {
+                            $this->errors[] = $invalid . $s . $this->l('Event string usually starts with "action".');
+                        }
+                    }
+                    $postVal = implode(', ', $clean);
+                }
+                break;
+
+            case 'ctrl':
+                $clean = array_unique(preg_split($splitPattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                if (count($clean) == 0) {
+                    $postVal = '';
+                } else {
+                    foreach ($clean as $ci) {
+                        // allow ClassName?param1&param2
+                        if (!preg_match('/^([a-zA-Z_]+)(\?[a-zA-Z_0-9\-&]+)?$/', $ci, $m)) {
+                            $this->errors[] = $invalid . $s . $invalidChars;
+                        } /*elseif (!class_exists($m[1])) {
+                            $this->errors[] = $invalid . $s . ' ' . $m[1] . ' ' . $this->l('Invalid class name.');
+                        }*/
+                    }
+                    $postVal = implode(', ', $clean);
+                }
+                break;
+
+            case 'methods':
+                $clean = array_unique(preg_split($splitPattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                if (count($clean) == 0) {
+                    $postVal = '';
+                } else {
+                    foreach ($clean as $ci) {
+                        if (!preg_match('/^(\!)?([a-zA-Z_]+)$/', $ci, $m)) {
+                            $this->errors[] = $invalid . $s . $invalidChars;
+                        } else {
+                            // no further validation for now
+                        }
+                    }
+                    $postVal = implode(', ', $clean);
+                }
+                break;
+
+            case 'render':
+                $clean = array_unique(preg_split($splitPattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                if (count($clean) == 0) {
+                    $postVal = '';
+                } elseif (count($clean) == 1 && $clean[0] == '*') {
+                    $postVal = '*'; // allow * for all
+                } else {
+                    foreach ($clean as $ci) {
+                        if (!preg_match('/^(\!)?([a-zA-Z_]+)$/', $ci, $m)) {
+                            $this->errors[] = $invalid . $s . $invalidChars;
+                        } else {
+                            // no further validation for now
+                        }
+                    }
+                    $postVal = implode(', ', $clean);
+                }
+                break;
+        }
+
+        if ($postVal != $origVal) {
+            $this->changed |= 1;
+        }
+
+        $this->current_values[$name] = $postVal;
+    }
+
+    private function processFormSave()
+    {
+        $inputs = ['id', 'priv', 'ttl', 'tag', 'events', 'ctrl', 'methods', 'render', 'asvar', 'ie', 'ce'];
+        $this->changed = 0;
+        foreach ($inputs as $field) {
+            $this->validateInput($field);
+        }
+        if (count($this->errors)) {
+            return;
+        }
+
+        if ($this->changed == 0) {
+            $this->confirmations[] = $this->l('No changes detected. Nothing to save.');
+
+            return;
+        }
+        $this->saveModConfig($this->current_values);
+    }
+
+    private function saveModConfig($values)
+    {
+        $res = $this->config->saveModConfigValues($values, $this->action);
+        if ($res && ($this->display == 'add')) { // successfully added
+            $this->display = 'list';
+        }
+        $this->initDisplayValues();
+        if ($res == 1) {
+            $this->confirmations[] = $this->l('Settings saved.') . ' '
+                . $this->l('Please flush all cached pages.');
+        } elseif ($res == 2) {
+            $this->confirmations[] = $this->l('Settings saved and hooks updated') . ' '
+                . $this->l('Please flush all cached pages.');
+        } else {
+            $this->errors[] = $this->l('Fail to update the settings.');
+        }
+    }
+
+    private function getModuleOptions()
+    {
+        $moduleOptions = [];
+        // $is17 = version_compare(_PS_VERSION_, '1.7.0.0', '>=');
+        if ($this->display == 'edit' || $this->display == 'view') {
+            $name = $this->current_id;
+            $moduleOptions[] = [
+                'id' => $name,
+                'name' => "[$name] " . $this->config_values[$name]['name'],
+            ];
+        } elseif ($this->display == 'add') {
+            $list = [];
+            $modules = Module::getModulesInstalled();
+            $existing = array_keys($this->config_values);
+            foreach ($modules as $module) {
+                if (($module['active'] == 1)
+                    && (!in_array($module['name'], $existing))
+                    && ($tmp_instance = Module::getInstanceByName($module['name']))
+                ) {
+                    $list[$module['name']] = $tmp_instance->displayName;
+                }
+            }
+            natsort($list);
+            foreach ($list as $id => $name) {
+                $name = "[$id] $name";
+                $moduleOptions[] = ['id' => $id, 'name' => $name];
+            }
+        }
+
+        $this->module_options = $moduleOptions;
     }
 }

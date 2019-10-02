@@ -341,59 +341,6 @@ class LiteSpeedCacheConfig
         return ($this->isDebug < $requiredLevel) ? 0 : $this->isDebug;
     }
 
-    private function init()
-    {
-        $this->all = json_decode(Configuration::get(self::ENTRY_ALL), true);
-
-        if (!$this->all) { // for config not exist, or decode err
-            LSLog::log('Config not exist yet or decode err', LSLog::LEVEL_FORCE);
-            $this->all = $this->getDefaultConfData(self::ENTRY_ALL);
-        }
-
-        if ($this->all[self::CFG_DEBUG]) {
-            $ips = $this->getArray(self::CFG_DEBUG_IPS);
-            if (empty($ips) || in_array($_SERVER['REMOTE_ADDR'], $ips)) {
-                $this->isDebug = $this->all[self::CFG_DEBUG_LEVEL];
-            }
-        }
-
-        $this->shop = json_decode(Configuration::get(self::ENTRY_SHOP), true);
-        if (!$this->shop) {
-            $this->shop = $this->getDefaultConfData(self::ENTRY_SHOP);
-        }
-
-        $this->custMod = Configuration::get(self::ENTRY_MODULE);
-        $this->esiModConf = ['mods' => [], 'purge_events' => []];
-        $custdata = json_decode($this->custMod, true);
-        if ($custdata) {
-            foreach ($custdata as $name => $sdata) {
-                $esiconf = new EsiConf($name, EsiConf::TYPE_CUSTOMIZED, $sdata);
-                $this->registerEsiModule($esiconf);
-            }
-        }
-
-        $this->pubController = [
-            'IndexController' => self::TAG_HOME, // controller name - tag linked to it
-            'ProductController' => '',
-            'CategoryController' => '',
-            'CmsController' => '',
-            'ManufacturerController' => '',
-            'SupplierController' => '',
-            'SearchController' => self::TAG_SEARCH,
-            'BestSalesController' => self::TAG_SEARCH,
-            'NewProductsController' => self::TAG_SEARCH,
-            'PricesDropController' => self::TAG_SEARCH,
-            'SitemapController' => self::TAG_SITEMAP,
-            'StoresController' => self::TAG_STORES,
-            'PageNotFoundController' => self::TAG_404,
-        ];
-
-        LSLog::setDebugLevel($this->isDebug);
-        if (!defined('_LITESPEED_DEBUG_')) {
-            define('_LITESPEED_DEBUG_', $this->isDebug);
-        }
-    }
-
     public function isControllerCacheable($controllerClass)
     {
         if (!isset($this->pubController[$controllerClass])) {
@@ -638,5 +585,58 @@ class LiteSpeedCacheConfig
         }
 
         return $hooks;
+    }
+
+    private function init()
+    {
+        $this->all = json_decode(Configuration::get(self::ENTRY_ALL), true);
+
+        if (!$this->all) { // for config not exist, or decode err
+            LSLog::log('Config not exist yet or decode err', LSLog::LEVEL_FORCE);
+            $this->all = $this->getDefaultConfData(self::ENTRY_ALL);
+        }
+
+        if ($this->all[self::CFG_DEBUG]) {
+            $ips = $this->getArray(self::CFG_DEBUG_IPS);
+            if (empty($ips) || in_array($_SERVER['REMOTE_ADDR'], $ips)) {
+                $this->isDebug = $this->all[self::CFG_DEBUG_LEVEL];
+            }
+        }
+
+        $this->shop = json_decode(Configuration::get(self::ENTRY_SHOP), true);
+        if (!$this->shop) {
+            $this->shop = $this->getDefaultConfData(self::ENTRY_SHOP);
+        }
+
+        $this->custMod = Configuration::get(self::ENTRY_MODULE);
+        $this->esiModConf = ['mods' => [], 'purge_events' => []];
+        $custdata = json_decode($this->custMod, true);
+        if ($custdata) {
+            foreach ($custdata as $name => $sdata) {
+                $esiconf = new EsiConf($name, EsiConf::TYPE_CUSTOMIZED, $sdata);
+                $this->registerEsiModule($esiconf);
+            }
+        }
+
+        $this->pubController = [
+            'IndexController' => self::TAG_HOME, // controller name - tag linked to it
+            'ProductController' => '',
+            'CategoryController' => '',
+            'CmsController' => '',
+            'ManufacturerController' => '',
+            'SupplierController' => '',
+            'SearchController' => self::TAG_SEARCH,
+            'BestSalesController' => self::TAG_SEARCH,
+            'NewProductsController' => self::TAG_SEARCH,
+            'PricesDropController' => self::TAG_SEARCH,
+            'SitemapController' => self::TAG_SITEMAP,
+            'StoresController' => self::TAG_STORES,
+            'PageNotFoundController' => self::TAG_404,
+        ];
+
+        LSLog::setDebugLevel($this->isDebug);
+        if (!defined('_LITESPEED_DEBUG_')) {
+            define('_LITESPEED_DEBUG_', $this->isDebug);
+        }
     }
 }
