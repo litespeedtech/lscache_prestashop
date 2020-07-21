@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -80,7 +80,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache'; // self::MODULE_NAME was rejected by validator
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '1.2.7'; // validator does not allow const here
+        $this->version = self::getVersion();
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
@@ -111,6 +111,14 @@ class LiteSpeedCache extends Module
         if (!defined('_LITESPEED_DEBUG_')) {
             define('_LITESPEED_DEBUG_', 0);
         }
+        if (self::isActiveForUser()) {
+            require_once _PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php';
+        }
+    }
+    
+    public static function getVersion()
+    {
+        return '1.3.0';
     }
 
     public static function isActive()
@@ -160,6 +168,9 @@ class LiteSpeedCache extends Module
 
     public function hookActionDispatcher($params)
     {
+        if (!self::isActiveForUser()) {
+            return;
+        }
         $controllerType = $params['controller_type'];
         $controllerClass = $params['controller_class'];
 
@@ -171,6 +182,8 @@ class LiteSpeedCache extends Module
         }
 
         $status = $this->checkDispatcher($controllerType, $controllerClass);
+        
+        LscIntegration::preDispatchAction();
 
         if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_CACHE_ROUTE) {
             LiteSpeedCacheLog::log(__FUNCTION__ . ' type=' . $controllerType . ' controller=' . $controllerClass
@@ -301,6 +314,10 @@ class LiteSpeedCache extends Module
     // allow other modules to set
     public function hookLitespeedNotCacheable($params)
     {
+        if (!self::isActiveForUser()) {
+            return;
+        }
+        
         $reason = '';
         if (isset($params['reason'])) {
             $reason = $params['reason'];
@@ -356,9 +373,6 @@ class LiteSpeedCache extends Module
             ob_start('LiteSpeedCache::callbackOutputFilter');
         }
 
-        // 3rd party integration init needs to be before checkRoute
-        include_once _PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php';
-
         if ($controllerType == DispatcherCore::FC_FRONT) {
             self::$ccflag |= self::CCBM_FRONT_CONTROLLER;
         }
@@ -406,7 +420,7 @@ class LiteSpeedCache extends Module
             if ($moduleConf->isPrivate()) {
                 self::$ccflag |= self::CCBM_PRIVATE;
             }
-            $this->cache->setEsiTtl($ttl);
+            $this->cache->setTTL($ttl);
         }
     }
 
@@ -689,6 +703,12 @@ class LiteSpeedCache extends Module
         }
 
         return $lsc->registerEsiMarker($esiParam, $conf);
+    }
+    
+    public static function forceNotCacheable($reason)
+    {
+        $lsc = self::myInstance();
+        $lsc->setNotCacheable($reason);
     }
 
     // allow other plugins to set current response not cacheable

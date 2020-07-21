@@ -38,6 +38,8 @@ if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) { // for PS 1.7 only
     // integrated modules, feel free to comment out if you don't need
     include __DIR__ . '/1.7/iqit/loader.php';
     include __DIR__ . '/1.7/LscGdprPro.php';
+    include __DIR__ . '/1.7/promokit/loader.php';
+    
 } else { // for PS 1.6 only
     // default built-in modules
     include __DIR__ . '/1.6/LscBlockCart.php';

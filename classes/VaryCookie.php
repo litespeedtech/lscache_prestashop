@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -41,10 +41,14 @@ class LiteSpeedCacheVaryCookie extends CookieCore
     const BM_UPDATE_FAILED = 128;
 
     const DEFAULT_VARY_COOKIE_NAME = '_lscache_vary'; // system default
+    
+    const AMP_VARY_COOKIE_NAME = '_lscache_vary_amp';
 
     const PRIVATE_SESSION_COOKIE = 'lsc_private';
 
     private $vd;
+    
+    private $name;
 
     private $status = 0;
 
@@ -57,13 +61,17 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         parent::__construct($name, $path);
         $this->_modified = false; // disallow others to call write
         $this->_allow_writing = false;
-
-        $this->vd = [
-            'cv' => ['name' => $name, 'ov' => null, 'nv' => null], // cookieVary
-            'vv' => ['ov' => null, 'nv' => null],   // valueVary
-            'ps' => ['ov' => null, 'nv' => null], // private session
-        ];
-        $this->init();
+        
+        $context = Context::getContext();
+        $psCookie = $context->cookie;
+        $this->_path = $psCookie->_path;
+        $this->_domain = $psCookie->_domain;
+        $this->_secure = $psCookie->_secure;
+        $this->name = $name;
+        
+        if ($name == self::DEFAULT_VARY_COOKIE_NAME) {
+            $this->init($context, $psCookie);
+        }
     }
 
     private function envChanged()
@@ -100,6 +108,34 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         }
 
         return $changed;
+    }
+    
+    public static function setAmpVary($value)
+    {
+        // this will be called by Amp module from third-party integration
+        $amp = new LiteSpeedCacheVaryCookie(self::AMP_VARY_COOKIE_NAME);
+        $amp->writeAmpVary($value);
+    }
+    
+    private function writeAmpVary($value)
+    {
+        if (headers_sent()) {
+            $this->status |= self::BM_UPDATE_FAILED;
+
+            return;
+        }
+        
+        // check lscache vary cookie, not default PS cookie, workaround validator
+        $cookies = ${'_COOKIE'};
+        $ov = null;
+        
+        if (isset($cookies[self::AMP_VARY_COOKIE_NAME])) {
+            $ov = $cookies[self::AMP_VARY_COOKIE_NAME];
+        }
+        if ($ov != $value) {
+            setcookie(self::AMP_VARY_COOKIE_NAME, $value, 0, $this->_path, $this->_domain, $this->_secure, true);
+            LiteSpeedCache::forceNotCacheable('Amp vary change');
+        }
     }
 
     private function getPrivateId()
@@ -157,19 +193,20 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         }
     }
 
-    private function init()
+    private function init($context, $psCookie)
     {
+        $this->vd = [
+            'cv' => ['name' => $this->name, 'ov' => null, 'nv' => null], // cookieVary
+            'vv' => ['ov' => null, 'nv' => null],   // valueVary
+            'ps' => ['ov' => null, 'nv' => null], // private session
+        ];
+        
         $conf = LiteSpeedCacheConfig::getInstance();
         // $diffCustomerGroup 0: No; 1: Yes; 2: login_out
         $diffCustomerGroup = $conf->get(LiteSpeedCacheConfig::CFG_DIFFCUSTGRP);
         // $diffMobile  0: no; 1: yes
         $diffMobile = $conf->get(LiteSpeedCacheConfig::CFG_DIFFMOBILE);
-        $context = Context::getContext();
-        $psCookie = $context->cookie;
         $isMobile = $diffMobile ? $context->getMobileDevice() : false;
-        $this->_path = $psCookie->_path;
-        $this->_domain = $psCookie->_domain;
-        $this->_secure = $psCookie->_secure;
 
         // check lscache vary cookie, not default PS cookie, workaround validator
         $cookies = ${'_COOKIE'};
@@ -196,7 +233,8 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             $data['mobile'] = 1;
             $this->status |= self::BM_IS_MOBILEVIEW;
         }
-        if ($diffCustomerGroup != 0 && $context->customer->isLogged()) {
+        // customer maybe null
+        if (($diffCustomerGroup != 0) && ($context->customer != null) && $context->customer->isLogged()) {
             // 1: every group, 2: inout
             if ($diffCustomerGroup == 1) {
                 $data['cg'] = $context->customer->getGroups()[0];
@@ -250,4 +288,6 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             $this->vd['ps']['ov'] = $cookies[self::PRIVATE_SESSION_COOKIE];
         }
     }
+    
+    
 }

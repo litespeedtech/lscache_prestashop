@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -43,6 +43,8 @@ class LiteSpeedCacheConfig
 
     const TAG_PREFIX_SHOP = 'S';
 
+    const TAG_PREFIX_PCOMMENTS = 'N';
+
     const TAG_PREFIX_PRIVATE = 'PRIV';
 
     // public tags
@@ -55,7 +57,7 @@ class LiteSpeedCacheConfig
     const TAG_STORES = 'ST';
 
     const TAG_404 = 'D404';
-
+    
     // common private tags
     const TAG_CART = 'cart';
 
@@ -80,6 +82,8 @@ class LiteSpeedCacheConfig
     const CFG_404_TTL = '404ttl';
 
     const CFG_HOME_TTL = 'homettl';
+    
+    const CFG_PCOMMENTS_TTL = 'pcommentsttl';
 
     const CFG_DIFFMOBILE = 'diff_mobile';
 
@@ -103,7 +107,7 @@ class LiteSpeedCacheConfig
 
     private $esiModConf;
 
-    private $pubController;
+    private $pubController = [];
 
     private $purgeController = [];
 
@@ -160,6 +164,7 @@ class LiteSpeedCacheConfig
             case self::CFG_PRIVATE_TTL:
             case self::CFG_HOME_TTL:
             case self::CFG_404_TTL:
+            case self::CFG_PCOMMENTS_TTL:
             case self::CFG_DIFFCUSTGRP:
                 if (!isset($this->shop[$configField])) {
                     $this->shop = array_replace($this->getDefaultConfData(self::ENTRY_SHOP), $this->shop);
@@ -213,6 +218,7 @@ class LiteSpeedCacheConfig
                 self::CFG_PRIVATE_TTL => 1800,
                 self::CFG_HOME_TTL => 86400,
                 self::CFG_404_TTL => 86400,
+                self::CFG_PCOMMENTS_TTL => 7200,
                 self::CFG_DIFFCUSTGRP => 0,
             ];
         }
@@ -274,13 +280,13 @@ class LiteSpeedCacheConfig
         if (!empty($added) || !empty($removed)) {
             $mymod = Module::getInstanceByName(LiteSpeedCache::MODULE_NAME);
             foreach ($added as $a) {
-                $res = Hook::registerHook($mymod, $a);
+                $res = $mymod->registerHook($a);
                 if ($this->isDebug >= LSLog::LEVEL_UPDCONFIG) {
                     LSLog::log('in registerHook ' . $a . '=' . $res, LSLog::LEVEL_UPDCONFIG);
                 }
             }
             foreach ($removed as $r) {
-                $res = Hook::unregisterHook($mymod, $r);
+                $res = $mymod->unregisterHook($r);
                 if ($this->isDebug >= LSLog::LEVEL_UPDCONFIG) {
                     LSLog::log('in unregisterHook ' . $r . '=' . $res, LSLog::LEVEL_UPDCONFIG);
                 }
@@ -320,6 +326,7 @@ class LiteSpeedCacheConfig
                     self::CFG_PRIVATE_TTL => $values[self::CFG_PRIVATE_TTL],
                     self::CFG_HOME_TTL => $values[self::CFG_HOME_TTL],
                     self::CFG_404_TTL => $values[self::CFG_404_TTL],
+                    self::CFG_PCOMMENTS_TTL => $values[self::CFG_PCOMMENTS_TTL],
                     self::CFG_DIFFCUSTGRP => $values[self::CFG_DIFFCUSTGRP],
                 ];
                 Configuration::updateValue(self::ENTRY_SHOP, json_encode($this->shop));
@@ -362,6 +369,8 @@ class LiteSpeedCacheConfig
             $this->shop = $this->getDefaultConfData(self::ENTRY_SHOP);
         }
 
+        $this->addDefaultPurgeControllers();
+        
         $this->custMod = Configuration::get(self::ENTRY_MODULE);
         $this->esiModConf = ['mods' => [], 'purge_events' => []];
         $custdata = json_decode($this->custMod, true);
@@ -386,12 +395,18 @@ class LiteSpeedCacheConfig
             'SitemapController' => self::TAG_SITEMAP,
             'StoresController' => self::TAG_STORES,
             'PageNotFoundController' => self::TAG_404,
+            'productcommentsListCommentsModuleFrontController' => self::TAG_PREFIX_PCOMMENTS,
         ];
-
+        
         LSLog::setDebugLevel($this->isDebug);
         if (!defined('_LITESPEED_DEBUG_')) {
             define('_LITESPEED_DEBUG_', $this->isDebug);
         }
+    }
+    
+    public function addExtraPubControllers($extraPubControllers)
+    {
+        $this->pubController = array_merge($this->pubController, $extraPubControllers);
     }
 
     public function isControllerCacheable($controllerClass)
@@ -399,13 +414,22 @@ class LiteSpeedCacheConfig
         if (!isset($this->pubController[$controllerClass])) {
             return false;
         }
-        if ($controllerClass == 'PageNotFoundController') {
-            if ($this->get(self::CFG_404_TTL) == 0) {
-                return false;
+        $tag = $this->pubController[$controllerClass];
+        $ttl = -1;
+        
+        if ($controllerClass == 'IndexController') {
+            $ttl = $this->get(self::CFG_HOME_TTL);
+        } elseif ($controllerClass == 'PageNotFoundController') {
+            $ttl = $this->get(self::CFG_404_TTL);
+        } elseif ($controllerClass == 'productcommentsListCommentsModuleFrontController') {
+            $ttl = $this->get(self::CFG_PCOMMENTS_TTL);
+            $idProduct = Tools::getValue('id_product');
+            if ($idProduct) {
+                $tag = self::TAG_PREFIX_PCOMMENTS . $idProduct;
             }
         }
 
-        return $this->pubController[$controllerClass];
+        return ['tag' => $tag, 'ttl' => $ttl];
     }
 
     public function getNoCacheConf()
@@ -493,6 +517,14 @@ class LiteSpeedCacheConfig
                     $this->esiModConf['purge_events'][$event][$type][] = $tag;
                 }
             }
+        }
+    }
+    
+    private function addDefaultPurgeControllers()
+    {
+        if (version_compare(_PS_VERSION_, '1.7.1.0', '<')) {
+            // older version does not have hook method, 
+            $this->purgeController['adminperformancecontroller'] = ['empty_smarty_cache' => ['priv' => ['*'], 'pub' => ['*']]];
         }
     }
 
@@ -635,6 +667,8 @@ class LiteSpeedCacheConfig
 
         if (version_compare(_PS_VERSION_, '1.7.1.0', '>=')) {
             $hooks[] = 'actionClearCache';
+            $hooks[] = 'actionClearCompileCache';
+            $hooks[] = 'actionClearSf2Cache';
         }
 
         return $hooks;

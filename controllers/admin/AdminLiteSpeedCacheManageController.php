@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -75,12 +75,14 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             'supplier' => $this->l('All Suppliers Pages'),
             'sitemap' => $this->l('Site Map'),
             'cms' => $this->l('All CMS Pages'),
+            'pc' => $this->l('All Product Comments'),
             'priv' => $this->l('All Private ESI Blocks'),
             'prod0' => $this->l('Product'),
             'cat0' => $this->l('Category'),
             'brand0' => $this->l('Brand'),
             'supplier0' => $this->l('Supplier'),
             'cms0' => $this->l('CMS'),
+            'pc0' => $this->l('Comments for Product ID'),
             'shop0' => $this->l('Shop'),
             'affectall' => $this->l('This will affect all shops'),
         ];
@@ -167,6 +169,10 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             $tags[] = Conf::TAG_PREFIX_CMS;
             $info[] = $this->labels['cms'];
         }
+        if (Tools::getValue('cbPurge_pc')) {
+            $tags[] = Conf::TAG_PREFIX_PCOMMENTS;
+            $info[] = $this->labels['pc'];
+        }
         if (Tools::getValue('cbPurge_priv')) {
             $tags[] = Conf::TAG_PREFIX_PRIVATE;
             $info[] = $this->labels['priv'];
@@ -209,6 +215,10 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             case 'cms':
                 $pre = Conf::TAG_PREFIX_CMS;
                 $desc = $this->labels['cms0'];
+                break;
+            case 'pc':
+                $pre = Conf::TAG_PREFIX_PCOMMENTS;
+                $desc = $this->labels['pc0'];
                 break;
             case 'shop':
                 $pre = Conf::TAG_PREFIX_SHOP;
@@ -296,6 +306,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
                     ['id' => 'supplier', 'name' => $this->labels['supplier']],
                     ['id' => 'sitemap', 'name' => $this->labels['sitemap']],
                     ['id' => 'cms', 'name' => $this->labels['cms']],
+                    ['id' => 'pc', 'name' => $this->labels['pc']],
                     ['id' => 'priv', 'name' => $this->labels['priv']],
                 ],
                 'id' => 'id', 'name' => 'name', ],
@@ -345,6 +356,8 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             ['purgeby' => 'brand', 'name' => $this->labels['brand0']],
             ['purgeby' => 'supplier', 'name' => $this->labels['supplier0']],
             ['purgeby' => 'cms', 'name' => $this->labels['cms0']],
+            ['purgeby' => 'pc', 'name' => $this->labels['pc0']],
+            ['purgeby' => 'shop', 'name' => $this->labels['shop0']],
         ];
         $textareaIds = [
             'type' => 'textarea',

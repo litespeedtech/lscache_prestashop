@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -42,7 +42,7 @@ class LiteSpeedCacheCore
 
     private $config;
 
-    private $esiTtl;
+    private $currentTtl = -1;
 
     private $specificPrices = [];
 
@@ -52,9 +52,9 @@ class LiteSpeedCacheCore
         $this->purgeTags = ['pub' => [], 'priv' => []];
     }
 
-    public function setEsiTtl($ttl)
+    public function setTTL($ttl)
     {
-        $this->esiTtl = $ttl; // todo: may retire
+        $this->currentTtl = $ttl; 
     }
 
     public function isCacheableRoute($controllerType, $controllerClass)
@@ -65,17 +65,24 @@ class LiteSpeedCacheCore
         } elseif ($controllerType != DispatcherCore::FC_FRONT) {
             $reason = 'Not FC_FRONT';
         } else {
-            $tag = $this->config->isControllerCacheable($controllerClass);
-            if ($tag === false) {
+            $res = $this->config->isControllerCacheable($controllerClass);
+            if ($res === false) {
                 $reason = 'Not in defined cacheable controllers';
-            } elseif (!$this->inDoNotCacheRules($reason) && $tag) {
-                $this->addCacheTags($tag);
+            } elseif ($res['ttl'] == 0) {
+                $reason = 'defined TTL is 0';
+            } elseif (!$this->inDoNotCacheRules($reason) && !empty($res['tag'])) {
+                $this->addCacheTags($res['tag']);
             }
         }
         if ($reason) {
             $reason = 'Route not cacheable: ' . $controllerClass . ' - ' . $reason;
-        } elseif (defined('_LITESPEED_DEBUG_') && _LITESPEED_DEBUG_ >= LSLog::LEVEL_CACHE_ROUTE) {
-            LSLog::log('route in defined cacheable controllers ' . $controllerClass, LSLog::LEVEL_CACHE_ROUTE);
+        } else {
+            if ($res['ttl'] > 0) {
+                $this->setTTL($res['ttl']);
+            }
+            if (defined('_LITESPEED_DEBUG_') && _LITESPEED_DEBUG_ >= LSLog::LEVEL_CACHE_ROUTE) {
+                LSLog::log('route in defined cacheable controllers ' . $controllerClass, LSLog::LEVEL_CACHE_ROUTE);
+            }
         }
 
         // check purge by controller
@@ -191,6 +198,10 @@ class LiteSpeedCacheCore
                     break;
             }
         }
+        
+        if (!$tag) {
+            $tag = LscIntegration::initCacheTagAction($params);
+        }
 
         if ($tag) {
             $this->addCacheTags($tag);
@@ -199,16 +210,37 @@ class LiteSpeedCacheCore
         }
     }
 
-    public function addCacheTags($tag)
+    public function addCacheTags($tags)
     {
-        $old = count($this->cacheTags);
-        if (is_array($tag)) {
-            $this->cacheTags = array_unique(array_merge($this->cacheTags, $tag));
-        } elseif (!in_array($tag, $this->cacheTags)) {
-            $this->cacheTags[] = $tag;
+        $added = false;
+        if (is_array($tags)) {
+            foreach ($tags as $tag) {
+                if ($this->addCacheTag($tag)) {
+                    $added = true;
+                }
+            }
+        } else {
+            $added = $this->addCacheTag($tags);
         }
-
-        return (count($this->cacheTags) > $old);
+        return $added;
+    }
+    
+    private function addCacheTag($tag)
+    {
+        if (!in_array($tag, $this->cacheTags)) {
+            $this->cacheTags[] = $tag;
+            
+            // if tag has ID, add the group tag for group purge
+            $t = preg_replace('/\d+/', '', $tag);
+            if ($t == Conf::TAG_PREFIX_CATEGORY || $t == Conf::TAG_PREFIX_PRODUCT) {
+                $this->cacheTags[] = Conf::TAG_SEARCH;
+            } elseif (in_array($t, [Conf::TAG_PREFIX_CMS, Conf::TAG_PREFIX_MANUFACTURER, 
+                Conf::TAG_PREFIX_SUPPLIER, Conf::TAG_PREFIX_PCOMMENTS])) {
+                $this->cacheTags[] = $t;
+            }
+            return true;
+        }
+        return false;
     }
 
     // return 1: added, 0: already exists, 2: already has purgeall
@@ -492,6 +524,8 @@ class LiteSpeedCacheCore
                 break;
 
             case 'actionclearcache':
+            case 'actionclearcompilecache':
+            case 'actionclearsf2cache':
                 $tags['pub'] = ['*'];
                 break;
 
@@ -511,7 +545,10 @@ class LiteSpeedCacheCore
                 }
                 break;
             case 'displayorderconfirmation':
-                return $this->getPurgeTagsByOrder($args['order']);
+                if (isset($args['order'])) {
+                    return $this->getPurgeTagsByOrder($args['order']);
+                }
+                break;
 
             case 'categoryupdate':
             case 'actioncategoryupdate':
@@ -660,6 +697,17 @@ class LiteSpeedCacheCore
 
         return $ttl;
     }
+    
+    private function getCurrentTtl($ccflag)
+    {
+        if ($this->currentTtl != -1) {
+            return $this->currentTtl;
+        }
+        $ttl = (($ccflag & LSC::CCBM_PRIVATE) == 0) ?
+                    $this->config->get(Conf::CFG_PUBLIC_TTL) : $this->config->get(Conf::CFG_PRIVATE_TTL);
+        $ttl = $this->adjustTtlBySpecificPrices($ttl);
+        return $ttl;
+    }
 
     public function setCacheControlHeader()
     {
@@ -678,12 +726,7 @@ class LiteSpeedCacheCore
         if ((($ccflag & LSC::CCBM_NOT_CACHEABLE) == 0) && (($ccflag & LSC::CCBM_CACHEABLE) != 0)) {
             $prefix = LiteSpeedCacheHelper::getTagPrefix();
             $tags = [];
-            $ttl = (($ccflag & LSC::CCBM_ESI_REQ) == 0) ? '' : $this->esiTtl;
-            if ($ttl == '') {
-                $ttl = (($ccflag & LSC::CCBM_PRIVATE) == 0) ?
-                    $this->config->get(Conf::CFG_PUBLIC_TTL) : $this->config->get(Conf::CFG_PRIVATE_TTL);
-            }
-            $ttl = $this->adjustTtlBySpecificPrices($ttl);
+            $ttl = $this->getCurrentTtl($ccflag);
 
             if (($ccflag & LSC::CCBM_PRIVATE) == 0) {
                 $cacheControlHeader .= 'public,max-age=' . $ttl;

@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -94,6 +94,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             Conf::CFG_PRIVATE_TTL => $this->l('Default Private Cache TTL'),
             Conf::CFG_HOME_TTL => $this->l('Home Page TTL'),
             Conf::CFG_404_TTL => $this->l('404 Pages TTL'),
+            Conf::CFG_PCOMMENTS_TTL => $this->l('Product Comments TTL'),
             Conf::CFG_DIFFMOBILE => $this->l('Separate Mobile View'),
             Conf::CFG_DIFFCUSTGRP => $this->l('Separate Cache Copy per Customer Group'),
             Conf::CFG_FLUSH_PRODCAT => $this->l('Flush Product and Categories When Order Placed'),
@@ -139,6 +140,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             Conf::CFG_PRIVATE_TTL,
             Conf::CFG_HOME_TTL,
             Conf::CFG_404_TTL,
+            Conf::CFG_PCOMMENTS_TTL,
             Conf::CFG_DIFFCUSTGRP,
         ];
         if ($this->is_shop_level != 1) {
@@ -264,9 +266,9 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                     $this->errors[] = $invalid;
                 } else {
                     $postVal = (int) $postVal;
-                    if ($postVal < 60 && $postVal != 0) {
+                    if ($postVal < 60) {
                         $this->errors[] = $invalid . $s .
-                            $this->l('Must be greater than 60 seconds. Enter 0 to disable cache.');
+                            $this->l('Must be greater than 60 seconds.');
                     } elseif ($postVal != $origVal) {
                         $this->changed |= self::BMC_SHOP;
                         $this->changed |= ($postVal < $origVal) ? self::BMC_MUST_PURGE : self::BMC_MAY_PURGE;
@@ -292,6 +294,24 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 }
                 break;
 
+            case Conf::CFG_PCOMMENTS_TTL:
+                if (!Validate::isUnsignedInt($postVal)) {
+                    $this->errors[] = $invalid;
+                } else {
+                    $postVal = (int) $postVal;
+                    if ($postVal > 0 && $postVal < 300) {
+                        $this->errors[] = $invalid . $s . $this->l('Must be greater than 300 seconds.');
+                    } elseif ($postVal != $origVal) {
+                        if ($postVal == 0) {
+                            $this->changed |= self::BMC_SHOP | self::BMC_MUST_PURGE;
+                        } else {
+                            $this->changed |= self::BMC_SHOP;
+                            $this->changed |= ($postVal < $origVal) ? self::BMC_MUST_PURGE : self::BMC_MAY_PURGE;
+                        }
+                    }
+                }
+                break;
+                
             case Conf::CFG_DIFFMOBILE:
                 $postVal = (int) $postVal;
                 if ($postVal != 0 && $postVal != 1 && $postVal != 2) {
@@ -427,7 +447,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
         $secs = $this->l('seconds');
         $s = ' - '; // spacer
-        $fg = $this->newFieldForm($this->l('General'), 'cogs');
+        $fg = $this->newFieldForm($this->l('General') . ' v' . LiteSpeedCache::getVersion(), 'cogs');
         $fg['input'][] = $this->addInputSwitch(Conf::CFG_ENABLED, $this->labels[Conf::CFG_ENABLED], '', $disabled);
         $fg['input'][] = $this->addInputText(
             Conf::CFG_PUBLIC_TTL,
@@ -452,6 +472,12 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             Conf::CFG_404_TTL,
             $this->labels[Conf::CFG_404_TTL],
             $this->l('Default timeout for all 404 (Not found) pages. 0 will disable caching for 404 pages.'),
+            $secs
+        );
+        $fg['input'][] = $this->addInputText(
+            Conf::CFG_PCOMMENTS_TTL,
+            $this->labels[Conf::CFG_PCOMMENTS_TTL],
+            $this->l('Timeout for product comments. 0 will disable caching for it. There is no automatic purge when comments updated. You can set a shorter TTL if you want the change to show faster, or manually flush it.'),
             $secs
         );
         $fg['input'][] = $this->addInputSwitch(

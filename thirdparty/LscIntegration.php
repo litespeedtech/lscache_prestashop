@@ -39,7 +39,7 @@ abstract class LscIntegration
 
     public static function isUsed($name)
     {
-        return Module::isInstalled($name);
+        return Module::isEnabled($name);
     }
 
     public static function register()
@@ -72,7 +72,12 @@ abstract class LscIntegration
             }
         }
     }
-
+    
+    protected function addCacheableControllers($controllers)
+    {
+        LiteSpeedCacheConfig::getInstance()->addExtraPubControllers($controllers);
+    }
+    
     protected function registerEsiModule()
     {
         if ($this->esiConf && ($this->esiConf instanceof LiteSpeedCacheEsiModConf)) {
@@ -86,37 +91,6 @@ abstract class LscIntegration
 
             return false;
         }
-    }
-
-    public static function filterJSDef0(&$jsDef, &$injected)
-    {
-        if (!isset(self::$integrated['jsloc']) || !is_array($jsDef)) {
-            return false;
-        }
-
-        $replaced = false;
-        $log = '';
-
-        foreach ($jsDef as $key => &$js) {
-            $curkey = $key;
-            if (is_array($js)) {
-                foreach ($js as $key2 => &$js2) {
-                    $curkey = $key . ':' . $key2;
-                    if (self::filterCurrentJSKeyVal($curkey, $js2, $injected, $log)) {
-                        $replaced = true;
-                    }
-                }
-            } else {
-                if (self::filterCurrentJSKeyVal($curkey, $js, $injected, $log)) {
-                    $replaced = true;
-                }
-            }
-        }
-        if ($log && _LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
-            LSLog::log('filter JSDef = ' . $log, LSLog::LEVEL_ESI_INCLUDE);
-        }
-
-        return $replaced;
     }
 
     protected static function filterCurrentJSKeyVal($key, &$val, &$injected, &$log)
@@ -217,5 +191,42 @@ abstract class LscIntegration
         $item->setFailed();
     }
 
+    protected function addPreDispatchAction($proc)
+    {
+        if (!isset(self::$integrated['predispatch'])) {
+            self::$integrated['predispatch'] = [];
+        }
+        self::$integrated['predispatch'][] = $proc;
+    }
+
+    public static function preDispatchAction()
+    {
+        if (isset(self::$integrated['predispatch'])) {
+            foreach (self::$integrated['predispatch'] as $proc) {
+                $proc->actionPreDispatch();
+            }
+        }
+    }
+
+    protected function addInitCacheTagAction($proc)
+    {
+        if (!isset(self::$integrated['initCacheTag'])) {
+            self::$integrated['initCacheTag'] = [];
+        }
+        self::$integrated['initCacheTag'][] = $proc;
+    }
+
+    public static function initCacheTagAction($params)
+    {
+        if (isset(self::$integrated['initCacheTag'])) {
+            foreach (self::$integrated['initCacheTag'] as $proc) {
+                $tag = $proc->initCacheTagsByController($params);
+                if ($tag !== null) {
+                    return $tag;
+                }
+            }
+        }
+    }
+    
     abstract protected function init();
 }

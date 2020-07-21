@@ -514,7 +514,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'label' => $this->labels['ctrl'],
                 'name' => 'ctrl',
                 'hint' => $this->l('For example, cart block is set to be purged by this setting:')
-                . $s . '"CartController:id_product"',
+                . $s . '"CartController?id_product"',
                 'readonly' => $disabled, // allow ClassName?param1&param2
                 'desc' => $this->l('You can automatically purge the cached ESI blocks by dispatched controllers.')
                 . $s . $this->l('Specify a comma-delimited list of controller class names.') . $s
