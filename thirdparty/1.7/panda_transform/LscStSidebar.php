@@ -18,31 +18,32 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
 use LiteSpeedCacheEsiModConf as EsiConf;
 
-class LscBlockCart extends LscIntegration
+class LscStSidebar extends LscIntegration
 {
-    // for PS 1.6 built-in module blockcart
-    const NAME = 'blockcart';
+    const NAME = 'stsidebar';
 
     protected function init()
     {
         $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => LiteSpeedCacheConfig::TAG_CART,
-            EsiConf::FLD_PURGE_CONTROLLERS => 'CartController?id_product',
-            EsiConf::FLD_HOOK_METHODS => '!hookHeader',
+            EsiConf::FLD_HOOK_METHODS => 'hookdisplayRightBar',
             EsiConf::FLD_IGNORE_EMPTY => 1,
-            EsiConf::FLD_TIPURL => 'https://docs.litespeedtech.com/lscache/lscps/settings/#blockcart-template',
         ];
-        $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
+        $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);
 
-        return $this->registerEsiModule();
+        $this->registerEsiModule();
+        LiteSpeedCacheConfig::getInstance()->overrideGuestMode();
+
+        return true;
     }
+
 }
 
-LscBlockCart::register();
+LscStSidebar::register();

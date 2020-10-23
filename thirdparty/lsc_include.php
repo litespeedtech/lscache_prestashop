@@ -35,10 +35,14 @@ if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) { // for PS 1.7 only
     include __DIR__ . '/1.7/LscCustomerSignIn.php';
     include __DIR__ . '/1.7/LscShoppingcart.php';
 
-    // integrated modules, feel free to comment out if you don't need
-    include __DIR__ . '/1.7/iqit/loader.php';
+    // integrated modules, feel free to comment out the modules you don't use
     include __DIR__ . '/1.7/LscGdprPro.php';
-    include __DIR__ . '/1.7/promokit/loader.php';
+    include __DIR__ . '/1.7/LscPscartdropdown.php';
+
+    // integrated theme modules, feel free to comment out the themes you don't use
+    include __DIR__ . '/1.7/iqit/loader.php';  // warehouse theme
+    include __DIR__ . '/1.7/panda_transform/loader.php'; // panda or transform theme
+    include __DIR__ . '/1.7/promokit/loader.php'; // alysum theme
     
 } else { // for PS 1.6 only
     // default built-in modules

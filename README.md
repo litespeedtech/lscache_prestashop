@@ -19,7 +19,7 @@ Enable the module by navigating to **LiteSpeed Cache > Settings** and setting **
 
 Make sure that your license includes the LSCache module enabled. A 2-CPU trial license with LSCache module is available for free for 15 days.
 The server must be configured to have caching enabled. If you are the server admin, 
-click [here](https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps:installation). 
+click [here](https://docs.litespeedtech.com/lscache/lscps/installation/). 
 Otherwise request that the server admin configure the cache root for the server.
 
 ### Module Features
@@ -45,5 +45,5 @@ Subsequent requests should have the ```X-LiteSpeed-Cache-Control:hit``` response
 ### Learn More
 
 For additional instructions, tips, and ideas, please see 
-the [LiteSpeed Cache for PrestaShop wiki page](https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps).
+the [LiteSpeed Cache for PrestaShop documentation](https://docs.litespeedtech.com/lscache/lscps/).
 

@@ -101,8 +101,10 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             Conf::CFG_GUESTMODE => $this->l('Enable Guest Mode'),
             Conf::CFG_NOCACHE_VAR => $this->l('Do-Not-Cache GET Parameters'),
             Conf::CFG_NOCACHE_URL => $this->l('URL Blacklist'),
+            Conf::CFG_VARY_BYPASS => $this->l('Context Vary Bypass'),
             Conf::CFG_ALLOW_IPS => $this->l('Enable Cache Only for Listed IPs'),
             Conf::CFG_DEBUG => $this->l('Enable Debug Log'),
+            Conf::CFG_DEBUG_HEADER => $this->l('Enable Debug Headers'),
             Conf::CFG_DEBUG_IPS => $this->l('Log Only for Listed IPs'),
             Conf::CFG_DEBUG_LEVEL => $this->l('Debug Level'),
         ];
@@ -150,8 +152,10 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 Conf::CFG_GUESTMODE,
                 Conf::CFG_NOCACHE_VAR,
                 Conf::CFG_NOCACHE_URL,
+                Conf::CFG_VARY_BYPASS,
                 Conf::CFG_FLUSH_PRODCAT,
                 Conf::CFG_DEBUG,
+                Conf::CFG_DEBUG_HEADER,
                 Conf::CFG_DEBUG_LEVEL,
                 Conf::CFG_ALLOW_IPS,
                 Conf::CFG_DEBUG_IPS,
@@ -200,8 +204,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             if ($res) {
                 $this->confirmations[] = $this->l('.htaccess file updated accordingly.');
             } else {
-                $url = 'https://www.litespeedtech.com/support/wiki/doku.php/'
-                    . 'litespeed_wiki:cache:lscps:installation#htaccess_update';
+                $url = 'https://docs.litespeedtech.com/lscache/lscps/installation/#htaccess-update';
                 $this->warnings[] = $this->l('Failed to update .htaccess due to permission.') . ' ' . '<a href="' . $url
                     . '"  target="_blank" rel="noopener noreferrer">' . $this->l('Please manually update.') . '</a>';
             }
@@ -384,7 +387,31 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 }
                 break;
 
+            case Conf::CFG_VARY_BYPASS:
+                $clean = array_unique(preg_split($pattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                if (count($clean) == 0) {
+                    $postVal = '';
+                } else {
+                    $postVal = implode(', ', $clean);
+                    $test = array_diff($clean, ['ctry', 'curr', 'lang']);
+                    if (!empty($test)) {
+                        $this->errors[] = $invalid . $s . $this->l('Value not supported') . ': ' . implode(', ', $test);
+                    }
+                }
+                if ($postVal != $origVal) {
+                    $this->changed |= self::BMC_ALL | self::BMC_MUST_PURGE;
+                }
+                break;
+
+
             case Conf::CFG_DEBUG:
+                $postVal = (int) $postVal;
+                if ($postVal != $origVal) {
+                    $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE;
+                }
+                break;
+
+            case Conf::CFG_DEBUG_HEADER:
                 $postVal = (int) $postVal;
                 if ($postVal != $origVal) {
                     $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE;
@@ -477,7 +504,10 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         $fg['input'][] = $this->addInputText(
             Conf::CFG_PCOMMENTS_TTL,
             $this->labels[Conf::CFG_PCOMMENTS_TTL],
-            $this->l('Timeout for product comments. 0 will disable caching for it. There is no automatic purge when comments updated. You can set a shorter TTL if you want the change to show faster, or manually flush it.'),
+            $this->l('Timeout for product comments.') . ' '
+            . $this->l('0 will disable caching for product comments.') . ' '
+            . $this->l('There is no automatic purge when comments are updated.') . ' '
+            . $this->l('You can set a shorter TTL if you want new comments to show more quickly, or you can manually flush the cache.'),
             $secs
         );
         $fg['input'][] = $this->addInputSwitch(
@@ -552,6 +582,13 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             . $this->l('Enter one relative URL per line.'),
             $disabled
         );
+        $formUser['input'][] = $this->addInputTextArea(
+            Conf::CFG_VARY_BYPASS,
+            $this->labels[Conf::CFG_VARY_BYPASS],
+            $this->l('If certain context changes are global and cacheable, you can list their names in a comma-delimited string to avoid duplicate cache copies and allow the first visit to have a cache hit.') . ' '
+                . $this->l('Supported values are: ctry (if all countries have same view), curr (if different currency pages will not share same URL), and lang (if different language pages will always have different URLs).'),
+            $disabled
+        );
 
         $formDev = $this->newFieldForm($this->l('Developer Testing'), 'stethoscope');
         $formDev['input'][] = $this->addInputTextArea(
@@ -565,6 +602,12 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             Conf::CFG_DEBUG,
             $this->labels[Conf::CFG_DEBUG],
             $this->l('Prints additional information to "lscache.log." Turn off for production use.'),
+            $disabled
+        );
+        $formDev['input'][] = $this->addInputSwitch(
+            Conf::CFG_DEBUG_HEADER,
+            $this->labels[Conf::CFG_DEBUG_HEADER],
+            $this->l('Show debug information through response headers. Turn off for production use.'),
             $disabled
         );
         $formDev['input'][] = $this->addInputTextArea(

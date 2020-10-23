@@ -18,13 +18,13 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
 use LiteSpeedCacheHelper as LSHelper;
 
-class LiteSpeedCacheEsiItem implements JsonSerializable
+class LiteSpeedCacheEsiItem
 {
     const ESI_RENDERWIDGET = 'rw';
 
@@ -55,6 +55,10 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
     public function __construct($param, LiteSpeedCacheEsiModConf $conf)
     {
         $this->conf = $conf;
+        if (!$this->conf->isPrivate($param)) {
+            // make diff esi url if a block under vary condition, can be either public or private
+            $param['pub'] = 1;
+        }
 
         $this->sdata = [
             'id' => json_encode($param),
@@ -63,16 +67,11 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
             'inc' => false,
             'inlStart' => false,
             'shared' => null,
-            'tag' => $conf->getTag(),
+            'tag' => implode(',', $conf->getTags()), // use default conf tags, cannot use this, not ready yet
         ];
         $this->cdata = [
             'inlStart' => false,
         ];
-    }
-
-    public function jsonSerialize()
-    {
-        return $this->sdata;
     }
 
     public function getInfoLog($simple = false)
@@ -96,6 +95,11 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
         $item->cdata['inlStart'] = $sdata['inlStart'];
 
         return $item;
+    }
+
+    public function getSavedData()
+    {
+        return $this->sdata;
     }
 
     public function getId()
@@ -128,9 +132,57 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
         return $this->conf;
     }
 
-    public function getTag()
+    /**
+     * comma delimited string
+     */
+    public function getTagString($prefix)
     {
-        return $this->conf->getTag();
+        $tags = $this->getTags();
+        $s = '';
+        foreach ($tags as $tag) {
+            if (strpos($tag, 'public:') !== false) {
+                $s .= 'public:' . $prefix . substr($tag, 7) . ',';
+            } else {
+                $s .= $prefix . $tag . ',';
+            }
+        }
+        return rtrim($s, ',');
+    }
+
+
+    public function getTags()
+    {
+        return $this->conf->getTags($this->sdata['param']);
+    }
+
+    public function getTTL()
+    {
+        return $this->conf->getTTL($this->sdata['param']);
+    }
+
+    public function isPrivate()
+    {
+        return $this->conf->isPrivate($this->sdata['param']);
+    }
+
+    public function onlyCacheEmtpy()
+    {
+        return $this->conf->onlyCacheEmtpy($this->sdata['param']);
+    }
+
+    public function ignoreEmptyContent()
+    {
+        return $this->conf->ignoreEmptyContent($this->sdata['param']);
+    }
+
+    public function asVar()
+    {
+        return $this->conf->asVar($this->sdata['param']);
+    }
+
+    public function noItemCache()
+    {
+        return $this->conf->getNoItemCache($this->sdata['param']);
     }
 
     public function getParam($key = '')
@@ -154,8 +206,8 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
         $this->content = trim($content);
 
         if ($this->sdata['inlStart'] == false
-                || $this->conf->onlyCacheEmtpy()) { // can vary, always regenerate
-            if ($this->content === '' && $this->conf->ignoreEmptyContent()) {
+                || $this->onlyCacheEmtpy()) { // can vary, always regenerate
+            if ($this->content === '' && $this->ignoreEmptyContent()) {
                 $this->sdata['inc'] = '';
 
                 return;
@@ -169,6 +221,17 @@ class LiteSpeedCacheEsiItem implements JsonSerializable
     {
         $this->content = self::RES_FAILED;
         $this->err = $err;
+    }
+
+    public function preRenderWidget()
+    {
+        $p = $this->sdata['param'];
+        unset($p['pt']);
+        unset($p['m']);
+        unset($p['h']);
+        foreach ($p as $k => $v) {
+            $_GET[$k] = $v; // restore extra GET param
+        }
     }
 
     public static function decodeEsiUrl()

@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -137,6 +137,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             $item->setFailed();
         } else {
             // h can be empty
+            $item->preRenderWidget();
             $item->setContent($module->renderWidget($item->getParam('h'), $params));
         }
     }

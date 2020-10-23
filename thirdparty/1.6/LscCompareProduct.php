@@ -37,8 +37,7 @@ class LscCompareProduct extends LscIntegration
             EsiConf::FLD_TAG => 'compare',
             EsiConf::FLD_PURGE_CONTROLLERS => 'CompareController?id_product',
             EsiConf::FLD_ASVAR => 1,
-            EsiConf::FLD_TIPURL => 'https://www.litespeedtech.com/support/wiki/doku.php/'
-            . 'litespeed_wiki:cache:lscps:customization_1_6#update_template_for_compare_product_feature',
+            EsiConf::FLD_TIPURL => 'https://docs.litespeedtech.com/lscache/lscps/settings/#compare-product-feature',
         ];
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
         $this->registerEsiModule();
@@ -101,5 +100,5 @@ LscCompareProduct::register();
  * Please do not add extra space or line break in between.
  *
  * Please note, "{count($compared_products)}" appeared twice, both need to be replaced.
- * Please check the wiki link for more info
+ * Please check the doc link for more info
  */

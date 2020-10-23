@@ -24,25 +24,21 @@
 
 use LiteSpeedCacheEsiModConf as EsiConf;
 
-class LscBlockCart extends LscIntegration
+class LscPscartdropdown extends LscIntegration
 {
-    // for PS 1.6 built-in module blockcart
-    const NAME = 'blockcart';
+    const NAME = 'pscartdropdown';
 
     protected function init()
     {
         $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => LiteSpeedCacheConfig::TAG_CART,
-            EsiConf::FLD_PURGE_CONTROLLERS => 'CartController?id_product',
-            EsiConf::FLD_HOOK_METHODS => '!hookHeader',
-            EsiConf::FLD_IGNORE_EMPTY => 1,
-            EsiConf::FLD_TIPURL => 'https://docs.litespeedtech.com/lscache/lscps/settings/#blockcart-template',
+            EsiConf::FLD_HOOK_METHODS => 'hookHeader',
         ];
-        $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
+        $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);
 
         return $this->registerEsiModule();
     }
 }
 
-LscBlockCart::register();
+LscPscartdropdown::register();

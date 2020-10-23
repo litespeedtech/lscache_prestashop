@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -249,9 +249,9 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             $this->informations[] = $this->l('You can make an ESI block for a widget, also known as Hole-Punching.') . $s
                 . $this->l('Built-in and integrated modules cannot be changed.') . $s
                 . $this->l('These are advanced settings for third-party modules.') . $s
-                . '<a href="https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps" '
+                . '<a href="https://docs.litespeedtech.com/lscache/lscps/settings/#customization-for-prestashop-17" '
                 . 'target="_blank" rel="noopener noreferrer">'
-                . $this->l('Wiki Help') . '</a>';
+                . $this->l('Documentation') . '</a>';
             $this->content = $this->renderList();
         }
 

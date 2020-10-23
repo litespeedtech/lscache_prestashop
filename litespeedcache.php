@@ -35,13 +35,6 @@ require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/VaryCookie.php';
 
 class LiteSpeedCache extends Module
 {
-    private $cache;
-
-    private $config;
-
-    private $esiInjection;
-
-    private static $ccflag = 0; // cache control flag
 
     const MODULE_NAME = 'litespeedcache';
 
@@ -74,6 +67,17 @@ class LiteSpeedCache extends Module
 
     // ESI MARKER
     const ESI_MARKER_END = '_LSCESIEND_';
+
+    private $cache;
+
+    private $config;
+
+    private $esiInjection;
+
+    private static $ccflag = 0; // cache control flag
+
+    private static $no_cache_reason = '';
+
 
     public function __construct()
     {
@@ -118,7 +122,7 @@ class LiteSpeedCache extends Module
     
     public static function getVersion()
     {
-        return '1.3.0';
+        return '1.4.0';
     }
 
     public static function isActive()
@@ -154,6 +158,29 @@ class LiteSpeedCache extends Module
     public static function getCCFlag()
     {
         return self::$ccflag;
+    }
+
+    public static function getCCFlagDebugInfo()
+    {
+        $flag = self::$ccflag;
+        $info = [];
+        if ($flag & self::CCBM_MOD_ALLOWIP) {
+            $info[] = 'Allowed IP';
+        }
+        if ($flag & self::CCBM_FRONT_CONTROLLER) {
+            $info[] = 'FrontController';
+        }
+        if ($flag & self::CCBM_GUEST) {
+            $info[] = 'Guest';
+        }
+        if ($flag & self::CCBM_CACHEABLE) {
+            $info[] = 'Cacheable';
+        }
+        if (self::$no_cache_reason) {
+            $info[] = 'NO CACHE reason: ' . self::$no_cache_reason;
+        }
+
+        return implode('; ', $info);
     }
 
     public function setEsiOn()
@@ -230,6 +257,7 @@ class LiteSpeedCache extends Module
                 $this->cache->addCacheTags(LiteSpeedCacheConfig::TAG_PREFIX_CATEGORY . $params['object']['id']);
             }
         }
+        return $params;
     }
 
     public function hookFilterProductContent($params)
@@ -242,6 +270,7 @@ class LiteSpeedCache extends Module
                 $this->cache->checkSpecificPrices($params['object']['specific_prices']);
             }
         }
+        return $params;
     }
 
     public function hookFilterCmsCategoryContent($params)
@@ -251,6 +280,7 @@ class LiteSpeedCache extends Module
             // so we do not distinguish by cms category id
             $this->cache->addCacheTags(LiteSpeedCacheConfig::TAG_PREFIX_CMS);
         }
+        return $params;
     }
 
     public function hookFilterCmsContent($params)
@@ -258,6 +288,7 @@ class LiteSpeedCache extends Module
         if (self::isCacheable() && isset($params['object']['id'])) {
             $this->cache->addCacheTags(LiteSpeedCacheConfig::TAG_PREFIX_CMS . $params['object']['id']);
         }
+        return $params;
     }
 
     // this is catchall function for purge events
@@ -407,20 +438,22 @@ class LiteSpeedCache extends Module
 
             return;
         }
-        $moduleConf = $item->getConf();
-        $ttl = $moduleConf->getTTL();
-        if ($moduleConf->onlyCacheEmtpy() && $item->getContent() !== '') {
+        $ttl = $item->getTTL();
+        if ($item->onlyCacheEmtpy() && $item->getContent() !== '') {
             $ttl = 0;
         }
         if ($ttl === 0 || $ttl === '0') {
             self::$ccflag |= self::CCBM_NOT_CACHEABLE;
+            self::$no_cache_reason .= 'Set by ESIModule ' . $item->getConf()->getModuleName();
         } else {
-            $this->cache->addCacheTags($moduleConf->getTag());
+            $this->cache->addCacheTags($item->getTags());
             self::$ccflag |= self::CCBM_CACHEABLE;
-            if ($moduleConf->isPrivate()) {
+            if ($item->isPrivate()) {
                 self::$ccflag |= self::CCBM_PRIVATE;
             }
-            $this->cache->setTTL($ttl);
+            if ($ttl > 0) {
+                $this->cache->setTTL($ttl);
+            }
         }
     }
 
@@ -440,10 +473,15 @@ class LiteSpeedCache extends Module
     public static function callbackOutputFilter($buffer)
     {
         $lsc = self::myInstance();
-        if ((self::$ccflag & self::CCBM_FRONT_CONTROLLER) > 0 && self::setVaryCookie() && self::isCacheable()) {
-            //condition order is fixed
-            $lsc->setNotCacheable('Env change');
+        if ((self::$ccflag & self::CCBM_FRONT_CONTROLLER) > 0) {
+            self::setVaryCookie();
         }
+        /** retired old logic, when vary cookie change, still cacheable
+        * if ((self::$ccflag & self::CCBM_FRONT_CONTROLLER) > 0 && self::setVaryCookie() && self::isCacheable()) {
+        *     //condition order is fixed
+        *     $lsc->setNotCacheable('Env change');
+        * }
+        **/
 
         $code = http_response_code();
         if ($code == 404) {
@@ -554,7 +592,7 @@ class LiteSpeedCache extends Module
             if ($inline !== false) {
                 // for ajax call, it's possible no inline content
                 $bufInline .= $inline;
-                if ($item->getConf()->isPrivate()) {
+                if ($item->isPrivate()) {
                     $allPrivateItems[] = $item;
                 }
             }
@@ -718,6 +756,7 @@ class LiteSpeedCache extends Module
             return;
         }
         self::$ccflag |= self::CCBM_NOT_CACHEABLE;
+        self::$no_cache_reason .= $reason;
         if ($reason && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_NOCACHE_REASON) {
             LiteSpeedCacheLog::log(__FUNCTION__ . ' - ' . $reason, LiteSpeedCacheLog::LEVEL_NOCACHE_REASON);
         }

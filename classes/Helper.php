@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -136,12 +136,11 @@ class LiteSpeedCacheHelper
 
         $tagInline = '';
         $tagInclude = '';
-        $esiconf = $item->getConf();
-        $ttl = $esiconf->getTTL();
+        $ttl = $item->getTTL();
         if ($ttl === 0 || $ttl === '0') {
             $ccInclude = $ccInline = 'no-cache';
         } else {
-            $isPrivate = $esiconf->isPrivate();
+            $isPrivate = $item->isPrivate();
             if ($ttl === '') {
                 $ttl = $isPrivate ? self::$internal['priv_ttl'] : self::$internal['pub_ttl'];
             }
@@ -151,7 +150,7 @@ class LiteSpeedCacheHelper
             // onlyCacheIfEmpty is conditional cache, so in esi:include, make it cacheable, this
             // will only have one cache copy (no need vary) for public page
             // esi:inline cacheable will be different based on content
-            if ($esiconf->onlyCacheEmtpy() && $item->getContent() !== '') {
+            if ($item->onlyCacheEmtpy() && $item->getContent() !== '') {
                 $ccInline = 'no-cache';
                 $ttl = 0;
             } else {
@@ -161,11 +160,11 @@ class LiteSpeedCacheHelper
             $tagInline = ' cache-tag=\''; // need space in front
             $tagInline .= $isPrivate ?
                     self::$internal['tag_shared_priv'] : self::$internal['tag_shared_pub'];
-            if ($tag = $esiconf->getTag()) {
-                $tagInline .= ',' . self::$internal['tag_prefix'] . '_' . $tag;
+            if ($tags = $item->getTagString(self::$internal['tag_prefix'] . '_')) {
+                $tagInline .= ',' . $tags;
             }
             $tagInline .= '\'';
-            if ($esiconf->asVar()) { // only asvar need to show tag
+            if ($item->asVar()) { // only asvar need to show tag
                 $tagInclude = $tagInline . ' as-var=\'1\'';
             }
         }
@@ -215,7 +214,7 @@ class LiteSpeedCacheHelper
         $ls = [];
         $ls[] = '### LITESPEED_CACHE_START - Do not remove this line, LSCache plugin will automatically update it';
         $ls[] = '# automatically genereated by LiteSpeedCache plugin: '
-        . 'https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:lscps';
+        . 'https://docs.litespeedtech.com/lscache/lscps/';
         $ls[] = '<IfModule LiteSpeed>';
         $ls[] = 'CacheLookup on';
         if ($guestMode) {
@@ -323,7 +322,7 @@ class LiteSpeedCacheHelper
         $related = [];
         $tag = ($id) ? $saved['data'][$id]['tag'] : Conf::TAG_ENV;
         if ($tag == Conf::TAG_ENV) {
-            $related = array_keys($saved['data']);
+            $related = array_keys($saved['data']); // all items
         } elseif (isset($saved['tags'][$tag])) {
             $related = array_keys($saved['tags'][$tag]);
         }
@@ -351,17 +350,22 @@ class LiteSpeedCacheHelper
         }
 
         foreach ($itemList as $item) {
-            $id = $item->getId();
-            $descr = $item->getInfoLog(true);
-            $saved['data'][$id] = $item;
-            $tag = $item->getTag();
-            if ($tag == Conf::TAG_ENV) {
+            if (!$item->isPrivate() || $item->noItemCache()) {
                 continue;
             }
-            if (!isset($saved['tags'][$tag])) {
-                $saved['tags'][$tag] = [$id => $descr];
-            } elseif (!isset($saved['tags'][$tag][$id])) {
-                $saved['tags'][$tag][$id] = $descr;
+            $id = $item->getId();
+            $descr = $item->getInfoLog(true);
+            $saved['data'][$id] = $item->getSavedData();
+            $tags = $item->getTags();
+            if ($tags[0] == Conf::TAG_ENV) {
+                continue;
+            }
+            foreach ($tags as $tag) {
+                if (!isset($saved['tags'][$tag])) {
+                    $saved['tags'][$tag] = [$id => $descr];
+                } elseif (!isset($saved['tags'][$tag][$id])) {
+                    $saved['tags'][$tag][$id] = $descr;
+                }
             }
         }
         ksort($saved['data']);
@@ -369,7 +373,7 @@ class LiteSpeedCacheHelper
         $newsnapshot = json_encode($saved, JSON_UNESCAPED_SLASHES);
         if ($snapshot != $newsnapshot) {
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_SAVED_DATA) {
-                LSLog::log(__FUNCTION__ . ' updated data ' . var_export($saved, true), LSLog::LEVEL_SAVED_DATA);
+                LSLog::log(__FUNCTION__ . " $cacheFile updated data " . var_export($saved, true), LSLog::LEVEL_SAVED_DATA);
             }
             file_put_contents($cacheFile, $newsnapshot);
         }

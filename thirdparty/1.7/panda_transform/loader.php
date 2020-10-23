@@ -22,7 +22,26 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-// You can comment out the lines if you do not use Promokit Modules (alysum theme)
+/**
+ * This is shared for panda and transform theme from Sunnytoo.com
+ * You can comment out the ST Modules not used.
+ * Do not support ViewedProducts, this is not cache friendly
+ *
+ */
 
-include __DIR__ . '/LscPkHeader.php';
-include __DIR__ . '/LscPkAmp.php';
+include __DIR__ . '/LscStNotification.php';
+include __DIR__ . '/LscStShoppingcart.php';
+include __DIR__ . '/LscStCustomerSignIn.php';
+
+// You can comment out if you do not use stcompare
+include __DIR__ . '/LscStCompare.php';
+
+// You can comment out if you do not use stlovedproduct
+include __DIR__ . '/LscStLovedProduct.php';
+
+// You can comment out if you do not use stwishlist
+include __DIR__ . '/LscStWishlist.php';
+
+// You can comment out if you do not use stsidebar
+include __DIR__ . '/LscStSidebar.php';
+

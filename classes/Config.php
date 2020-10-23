@@ -97,7 +97,11 @@ class LiteSpeedCacheConfig
 
     const CFG_NOCACHE_URL = 'nocache_urls';
 
+    const CFG_VARY_BYPASS = 'vary_bypass';
+
     const CFG_DEBUG = 'debug';
+
+    const CFG_DEBUG_HEADER = 'debug_header';
 
     const CFG_DEBUG_LEVEL = 'debug_level';
 
@@ -116,6 +120,8 @@ class LiteSpeedCacheConfig
     private $shop;
 
     private $custMod;
+
+    private $enforceDiffGroup = 0;
 
     private $isDebug = 0;
 
@@ -145,9 +151,11 @@ class LiteSpeedCacheConfig
             case self::CFG_GUESTMODE:
             case self::CFG_NOCACHE_VAR:
             case self::CFG_NOCACHE_URL:
+            case self::CFG_VARY_BYPASS:
             case self::CFG_FLUSH_PRODCAT:
             // in global developer form
             case self::CFG_DEBUG:
+            case self::CFG_DEBUG_HEADER:
             case self::CFG_DEBUG_LEVEL:
             case self::CFG_ALLOW_IPS:
             case self::CFG_DEBUG_IPS:
@@ -206,8 +214,10 @@ class LiteSpeedCacheConfig
                 self::CFG_GUESTMODE => 1,
                 self::CFG_NOCACHE_VAR => '',
                 self::CFG_NOCACHE_URL => '',
+                self::CFG_VARY_BYPASS => '',
                 self::CFG_FLUSH_PRODCAT => 0,
                 self::CFG_DEBUG => 0,
+                self::CFG_DEBUG_HEADER => 0,
                 self::CFG_DEBUG_LEVEL => 9,
                 self::CFG_ALLOW_IPS => '',
                 self::CFG_DEBUG_IPS => '',
@@ -312,8 +322,10 @@ class LiteSpeedCacheConfig
                     self::CFG_GUESTMODE => $values[self::CFG_GUESTMODE],
                     self::CFG_NOCACHE_VAR => $values[self::CFG_NOCACHE_VAR],
                     self::CFG_NOCACHE_URL => $values[self::CFG_NOCACHE_URL],
+                    self::CFG_VARY_BYPASS => $values[self::CFG_VARY_BYPASS],
                     self::CFG_FLUSH_PRODCAT => $values[self::CFG_FLUSH_PRODCAT],
                     self::CFG_DEBUG => $values[self::CFG_DEBUG],
+                    self::CFG_DEBUG_HEADER => $values[self::CFG_DEBUG_HEADER],
                     self::CFG_DEBUG_LEVEL => $values[self::CFG_DEBUG_LEVEL],
                     self::CFG_ALLOW_IPS => $values[self::CFG_ALLOW_IPS],
                     self::CFG_DEBUG_IPS => $values[self::CFG_DEBUG_IPS],
@@ -381,7 +393,7 @@ class LiteSpeedCacheConfig
             }
         }
 
-        $this->pubController = [
+        $this->addExtraPubControllers([
             'IndexController' => self::TAG_HOME, // controller name - tag linked to it
             'ProductController' => '',
             'CategoryController' => '',
@@ -396,7 +408,8 @@ class LiteSpeedCacheConfig
             'StoresController' => self::TAG_STORES,
             'PageNotFoundController' => self::TAG_404,
             'productcommentsListCommentsModuleFrontController' => self::TAG_PREFIX_PCOMMENTS,
-        ];
+            'productcommentsCommentGradeModuleFrontController' => self::TAG_PREFIX_PCOMMENTS,
+        ]);
         
         LSLog::setDebugLevel($this->isDebug);
         if (!defined('_LITESPEED_DEBUG_')) {
@@ -406,22 +419,26 @@ class LiteSpeedCacheConfig
     
     public function addExtraPubControllers($extraPubControllers)
     {
-        $this->pubController = array_merge($this->pubController, $extraPubControllers);
+        array_walk($extraPubControllers, function($tag, $key) {
+            $this->pubController[strtolower($key)] = $tag;
+        });
     }
 
     public function isControllerCacheable($controllerClass)
     {
+        $controllerClass = strtolower($controllerClass);
         if (!isset($this->pubController[$controllerClass])) {
             return false;
         }
         $tag = $this->pubController[$controllerClass];
         $ttl = -1;
         
-        if ($controllerClass == 'IndexController') {
+        if ($controllerClass == 'indexcontroller') {
             $ttl = $this->get(self::CFG_HOME_TTL);
-        } elseif ($controllerClass == 'PageNotFoundController') {
+        } elseif ($controllerClass == 'pagenotfoundcontroller') {
             $ttl = $this->get(self::CFG_404_TTL);
-        } elseif ($controllerClass == 'productcommentsListCommentsModuleFrontController') {
+        } elseif ($controllerClass == 'productcommentslistcommentsmodulefrontcontroller'
+            || $controllerClass == 'productcommentscommentgrademodulefrontcontroller') {
             $ttl = $this->get(self::CFG_PCOMMENTS_TTL);
             $idProduct = Tools::getValue('id_product');
             if ($idProduct) {
@@ -440,8 +457,35 @@ class LiteSpeedCacheConfig
         return $nocache;
     }
 
+    public function getContextBypass()
+    {
+        return $this->getArray(self::CFG_VARY_BYPASS);
+    }
+
+    public function getDiffCustomerGroup()
+    {
+        // $diffCustomerGroup 0: No; 1: Yes; 2: login_out
+        $diffGroup = $this->get(self::CFG_DIFFCUSTGRP);
+        // check 2 override case
+        if ($this->enforceDiffGroup == 1) {
+            return 1;
+        } elseif ($this->enforceDiffGroup == 2 && $diffGroup == 0) {
+            return 2; // in_out only
+        }
+        return $diffGroup;
+    }
+
+    public function enforceDiffCustomerGroup($enforcedSetting)
+    {
+        if ($enforcedSetting == 1) { // separate per group
+            $this->enforceDiffGroup = 1;
+        } elseif ($enforcedSetting == 2 && $this->enforceDiffGroup == 0) {
+            $this->enforceDiffGroup = 2; // in_out only
+        }
+    }
+
     // if allowed, return conf
-    public function canInjectEsi($name, $params)
+    public function canInjectEsi($name, &$params)
     {
         $m = &$this->esiModConf['mods'];
         if (isset($m[$name]) && $m[$name]->canInject($params)) {
@@ -449,16 +493,6 @@ class LiteSpeedCacheConfig
         } else {
             return false;
         }
-    }
-
-    public function esiInjectRenderWidget($mName, $hName)
-    {
-        $m = &$this->esiModConf['mods'];
-        if (isset($m[$mName]) && $m[$mName]->injectRenderWidget($hName)) {
-            return $m[$mName];
-        }
-
-        return false;
     }
 
     public function isEsiModule($moduleName)
@@ -488,23 +522,21 @@ class LiteSpeedCacheConfig
     {
         $modname = $esiConf->getModuleName();
         $this->esiModConf['mods'][$modname] = $esiConf;
-        $isPriv = $esiConf->isPrivate();
-        $type = $isPriv ? 'priv' : 'pub';
-        $tag = $esiConf->getTag();
+        $type = $esiConf->isPrivate() ? 'priv' : 'pub';
+        $tags = $esiConf->getTags();
         if ($pc = $esiConf->getPurgeControllers()) {
-            foreach ($pc as $cname => $cparam) {
+            foreach ($pc as $controllerName => $controllerParam) {
                 // allow ClassName?param1&param2=value
-                $cname = Tools::strtolower($cname);
-                if (!isset($this->purgeController[$cname])) {
-                    $this->purgeController[$cname] = [];
+                // if className?custom_handler, will let module handle it
+                $controllerName = Tools::strtolower($controllerName);
+                if (!isset($this->purgeController[$controllerName])) {
+                    $this->purgeController[$controllerName] = [];
                 }
-                $detail = &$this->purgeController[$cname];
-                if (!isset($detail[$cparam])) {
-                    $detail[$cparam] = ['priv' => [], 'pub' => []];
+                $detail = &$this->purgeController[$controllerName];
+                if (!isset($detail[$controllerParam])) {
+                    $detail[$controllerParam] = ['priv' => [], 'pub' => []];
                 }
-                if (!in_array($tag, $detail[$cparam][$type])) {
-                    $detail[$cparam][$type][] = $tag;
-                }
+                $detail[$controllerParam][$type] = array_unique(array_merge($detail[$controllerParam][$type], $tags));
             }
         }
         $events = $esiConf->getPurgeEvents();
@@ -513,9 +545,7 @@ class LiteSpeedCacheConfig
                 if (!isset($this->esiModConf['purge_events'][$event])) {
                     $this->esiModConf['purge_events'][$event] = ['priv' => [], 'pub' => []];
                 }
-                if (!in_array($tag, $this->esiModConf['purge_events'][$event][$type])) {
-                    $this->esiModConf['purge_events'][$event][$type][] = $tag;
-                }
+                $this->esiModConf['purge_events'][$event][$type] = array_unique(array_merge($this->esiModConf['purge_events'][$event][$type], $tags));
             }
         }
     }
@@ -538,6 +568,11 @@ class LiteSpeedCacheConfig
         $conf = ['pub' => [], 'priv' => []];
         foreach ($this->purgeController[$c] as $param => $tags) {
             if ($param !== 0) {
+                // custom_handler
+                if ($param == 'custom_handler') {
+                    LscIntegration::checkPurgeController($c, $conf);
+                    continue;
+                }
                 //param1&param2
                 $params = explode('&', $param);
                 foreach ($params as $paramName) {
@@ -547,10 +582,10 @@ class LiteSpeedCacheConfig
                 }
             }
             if (!empty($tags['priv'])) {
-                $conf['priv'] = $tags['priv'];
+                $conf['priv'] = array_merge($conf['priv'], $tags['priv']);
             }
             if (!empty($tags['pub'])) {
-                $conf['pub'] = $tags['pub'];
+                $conf['pub'] = array_merge($conf['pub'], $tags['pub']);
             }
         }
 

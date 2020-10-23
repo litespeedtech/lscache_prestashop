@@ -208,6 +208,33 @@ abstract class LscIntegration
         }
     }
 
+    protected function addCheckPurgeControllerCustomHandler($controller_class, $proc)
+    {
+        $c = Tools::strtolower($controller_class);
+        if (!isset(self::$integrated['checkpurgecontroller'])) {
+            self::$integrated['checkpurgecontroller'] = [];
+        }
+        if (!isset(self::$integrated['checkpurgecontroller'][$c])) {
+            self::$integrated['checkpurgecontroller'][$c] = [$proc];
+        } else {
+            self::$integrated['checkpurgecontroller'][$c][] = $proc;
+        }
+    }
+
+    /**
+     *
+     * @param type $controller_class
+     * @param type $tags = ['pub' => [], 'priv' => []];
+     */
+    public static function checkPurgeController($lowercase_controller_class, &$tags)
+    {
+        if (isset(self::$integrated['checkpurgecontroller'][$lowercase_controller_class])) {
+            foreach (self::$integrated['checkpurgecontroller'][$lowercase_controller_class] as $proc) {
+                $proc->checkPurgeControllerCustomHandler($lowercase_controller_class, $tags);
+            }
+        }
+    }
+
     protected function addInitCacheTagAction($proc)
     {
         if (!isset(self::$integrated['initCacheTag'])) {
@@ -227,6 +254,12 @@ abstract class LscIntegration
             }
         }
     }
-    
+
+    protected function isLoggedIn()
+    {
+        $context = Context::getContext();
+        return (($context->customer != null) && $context->customer->isLogged());
+    }
+
     abstract protected function init();
 }

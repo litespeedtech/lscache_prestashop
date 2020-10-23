@@ -34,7 +34,13 @@ class LiteSpeedCacheCore
 
     const LSHEADER_CACHE_TAG = 'X-Litespeed-Tag';
 
-    const LSHEADER_CACHE_VARY = 'X-Litespeed-Vary';
+    const LSHEADER_DEBUG_TAG = 'X-LSCACHE-Debug-Tag';
+
+    const LSHEADER_DEBUG_CC = 'X-LSCACHE-Debug-CC';
+
+    const LSHEADER_DEBUG_PURGE = 'X-LSCACHE-Debug-Purge';
+
+    const LSHEADER_DEBUG_INFO = 'X-LSCACHE-Debug-Info';
 
     private $cacheTags = [];
 
@@ -716,8 +722,10 @@ class LiteSpeedCacheCore
         }
 
         $headers = [];
+        $debug_headers = [];
         if (($purgeHeader = $this->getPurgeHeader()) != '') {
             $headers[] = $purgeHeader;
+            $debug_headers[] = self::LSHEADER_DEBUG_PURGE . ': ' . $purgeHeader;
         }
 
         $cacheControlHeader = '';
@@ -743,6 +751,7 @@ class LiteSpeedCacheCore
             }
 
             $headers[] = self::LSHEADER_CACHE_TAG . ': ' . implode(',', $tags);
+            $debug_headers[] = self::LSHEADER_DEBUG_TAG . ': ' . implode(',', $tags);
 
             if (($ccflag & LSC::CCBM_GUEST) != 0) {
                 $guestmode = $this->config->get(Conf::CFG_GUESTMODE);
@@ -768,6 +777,14 @@ class LiteSpeedCacheCore
         }
         if (defined('_LITESPEED_DEBUG_') && _LITESPEED_DEBUG_ >= LSLog::LEVEL_SETHEADER) {
             LSLog::log('SetHeader ' . implode("\n", $headers), LSLog::LEVEL_SETHEADER);
+        }
+        if ($this->config->get(Conf::CFG_DEBUG_HEADER)) {
+            $debug_headers[] = self::LSHEADER_DEBUG_CC . ': ' . $cacheControlHeader;
+            $info = htmlspecialchars(str_replace("\n", ' ', LSC::getCCFlagDebugInfo()));
+            $debug_headers[] = self::LSHEADER_DEBUG_INFO . ': ' . substr($info, 0, 256);
+            foreach ($debug_headers as $header) {
+                header($header);
+            }
         }
     }
 }

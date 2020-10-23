@@ -26,6 +26,7 @@ use LiteSpeedCacheLog as LSLog;
 
 class LiteSpeedCacheVaryCookie extends CookieCore
 {
+
     const BM_HAS_VARYCOOKIE = 1;
 
     const BM_VARYCOOKIE_CHANGED = 2;
@@ -49,6 +50,8 @@ class LiteSpeedCacheVaryCookie extends CookieCore
     private $vd;
     
     private $name;
+
+    private $debug_header;
 
     private $status = 0;
 
@@ -98,13 +101,22 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         $vary = new LiteSpeedCacheVaryCookie();
         $vary->writeVary();
         $changed = $vary->envChanged();
+        $debug_info = '';
 
-        if ($changed && _LITESPEED_DEBUG_ >= LSLog::LEVEL_ENVCOOKIE_CHANGE) {
-            LSLog::log('vary changed ' . json_encode($vary->vd), LSLog::LEVEL_ENVCOOKIE_CHANGE);
-        } elseif (!$changed && _LITESPEED_DEBUG_ >= LSLog::LEVEL_ENVCOOKIE_DETAIL
-            && ($vary->status & (self::BM_HAS_VARYCOOKIE | self::BM_HAS_VARYVALUE)) > 0
-            ) {
-            LSLog::log('vary found & match ' . json_encode($vary->vd), LSLog::LEVEL_ENVCOOKIE_DETAIL);
+        if ($changed) {
+            $debug_info = 'changed ' . json_encode($vary->vd);
+            if ( _LITESPEED_DEBUG_ >= LSLog::LEVEL_ENVCOOKIE_CHANGE) {
+                LSLog::log($debug_info, LSLog::LEVEL_ENVCOOKIE_CHANGE);
+            }
+        } elseif (($vary->status & (self::BM_HAS_VARYCOOKIE | self::BM_HAS_VARYVALUE)) > 0) {
+            $debug_info = 'found & match ' . json_encode($vary->vd);
+            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_ENVCOOKIE_DETAIL) {
+                LSLog::log($debug_info, LSLog::LEVEL_ENVCOOKIE_DETAIL);
+            }
+        }
+
+        if ($debug_info && $this->debug_header) {
+            header("X-LSCACHE-Debug-Vary: $debug_info");
         }
 
         return $changed;
@@ -134,7 +146,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         }
         if ($ov != $value) {
             setcookie(self::AMP_VARY_COOKIE_NAME, $value, 0, $this->_path, $this->_domain, $this->_secure, true);
-            LiteSpeedCache::forceNotCacheable('Amp vary change');
+            //LiteSpeedCache::forceNotCacheable('Amp vary change'); not needed any more, lscache engine can save with proper key.
         }
     }
 
@@ -203,10 +215,12 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         
         $conf = LiteSpeedCacheConfig::getInstance();
         // $diffCustomerGroup 0: No; 1: Yes; 2: login_out
-        $diffCustomerGroup = $conf->get(LiteSpeedCacheConfig::CFG_DIFFCUSTGRP);
+        $diffCustomerGroup = $conf->getDiffCustomerGroup();
         // $diffMobile  0: no; 1: yes
         $diffMobile = $conf->get(LiteSpeedCacheConfig::CFG_DIFFMOBILE);
         $isMobile = $diffMobile ? $context->getMobileDevice() : false;
+        $bypass = $conf->getContextBypass();
+        $this->debug_header = $conf->get(LiteSpeedCacheConfig::CFG_DEBUG_HEADER);
 
         // check lscache vary cookie, not default PS cookie, workaround validator
         $cookies = ${'_COOKIE'};
@@ -214,16 +228,21 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         if (LiteSpeedCache::isRestrictedIP()) {
             $data['dev'] = 1;
         }
-        if (isset($psCookie->iso_code_country)) {
-            $data['ctry'] = $psCookie->iso_code_country;
+        if (!in_array('ctry', $bypass) && isset($psCookie->iso_code_country)) {
+            $iso = $psCookie->iso_code_country;
+            $id_country = (int)Configuration::get('PS_COUNTRY_DEFAULT');
+            $default_iso = Country::getIsoById($id_country);
+            if ($iso != $default_iso) {
+                $data['ctry'] = $iso;
+            }
         }
-        if (isset($psCookie->id_currency)) {
+        if (!in_array('curr', $bypass) && isset($psCookie->id_currency)) {
             $configuration_curr = Configuration::get('PS_CURRENCY_DEFAULT');
             if ($psCookie->id_currency != $configuration_curr) {
                 $data['curr'] = $psCookie->id_currency;
             }
         }
-        if (isset($psCookie->id_lang) && Language::isMultiLanguageActivated()) {
+        if (!in_array('lang', $bypass) && isset($psCookie->id_lang) && Language::isMultiLanguageActivated()) {
             $configuration_id_lang = Configuration::get('PS_LANG_DEFAULT');
             if ($psCookie->id_lang != $configuration_id_lang) {
                 $data['lang'] = $psCookie->id_lang;

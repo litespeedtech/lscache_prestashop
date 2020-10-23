@@ -69,6 +69,8 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
 
     private $parsed = [];
 
+    private $customHandler = null;
+
     public function __construct($moduleName, $type, $data)
     {
         $this->moduleName = $moduleName;
@@ -77,7 +79,8 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         //sanatize data
         $this->data[self::FLD_PRIV] = $data[self::FLD_PRIV] ? 1 : 0;
         if (isset($data[self::FLD_TAG])) {
-            $this->data[self::FLD_TAG] = $data[self::FLD_TAG];
+            $this->data[self::FLD_TAG] = is_array($data[self::FLD_TAG])
+                ? $data[self::FLD_TAG] : [$data[self::FLD_TAG]];
         }
         if (isset($data[self::FLD_TTL])) {
             $this->data[self::FLD_TTL] = $data[self::FLD_TTL];
@@ -122,7 +125,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             'name' => $this->moduleName,
             'priv' => $this->isPrivate(),
             'ttl' => $this->getTTL(),
-            'tag' => $this->getTag(),
+            'tag' => implode(', ', $this->getTags()),
             'type' => $this->type,
             'events' => $this->getFieldValue(self::FLD_PURGE_EVENTS, false, true),
             'ctrl' => $this->getFieldValue(self::FLD_PURGE_CONTROLLERS, false, true),
@@ -134,7 +137,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             'tipurl' => $this->getFieldValue(self::FLD_TIPURL),
         ];
         if ($tmp_instance = Module::getInstanceByName($this->moduleName)) {
-            $cdata['name'] = $tmp_instance->displayName;
+            $cdata['name'] = htmlspecialchars_decode($tmp_instance->displayName);
         }
 
         return $cdata;
@@ -148,52 +151,74 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         return $sdata;
     }
 
-    public function isPrivate()
+    public function setCustomHandler($customHandler)
     {
+        if ($this->customHandler === null) { // only allow set once
+            $this->customHandler = $customHandler;
+        }
+    }
+
+    public function isPrivate($params=[])
+    {
+        if ($this->customHandler && method_exists($this->customHandler, 'isPrivate')) {
+            return $this->customHandler->isPrivate($params);
+        }
         return $this->data[self::FLD_PRIV] != null;
     }
 
-    private function getFieldValue($field, $isbool = false, $splitClean = false)
+    public function getTTL($params=[])
     {
-        $value = (isset($this->data[$field])) ? $this->data[$field] : '';
-        if ($isbool) {
-            $value = ($value) ? true : false;
-        }
-        if ($splitClean && $value) {
-            $dv = preg_split("/[\s,]+/", $value, null, PREG_SPLIT_NO_EMPTY);
-            $value = implode(', ', $dv);
+        if ($this->customHandler && method_exists($this->customHandler, 'getTTL')) {
+            return $this->customHandler->getTTL($params);
         }
 
-        return $value;
-    }
-
-    public function getTTL()
-    {
         return isset($this->data[self::FLD_TTL]) ?
             $this->data[self::FLD_TTL] : '';
     }
 
-    public function getTag()
+    public function getTags($params=[])
     {
+        if ($this->customHandler && method_exists($this->customHandler, 'getTags')) {
+            return $this->customHandler->getTags($params);
+        }
+
         if (!empty($this->data[self::FLD_TAG])) {
             return $this->data[self::FLD_TAG];
         } else {
-            return $this->moduleName;
+            return [$this->moduleName];
         }
     }
 
-    public function asVar()
+    public function getNoItemCache($params)
     {
+        if ($this->customHandler && method_exists($this->customHandler, 'getNoItemCache')) {
+            return $this->customHandler->getNoItemCache($params);
+        }
+
+        return false;
+    }
+
+    public function asVar($params)
+    {
+        if ($this->customHandler && method_exists($this->customHandler, 'asVar')) {
+            return $this->customHandler->asVar($params);
+        }
         return isset($this->data[self::FLD_ASVAR]) && $this->data[self::FLD_ASVAR];
     }
 
-    public function onlyCacheEmtpy()
+    public function onlyCacheEmtpy($params)
     {
+        if ($this->customHandler && method_exists($this->customHandler, 'onlyCacheEmtpy')) {
+            return $this->customHandler->onlyCacheEmtpy($params);
+        }
         return isset($this->data[self::FLD_ONLY_CACHE_EMPTY]) && $this->data[self::FLD_ONLY_CACHE_EMPTY];
     }
 
-    public function ignoreEmptyContent()
+    public function ignoreEmptyContent($params)
     {
+        if ($this->customHandler && method_exists($this->customHandler, 'ignoreEmptyContent')) {
+            return $this->customHandler->ignoreEmptyContent($params);
+        }
         return isset($this->data[self::FLD_IGNORE_EMPTY]) && $this->data[self::FLD_IGNORE_EMPTY];
     }
 
@@ -209,9 +234,10 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             // allow ClassName?param1&param2
             $ct = explode('?', $item);
             if (count($ct) == 1) {
-                $controllers[$item] = 0;
+                $controllers[$item] = 0;  // no param
             } else {
-                $controllers[$ct[0]] = $ct[1];
+                $controllers[$ct[0]] = $ct[1]; // with param
+                // if param is custom_handler, will let module handle it
             }
         }
 
@@ -227,7 +253,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         return null;
     }
 
-    public function canInject($params)
+    public function canInject(&$params)
     {
         if (empty($params['pt'])) {
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED) {
@@ -236,7 +262,12 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
 
             return false;
         }
-        switch ($params['pt']) {
+
+        if ($this->customHandler && method_exists($this->customHandler, 'canInject')) {
+            return $this->customHandler->canInject($params);
+        }
+
+        switch ($params['pt']) { // param type
             case EsiItem::ESI_RENDERWIDGET:
                 return $this->checkInjection(self::FLD_RENDER_WIDGETS, $params['h']);
 
@@ -252,6 +283,20 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     public function isCustomized()
     {
         return $this->type == self::TYPE_CUSTOMIZED;
+    }
+
+    private function getFieldValue($field, $isbool = false, $splitClean = false)
+    {
+        $value = (isset($this->data[$field])) ? $this->data[$field] : '';
+        if ($isbool) {
+            $value = ($value) ? true : false;
+        }
+        if ($splitClean && $value) {
+            $dv = preg_split("/[\s,]+/", $value, null, PREG_SPLIT_NO_EMPTY);
+            $value = implode(', ', $dv);
+        }
+
+        return $value;
     }
 
     private function checkInjection($field, $value)
@@ -278,6 +323,8 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         $res = [];
         if (!isset($this->data[$field])) {
             $res[0] = -1; // none
+        } elseif ($this->data[$field] instanceof LscIntegration) {
+            $res = $this->data[$field]; // custom handler
         } elseif ($this->data[$field] == '*') {
             $res[0] = 9; // all
         } else {
