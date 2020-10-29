@@ -115,7 +115,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             }
         }
 
-        if ($debug_info && $this->debug_header) {
+        if ($debug_info && $vary->debug_header) {
             header("X-LSCACHE-Debug-Vary: $debug_info");
         }
 

@@ -91,6 +91,10 @@ class LiteSpeedCacheConfig
 
     const CFG_FLUSH_PRODCAT = 'flush_prodcat';
 
+    const CFG_FLUSH_HOME = 'flush_home';
+
+    const CFG_FLUSH_HOME_INPUT = 'flush_homeinput';
+
     const CFG_GUESTMODE = 'guestmode';
 
     const CFG_NOCACHE_VAR = 'nocache_vars';
@@ -125,6 +129,8 @@ class LiteSpeedCacheConfig
 
     private $isDebug = 0;
 
+    private $flushHomePids = null;
+
     private static $instance = null;
 
     public static function getInstance()
@@ -153,6 +159,8 @@ class LiteSpeedCacheConfig
             case self::CFG_NOCACHE_URL:
             case self::CFG_VARY_BYPASS:
             case self::CFG_FLUSH_PRODCAT:
+            case self::CFG_FLUSH_HOME:
+            case self::CFG_FLUSH_HOME_INPUT:
             // in global developer form
             case self::CFG_DEBUG:
             case self::CFG_DEBUG_HEADER:
@@ -216,6 +224,8 @@ class LiteSpeedCacheConfig
                 self::CFG_NOCACHE_URL => '',
                 self::CFG_VARY_BYPASS => '',
                 self::CFG_FLUSH_PRODCAT => 0,
+                self::CFG_FLUSH_HOME => 0,
+                self::CFG_FLUSH_HOME_INPUT => '',
                 self::CFG_DEBUG => 0,
                 self::CFG_DEBUG_HEADER => 0,
                 self::CFG_DEBUG_LEVEL => 9,
@@ -324,6 +334,8 @@ class LiteSpeedCacheConfig
                     self::CFG_NOCACHE_URL => $values[self::CFG_NOCACHE_URL],
                     self::CFG_VARY_BYPASS => $values[self::CFG_VARY_BYPASS],
                     self::CFG_FLUSH_PRODCAT => $values[self::CFG_FLUSH_PRODCAT],
+                    self::CFG_FLUSH_HOME => $values[self::CFG_FLUSH_HOME],
+                    self::CFG_FLUSH_HOME_INPUT => $values[self::CFG_FLUSH_HOME_INPUT],
                     self::CFG_DEBUG => $values[self::CFG_DEBUG],
                     self::CFG_DEBUG_HEADER => $values[self::CFG_DEBUG_HEADER],
                     self::CFG_DEBUG_LEVEL => $values[self::CFG_DEBUG_LEVEL],
@@ -460,6 +472,19 @@ class LiteSpeedCacheConfig
     public function getContextBypass()
     {
         return $this->getArray(self::CFG_VARY_BYPASS);
+    }
+
+    public function getFlushHomePids()
+    {
+        if ($this->flushHomePids === null) {
+            if ($this->get(self::CFG_FLUSH_HOME) > 0) {
+                $this->flushHomePids = $this->getArray(self::CFG_FLUSH_HOME_INPUT);
+            } else {
+                $this->flushHomePids = false;
+            }
+        }
+
+        return $this->flushHomePids;
     }
 
     public function getDiffCustomerGroup()
@@ -601,7 +626,6 @@ class LiteSpeedCacheConfig
         // maybe configurable later
         $tags = [
             self::TAG_SEARCH,
-            self::TAG_HOME,
             self::TAG_SITEMAP,
         ];
 
@@ -613,7 +637,6 @@ class LiteSpeedCacheConfig
         // maybe configurable later
         $tags = [
             self::TAG_SEARCH,
-            self::TAG_HOME,
             self::TAG_SITEMAP,
         ];
 
@@ -701,7 +724,6 @@ class LiteSpeedCacheConfig
         ];
 
         if (version_compare(_PS_VERSION_, '1.7.1.0', '>=')) {
-            $hooks[] = 'actionClearCache';
             $hooks[] = 'actionClearCompileCache';
             $hooks[] = 'actionClearSf2Cache';
         }

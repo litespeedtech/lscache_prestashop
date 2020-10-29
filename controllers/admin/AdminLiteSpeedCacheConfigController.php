@@ -98,13 +98,15 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             Conf::CFG_DIFFMOBILE => $this->l('Separate Mobile View'),
             Conf::CFG_DIFFCUSTGRP => $this->l('Separate Cache Copy per Customer Group'),
             Conf::CFG_FLUSH_PRODCAT => $this->l('Flush Product and Categories When Order Placed'),
+            Conf::CFG_FLUSH_HOME => $this->l('Flush Home Page When Order Placed'),
+            Conf::CFG_FLUSH_HOME_INPUT => $this->l('Specify Product IDs for Home Page Flush'),
             Conf::CFG_GUESTMODE => $this->l('Enable Guest Mode'),
             Conf::CFG_NOCACHE_VAR => $this->l('Do-Not-Cache GET Parameters'),
             Conf::CFG_NOCACHE_URL => $this->l('URL Blacklist'),
             Conf::CFG_VARY_BYPASS => $this->l('Context Vary Bypass'),
             Conf::CFG_ALLOW_IPS => $this->l('Enable Cache Only for Listed IPs'),
-            Conf::CFG_DEBUG => $this->l('Enable Debug Log'),
             Conf::CFG_DEBUG_HEADER => $this->l('Enable Debug Headers'),
+            Conf::CFG_DEBUG => $this->l('Enable Debug Log'),
             Conf::CFG_DEBUG_IPS => $this->l('Log Only for Listed IPs'),
             Conf::CFG_DEBUG_LEVEL => $this->l('Debug Level'),
         ];
@@ -154,8 +156,10 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 Conf::CFG_NOCACHE_URL,
                 Conf::CFG_VARY_BYPASS,
                 Conf::CFG_FLUSH_PRODCAT,
-                Conf::CFG_DEBUG,
+                Conf::CFG_FLUSH_HOME,
+                Conf::CFG_FLUSH_HOME_INPUT,
                 Conf::CFG_DEBUG_HEADER,
+                Conf::CFG_DEBUG,
                 Conf::CFG_DEBUG_LEVEL,
                 Conf::CFG_ALLOW_IPS,
                 Conf::CFG_DEBUG_IPS,
@@ -348,6 +352,33 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 }
                 break;
 
+            case Conf::CFG_FLUSH_HOME:
+                $postVal = (int) $postVal;
+                if ($postVal < 0 || $postVal > 2) {
+                    // should not happen in drop down
+                    $postVal = 0;
+                }
+                if ($postVal != $origVal) {
+                    $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE;
+                }
+                break;
+
+            case Conf::CFG_FLUSH_HOME_INPUT:
+                $clean = array_unique(preg_split($pattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                if (count($clean) == 0) {
+                    $postVal = '';
+                } else {
+                    $postVal = implode(', ', $clean);
+                    if (!preg_match('/^[\d ,]+$/', $postVal)) {
+                        $this->errors[] = $invalid;
+                    }
+                }
+                if ($postVal != $origVal) {
+                    $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE;
+                }
+                break;
+
+
             case Conf::CFG_GUESTMODE:
                 $postVal = (int) $postVal;
                 if ($postVal != $origVal) {
@@ -403,15 +434,14 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 }
                 break;
 
-
-            case Conf::CFG_DEBUG:
+            case Conf::CFG_DEBUG_HEADER:
                 $postVal = (int) $postVal;
                 if ($postVal != $origVal) {
                     $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE;
                 }
                 break;
 
-            case Conf::CFG_DEBUG_HEADER:
+            case Conf::CFG_DEBUG:
                 $postVal = (int) $postVal;
                 if ($postVal != $origVal) {
                     $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE;
@@ -544,6 +574,28 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             $disabled
         );
 
+        $flushhomeOptions = [
+            ['id' => 0, 'name' => $this->l('Do not flush the home page')],
+            ['id' => 1, 'name' => $this->l('Flush the home page when stock status changed for specified products')],
+            ['id' => 2, 'name' => $this->l('Flush the home page when stock status or quantity is changed for specified products')],
+        ];
+        $fg['input'][] = $this->addInputSelect(
+            Conf::CFG_FLUSH_HOME,
+            $this->labels[Conf::CFG_FLUSH_HOME],
+            $flushhomeOptions,
+            $this->l('Determines how changes in product quantity and stock status affect the home page.') . ' '
+                . $this->l('No need to flush if your home page does not show any products.'),
+            $disabled
+        );
+
+        $fg['input'][] = $this->addInputTextArea(
+            Conf::CFG_FLUSH_HOME_INPUT,
+            $this->labels[Conf::CFG_FLUSH_HOME_INPUT],
+            $this->l('Only flush the home page for specified product IDs. (Space or comma separated.)') . ' '
+            . $this->l('If empty, any product update will trigger home page flush. Only effective when home page flush option is selected.'),
+            $disabled
+        );
+
         $guestOptions = [
             ['id' => 0, 'name' => $this->l('No') . $s . $this->l('No default guest view')],
             ['id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Has default guest view')],
@@ -599,15 +651,15 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             $disabled
         );
         $formDev['input'][] = $this->addInputSwitch(
-            Conf::CFG_DEBUG,
-            $this->labels[Conf::CFG_DEBUG],
-            $this->l('Prints additional information to "lscache.log." Turn off for production use.'),
-            $disabled
-        );
-        $formDev['input'][] = $this->addInputSwitch(
             Conf::CFG_DEBUG_HEADER,
             $this->labels[Conf::CFG_DEBUG_HEADER],
             $this->l('Show debug information through response headers. Turn off for production use.'),
+            $disabled
+        );
+        $formDev['input'][] = $this->addInputSwitch(
+            Conf::CFG_DEBUG,
+            $this->labels[Conf::CFG_DEBUG],
+            $this->l('Prints additional information to "lscache.log." Turn off for production use.'),
             $disabled
         );
         $formDev['input'][] = $this->addInputTextArea(

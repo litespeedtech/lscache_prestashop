@@ -151,6 +151,8 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         }
         if (Tools::getValue('cbPurge_search')) {
             $tags[] = Conf::TAG_SEARCH;
+            $tags[] = Conf::TAG_PREFIX_CATEGORY;
+            $tags[] = Conf::TAG_PREFIX_PRODUCT;
             $info[] = $this->labels['search'];
         }
         if (Tools::getValue('cbPurge_brand')) {

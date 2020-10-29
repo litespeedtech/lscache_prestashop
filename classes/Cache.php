@@ -238,10 +238,13 @@ class LiteSpeedCacheCore
             
             // if tag has ID, add the group tag for group purge
             $t = preg_replace('/\d+/', '', $tag);
-            if ($t == Conf::TAG_PREFIX_CATEGORY || $t == Conf::TAG_PREFIX_PRODUCT) {
-                $this->cacheTags[] = Conf::TAG_SEARCH;
-            } elseif (in_array($t, [Conf::TAG_PREFIX_CMS, Conf::TAG_PREFIX_MANUFACTURER, 
-                Conf::TAG_PREFIX_SUPPLIER, Conf::TAG_PREFIX_PCOMMENTS])) {
+            $group = [Conf::TAG_PREFIX_CATEGORY,
+                Conf::TAG_PREFIX_PRODUCT,
+                Conf::TAG_PREFIX_CMS,
+                Conf::TAG_PREFIX_MANUFACTURER,
+                Conf::TAG_PREFIX_SUPPLIER,
+                Conf::TAG_PREFIX_PCOMMENTS];
+            if (in_array($t, $group) && !in_array($t, $this->cacheTags)) {
                 $this->cacheTags[] = $t;
             }
             return true;
@@ -325,6 +328,11 @@ class LiteSpeedCacheCore
             }
         }
 
+        $flushHomePids = $this->config->getFlushHomePids();
+        if ($flushHomePids && in_array($id_product, $flushHomePids)) {
+            $tags['pub'][] = Conf::TAG_HOME;
+        }
+
         return $tags;
     }
 
@@ -365,7 +373,7 @@ class LiteSpeedCacheCore
         $resources = explode('/', $_REQUEST['url']);
         if (empty($resources) || count($resources) != 2 || intval($resources[1]) != $resources[1]) {
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_WEBSERVICE_DETAIL)
-                LSLog::log("WebService Purge - Ignored $method " . var_export($resources, 1), LSLog::LEVEL_WEBSERVICE_DETAIL);
+                LSLog::log("WebService Purge - Ignored $method " . print_r($resources, true), LSLog::LEVEL_WEBSERVICE_DETAIL);
             return;
         }
 
@@ -412,8 +420,11 @@ class LiteSpeedCacheCore
         $tags = [];
         $pubtags = [];
         $hasStockStatusChange = false;
+        $hasHome = false;
 
         $flushOption = $this->config->get(Conf::CFG_FLUSH_PRODCAT);
+        $flushHome = $this->config->get(Conf::CFG_FLUSH_HOME);
+        $flushHomePids = $this->config->getArray(Conf::CFG_FLUSH_HOME_INPUT);
         $list = $order->getOrderDetailList();
 
         foreach ($list as $product) {
@@ -441,6 +452,14 @@ class LiteSpeedCacheCore
                     break;
             }
 
+            if ($flushHome == 1 && $outstock // flush home page when specified pid stock status change
+                && (empty($flushHomePids) || in_array($product['product_id'], $flushHomePids))) {
+                $hasHome = true;
+            } elseif ($flushHome == 2 // flush home page when specified pid stock status or qty change
+                && (empty($flushHomePids) || in_array($product['product_id'], $flushHomePids))) {
+                $hasHome = true;
+            }
+
             if ($includeProd) {
                 $tags = $this->getPurgeTagsByProductOrder($product['product_id'], $includeCats);
                 if (!empty($tags)) {
@@ -451,6 +470,9 @@ class LiteSpeedCacheCore
         if (!empty($pubtags)) {
             if ($hasStockStatusChange) {
                 $pubtags = array_merge($pubtags, $this->config->getDefaultPurgeTagsByProduct());
+            }
+            if ($hasHome) {
+                $pubtags[] = Conf::TAG_HOME;
             }
             $tags['pub'] = array_unique($pubtags);
         }
@@ -529,17 +551,19 @@ class LiteSpeedCacheCore
                 $tags['priv'] = ['*'];
                 break;
 
-            case 'actionclearcache':
             case 'actionclearcompilecache':
             case 'actionclearsf2cache':
                 $tags['pub'] = ['*'];
                 break;
 
             case 'actionproductadd':
-            case 'actionproductsave':
-            case 'actionproductupdate':
             case 'actionproductdelete':
                 return $this->getPurgeTagsByProduct($args['id_product'], $args['product'], false);
+
+            case 'actionproductsave':
+            case 'actionproductupdate':
+                return $this->getPurgeTagsByProduct($args['id_product'], $args['product'], true);
+
             case 'actionobjectspecificpricecoreaddafter':
             case 'actionobjectspecificpricecoredeleteafter':
                 return $this->getPurgeTagsByProduct($args['object']->id_product, null, true);
