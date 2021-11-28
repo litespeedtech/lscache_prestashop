@@ -716,7 +716,10 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
     {
         $input = [
             'type' => 'switch', 'name' => $name, 'label' => $label,
-            'values' => [['value' => 1], ['value' => 0]],
+            'values' => [
+                ['value' => 1, 'id' => $name.'_on'],
+                ['value' => 0, 'id' => $name.'_off']
+            ]
         ];
         if ($desc) {
             $input['desc'] = $desc;
