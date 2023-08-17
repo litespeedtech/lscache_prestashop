@@ -480,7 +480,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'name' => 'priv',
                 'disabled' => $disabled,
                 'is_bool' => true,
-                'values' => [['value' => 1], ['value' => 0]],
+                'values' => [['value' => 1, 'id' => 'priv_on'], ['value' => 0,'id' => 'priv_off']],
             ],
             [
                 'type' => 'text',
@@ -550,7 +550,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'name' => 'asvar',
                 'disabled' => $disabled,
                 'is_bool' => true,
-                'values' => [['value' => 1], ['value' => 0]],
+                'values' => [['value' => 1, 'id' => 'asvar_on'], ['value' => 0, 'id' => 'asvar_off']],
             ],
             [
                 'type' => 'switch',
@@ -560,7 +560,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'hint' => $this->l('No need to hole-punch if the overridden template intentionally blank it out.'),
                 'disabled' => $disabled,
                 'is_bool' => true,
-                'values' => [['value' => 1], ['value' => 0]],
+                'values' => [['value' => 1, 'id' => 'ie_on'], ['value' => 0, 'id' => 'ie_off']],
             ],
             [
                 'type' => 'switch',
@@ -570,7 +570,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'name' => 'ce',
                 'disabled' => $disabled,
                 'is_bool' => true,
-                'values' => [['value' => 1], ['value' => 0]],
+                'values' => [['value' => 1, 'id' => 'ce_on'], ['value' => 0, 'id' => 'ce_off']],
             ],
         ];
 
