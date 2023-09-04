@@ -44,7 +44,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
 
         $this->config = Conf::getInstance();
         if (!$this->module->active) {
-            Tools::redirectAdmin($this->context->link->getAdminLink('AdminHome'));
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules'));
         }
 
         $title = $this->l('LiteSpeed Cache Management');
