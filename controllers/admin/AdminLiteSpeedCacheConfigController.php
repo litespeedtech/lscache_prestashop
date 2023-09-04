@@ -63,7 +63,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
         $this->config = Conf::getInstance();
         if (!$this->module->active) {
-            Tools::redirectAdmin($this->context->link->getAdminLink('AdminHome'));
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules'));
         }
 
         $title = $this->l('LiteSpeed Cache Configuration');
@@ -343,7 +343,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
             case Conf::CFG_FLUSH_PRODCAT:
                 $postVal = (int) $postVal;
-                if ($postVal < 0 || $postVal > 3) {
+                if ($postVal < 0 || $postVal > 4) {
                     // should not happen in drop down
                     $postVal = 0;
                 }
@@ -565,6 +565,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             ['id' => 1, 'name' => $this->l('Flush product and categories only when stock status changes')],
             ['id' => 2, 'name' => $this->l('Flush product when stock status changes, do not flush categories when stock status or quantity change')],
             ['id' => 3, 'name' => $this->l('Always flush product and categories when quantity or stock status change')],
+            ['id' => 4, 'name' => $this->l('Do not flush product or categories')],
         ];
         $fg['input'][] = $this->addInputSelect(
             Conf::CFG_FLUSH_PRODCAT,
@@ -716,7 +717,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
     {
         $input = [
             'type' => 'switch', 'name' => $name, 'label' => $label,
-            'values' => [
+	    'values' => [
                 ['value' => 1, 'id' => $name.'_on'],
                 ['value' => 0, 'id' => $name.'_off']
             ]
