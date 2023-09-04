@@ -55,6 +55,8 @@ class LiteSpeedCacheVaryCookie extends CookieCore
 
     private $status = 0;
 
+    private $mobile_device = null;
+
     public function __construct($name = '', $path = '')
     {
         if ($name == '') {
@@ -205,6 +207,46 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         }
     }
 
+    // override context:getMobileDevice
+    private function getMobileDevice($context)
+    {
+        if ($this->mobile_device === null) {
+            $this->mobile_device = false;
+            $allow_mobile_config = Configuration::get('PS_ALLOW_MOBILE_DEVICE');
+
+            // for checkMobileContext, only check base on below condition, as for guest mode, cookie may not exist
+            if (isset($_SERVER['HTTP_USER_AGENT']) && (bool)$allow_mobile_config) {
+
+                if (isset($context->cookie->no_mobile) && $context->cookie->no_mobile == false) {
+                    $this->mobile_device = true;
+                } else {
+                    switch ((int)$allow_mobile_config) {
+                        case 1: // Only for mobile device
+                            if ($context->isMobile() && !$context->isTablet()) {
+                                $this->mobile_device = true;
+                            }
+
+                            break;
+                        case 2: // Only for touchpads
+                            if ($context->isTablet() && !$context->isMobile()) {
+                                $this->mobile_device = true;
+                            }
+
+                            break;
+                        case 3: // For touchpad or mobile devices
+                            if ($context->isMobile() || $context->isTablet()) {
+                                $this->mobile_device = true;
+                            }
+
+                            break;
+                    }
+                }
+            }
+        }
+
+        return $this->mobile_device;
+    }
+
     private function init($context, $psCookie)
     {
         $this->vd = [
@@ -218,7 +260,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         $diffCustomerGroup = $conf->getDiffCustomerGroup();
         // $diffMobile  0: no; 1: yes
         $diffMobile = $conf->get(LiteSpeedCacheConfig::CFG_DIFFMOBILE);
-        $isMobile = $diffMobile ? $context->getMobileDevice() : false;
+        $isMobile = $diffMobile ? $this->getMobileDevice($context) : false;
         $bypass = $conf->getContextBypass();
         $this->debug_header = $conf->get(LiteSpeedCacheConfig::CFG_DEBUG_HEADER);
 
@@ -228,6 +270,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         if (LiteSpeedCache::isRestrictedIP()) {
             $data['dev'] = 1;
         }
+        /* no longer check based on ctry
         if (!in_array('ctry', $bypass) && isset($psCookie->iso_code_country)) {
             $iso = $psCookie->iso_code_country;
             $id_country = (int)Configuration::get('PS_COUNTRY_DEFAULT');
@@ -235,7 +278,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             if ($iso != $default_iso) {
                 $data['ctry'] = $iso;
             }
-        }
+        } */
         if (!in_array('curr', $bypass) && isset($psCookie->id_currency)) {
             $configuration_curr = Configuration::get('PS_CURRENCY_DEFAULT');
             if ($psCookie->id_currency != $configuration_curr) {
@@ -256,7 +299,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         if (($diffCustomerGroup != 0) && ($context->customer != null) && $context->customer->isLogged()) {
             // 1: every group, 2: inout
             if ($diffCustomerGroup == 1) {
-                $data['cg'] = $context->customer->getGroups()[0];
+                $data['cg'] = $context->customer->id_default_group;
             } else {
                 $data['cg'] = 1;
             }
