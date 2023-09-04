@@ -56,7 +56,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         parent::__construct();
 
         if (!$this->module->active) {
-            Tools::redirectAdmin($this->context->link->getAdminLink('AdminHome'));
+            Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules'));
         }
 
         $this->config = Conf::getInstance();
@@ -480,7 +480,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'name' => 'priv',
                 'disabled' => $disabled,
                 'is_bool' => true,
-                'values' => [['value' => 1, 'id' => 'priv_on'], ['value' => 0,'id' => 'priv_off']],
+                'values' => [['value' => 1, 'id' => 'priv_on'], ['value' => 0, 'id' => 'priv_off']],
             ],
             [
                 'type' => 'text',
