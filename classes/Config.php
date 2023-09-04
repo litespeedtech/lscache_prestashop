@@ -614,11 +614,26 @@ class LiteSpeedCacheConfig
             }
         }
 
+        if (empty($conf['priv']) && empty($conf['pub'])) {
+            $this->advancedCheckPurgeController($controller_class, $conf);
+        }
+
         if (!empty($conf['priv']) || !empty($conf['pub'])) {
             return $conf;
         }
 
         return false;
+    }
+
+    protected function advancedCheckPurgeController($controller_class, &$conf)
+    {
+        // not only class name, but other params
+        if ($controller_class == 'AdminProductsController') {
+            if (Tools::isSubmit('deleteSpecificPrice') || Tools::isSubmit('submitSpecificPricePriorities')) {
+                $id_product = Tools::getValue('id_product');
+                Hook::exec('litespeedCacheProductUpdate', ['id_product' => $id_product]);
+            }
+        }
     }
 
     public function getDefaultPurgeTagsByProduct()
@@ -689,7 +704,10 @@ class LiteSpeedCacheConfig
             'actionProductSave',
             'actionProductUpdate', //array('id_product' => (int)$this->id, 'product' => $this)
             'actionProductDelete',
+            'actionProductAttributeDelete', // 'id_product'
+            'deleteProductAttribute', // 'id_product'
             'actionObjectSpecificPriceCoreAddAfter',
+            'actionObjectSpecificPriceCoreUpdateAfter',
             'actionObjectSpecificPriceCoreDeleteAfter',
             'actionWatermark',
             'displayOrderConfirmation', // from OrderConfirmationController, array('order' => $order)
@@ -714,6 +732,7 @@ class LiteSpeedCacheConfig
             'actionObjectStoreUpdateAfter',
             /* lscache own hooks * */
             'litespeedCachePurge',
+            'litespeedCacheProductUpdate',
             'litespeedNotCacheable',
             'litespeedEsiBegin',
             'litespeedEsiEnd',

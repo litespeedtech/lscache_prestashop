@@ -84,8 +84,18 @@ class LiteSpeedCacheLog
 
     protected function __construct()
     {
+        $signature = [];
+        if (isset($_SERVER['REMOTE_ADDR'])) {
+            $signature[] = $_SERVER['REMOTE_ADDR'];
+        }
+        if (isset($_SERVER['REMOTE_PORT'])) {
+            $signature[] = $_SERVER['REMOTE_PORT'];
+        } elseif (isset($_SERVER['USER'])) {
+            $signature[] = $_SERVER['USER']; // cli user
+        }
         preg_match("/\d{6}/", microtime(), $msec);
-        $this->prefix = '[' . $_SERVER['REMOTE_ADDR'] . ':' . $_SERVER['REMOTE_PORT'] . ':' . $msec[0] . ']';
+        $signature[] = $msec[0];
+        $this->prefix = '[' . implode(':', $signature) . ']';
     }
 
     protected function getLogger()

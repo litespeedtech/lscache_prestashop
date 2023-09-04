@@ -363,13 +363,14 @@ class LiteSpeedCacheCore
         return $tags;
     }
 
-    private function getPurgeTagsByWebService()
+    private function getPurgeTagsByWebService($args)
     {
         $method = $_SERVER['REQUEST_METHOD'];
         if ($method == 'GET' || $method == 'HEAD') {
             // possible methods are POST, PUT, DELETE
             return;
         }
+        LSLog::log("WebService Purge - $method url " .  $_REQUEST['url'] . print_r($args, true), LSLog::LEVEL_WEBSERVICE_DETAIL);
         $resources = explode('/', $_REQUEST['url']);
         if (empty($resources) || count($resources) != 2 || intval($resources[1]) != $resources[1]) {
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_WEBSERVICE_DETAIL)
@@ -389,6 +390,9 @@ class LiteSpeedCacheCore
                 if ($prod_id = $this->getProdidByStockAvailId($resid)) {
                     $pubtags[] = Conf::TAG_PREFIX_PRODUCT . $prod_id;
                 }
+                break;
+            case 'specific_prices':
+                LSLog::log("WebService found specific_prices", LSLog::LEVEL_WEBSERVICE_DETAIL);
                 break;
             default:
                 return;
@@ -449,6 +453,10 @@ class LiteSpeedCacheCore
                 case 3: // 3: Always flush product and categories when qty/stock status change
                     $includeProd = true;
                     $includeCats = true;
+                    break;
+                case 4: // 4: no flush
+                    $includeProd = false;
+                    $includeCats = false;
                     break;
             }
 
@@ -566,10 +574,15 @@ class LiteSpeedCacheCore
 
             case 'actionobjectspecificpricecoreaddafter':
             case 'actionobjectspecificpricecoredeleteafter':
+            case 'actionobjectspecificpriceCoreupdateafter':
                 return $this->getPurgeTagsByProduct($args['object']->id_product, null, true);
+                
             case 'actionwatermark':
             case 'updateproduct':
             case 'actionupdatequantity':
+            case 'actionproductattributedelete':
+            case 'deleteproductattribute':
+            case 'litespeedcacheproductupdate':
                 if (isset($args['id_product'])) {
                     return $this->getPurgeTagsByProduct($args['id_product'], null, true);
                 }
@@ -622,7 +635,7 @@ class LiteSpeedCacheCore
                 break;
 
             case 'addwebserviceresources':
-                return $this->getPurgeTagsByWebService();
+                return $this->getPurgeTagsByWebService($args);
 
             default: // custom defined events
                 return $this->config->getPurgeTagsByEvent($event);
