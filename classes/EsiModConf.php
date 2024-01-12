@@ -143,7 +143,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         return $cdata;
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize(): mixed
     {
         $sdata = $this->data;
         $sdata['id'] = $this->moduleName;
