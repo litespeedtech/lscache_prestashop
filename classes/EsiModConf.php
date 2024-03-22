@@ -229,7 +229,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             return null;
         }
         $controllers = [];
-        $list = preg_split("/[\s,]+/", $this->data[self::FLD_PURGE_CONTROLLERS], null, PREG_SPLIT_NO_EMPTY);
+        $list = preg_split("/[\s,]+/", $this->data[self::FLD_PURGE_CONTROLLERS], -1, PREG_SPLIT_NO_EMPTY);
         foreach ($list as $item) {
             // allow ClassName?param1&param2
             $ct = explode('?', $item);
@@ -247,7 +247,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     public function getPurgeEvents()
     {
         if (isset($this->data[self::FLD_PURGE_EVENTS])) {
-            return preg_split("/[\s,]+/", $this->data[self::FLD_PURGE_EVENTS], null, PREG_SPLIT_NO_EMPTY);
+            return preg_split("/[\s,]+/", $this->data[self::FLD_PURGE_EVENTS], -1, PREG_SPLIT_NO_EMPTY);
         }
 
         return null;
