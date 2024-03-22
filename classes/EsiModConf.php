@@ -328,7 +328,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         } elseif ($this->data[$field] == '*') {
             $res[0] = 9; // all
         } else {
-            $list = preg_split("/[\s,]+/", $this->data[$field], null, PREG_SPLIT_NO_EMPTY);
+            $list = preg_split("/[\s,]+/", $this->data[$field], -1, PREG_SPLIT_NO_EMPTY);
             $isInclude = 0; // included is 1, excluded is 2
             foreach ($list as $d) {
                 $d = Tools::strtolower($d);
