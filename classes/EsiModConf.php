@@ -292,7 +292,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             $value = ($value) ? true : false;
         }
         if ($splitClean && $value) {
-            $dv = preg_split("/[\s,]+/", $value, null, PREG_SPLIT_NO_EMPTY);
+            $dv = preg_split("/[\s,]+/", $value, -1, PREG_SPLIT_NO_EMPTY);
             $value = implode(', ', $dv);
         }
 
