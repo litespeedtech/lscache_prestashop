@@ -296,7 +296,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             $this->status |= self::BM_IS_MOBILEVIEW;
         }
         // customer maybe null
-        if (($diffCustomerGroup != 0) && ($context->customer != null) && $context->customer->isLogged()) {
+        if (($diffCustomerGroup != 0) && ($context->customer != null) && $context->customer->logged && $context->customer->id) {
             // 1: every group, 2: inout
             if ($diffCustomerGroup == 1) {
                 $data['cg'] = $context->customer->id_default_group;
