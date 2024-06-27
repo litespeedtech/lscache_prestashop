@@ -303,6 +303,11 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             } else {
                 $data['cg'] = 1;
             }
+
+            if ($diffCustomerGroup == 3) {
+                LiteSpeedCache::forceNotCacheable('No Cache for logged-out users');
+            }
+    
         }
         if (!empty($data)) {
             ksort($data); // data is array, key sorted

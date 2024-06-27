@@ -332,7 +332,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
 
             case Conf::CFG_DIFFCUSTGRP:
                 $postVal = (int) $postVal;
-                if ($postVal != 0 && $postVal != 1 && $postVal != 2) {
+                if ($postVal != 0 && $postVal != 1 && $postVal != 2 && $postVal != 3) {
                     // should not happen in drop down
                     $postVal = 0;
                 }
@@ -552,6 +552,9 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             ['id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Each group has its own view')],
             ['id' => 2, 'name' => $this->l('Two views') . $s .
                 $this->l('One for all logged-in users and another for logged-out users'), ],
+            ['id' => 3, 'name' => $this->l('Do Not cache logged-in') . $s .
+            $this->l('No cache for logged-in users'), ],
+
         ];
         $fg['input'][] = $this->addInputSelect(
             Conf::CFG_DIFFCUSTGRP,
