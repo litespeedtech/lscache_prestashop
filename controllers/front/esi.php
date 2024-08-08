@@ -149,7 +149,17 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             $item->setFailed();
         } else {
             $this->context->smarty->assign($module->getWidgetVariables('', $params));
-            $item->setContent($this->context->smarty->fetch($item->getParam('t')));
+            if($mp=$item->getParam('mp')){
+                $mv = $item->getConf()->getTemplateArgs();
+                $mvs = explode('.', $mv);
+                if($mvs[1]){
+                    $mp = [$mvs[1]=>$mp];
+                }
+                $params['smarty']->assign($mvs[0],$mp);
+                $item->setContent($params['smarty']->fetch($item->getParam('t')));
+            } else {
+                $item->setContent($this->context->smarty->fetch($item->getParam('t')));
+            }
         }
     }
 
@@ -161,8 +171,18 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         } else {
             if (method_exists($module, 'getWidgetVariables')) {
                 $this->context->smarty->assign($module->getWidgetVariables('', $params));
-            }
+            }          
             $method = $item->getParam('mt');
+
+            if($mp=$item->getParam('mp')){
+                $mv = $item->getConf()->getTemplateArgs();
+                $mvs = explode('.', $mv);
+                if($mvs[1]){
+                    $mp = [$mvs[1]=>$mp];
+                }
+                $params['smarty']->assign($mvs[0],$mp);
+            }
+
             $item->setContent($module->$method($params));
         }
     }

@@ -728,7 +728,7 @@ class LiteSpeedCache extends Module
     }
 
     // used by override hook
-    public static function injectCallHook($module, $method)
+    public static function injectCallHook($module, $method, $params=false)
     {
         if ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) == 0) {
             return false;
@@ -745,6 +745,20 @@ class LiteSpeedCache extends Module
         }
         if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_INCLUDE) {
             LiteSpeedCacheLog::log(__FUNCTION__ . " $m : $method", LiteSpeedCacheLog::LEVEL_ESI_INCLUDE);
+        }
+
+        $mv = $conf->getTemplateArgs();
+        if($mv && $params && isset($params['smarty'])){
+            $smarty = $params['smarty'];
+            $mvs = explode('.', $mv);
+            $mp = $smarty->getTemplateVars($mvs[0]);
+            if($mp && ($arg = $mvs[1])){
+                $mp = $mp->$arg;
+            }
+
+            if($mp){
+                $esiParam['mp']=$mp;
+            }    
         }
 
         return $lsc->registerEsiMarker($esiParam, $conf);
