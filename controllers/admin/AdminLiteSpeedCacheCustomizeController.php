@@ -88,6 +88,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         $this->initDisplayValues();
         $this->labels = [
             'id' => $this->l('Module'),
+            'disableESI' => $this->l('Disable this ESI block'),
             'name' => $this->l('Name'),
             'pubpriv' => $this->l('Cache'),
             'priv' => $this->l('Is Private'),
@@ -98,6 +99,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             'ctrl' => $this->l('Purge Controllers'),
             'methods' => $this->l('Hooked Methods'),
             'render' => $this->l('Widget Render Hooks'),
+            'argument' => $this->l('Template Variable Name'),
             'asvar' => $this->l('As Variable'),
             'ie' => $this->l('Ignore If Empty'),
             'ce' => $this->l('Only Cache When Empty'),
@@ -163,6 +165,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'id' => '',
                 'name' => '',
                 'priv' => 1,
+                'disableESI' => 0,
                 'ttl' => 1800,
                 'tag' => '',
                 'events' => '',
@@ -172,6 +175,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'asvar' => '',
                 'ie' => '',
                 'ce' => '',
+                'argument' => '',
             ];
         } else { // list
             $this->original_values = $this->config_values;
@@ -284,11 +288,14 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         switch ($name) {
             case 'id':
                 break;
+            case 'argument':
+                break;
 
             case 'priv':
             case 'asvar':
             case 'ie':
             case 'ce':
+            case 'disableESI':
                 $postVal = (int) $postVal;
                 break;
 
@@ -391,7 +398,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
 
     private function processFormSave()
     {
-        $inputs = ['id', 'priv', 'ttl', 'tag', 'events', 'ctrl', 'methods', 'render', 'asvar', 'ie', 'ce'];
+        $inputs = ['id', 'priv', 'ttl', 'tag', 'events', 'ctrl', 'methods', 'render', 'asvar', 'ie', 'ce', 'disableESI', 'argument'];
         $this->changed = 0;
         foreach ($inputs as $field) {
             $this->validateInput($field);
@@ -474,6 +481,16 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             ],
             [
                 'type' => 'switch',
+                'label' => $this->labels['disableESI'],
+                'desc' => $this->l('Disable this ESI block'),
+                'name' => 'disableESI',
+                'disabled' => false,
+                'is_bool' => true,
+                'values' => [['value' => 1, 'disableESI' => '1'], ['value' => 0, 'disableESI' => 'priv_off']],
+            ],
+
+            [
+                'type' => 'switch',
                 'label' => $this->labels['priv'],
                 'desc' => $this->l('A public block will only have one cached copy which is shared by everyone.')
                 . $s . $this->l('A private block will be cached individually for each user.'),
@@ -541,6 +558,14 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 . '<br> ' . $this->l('Specify a comma-delimited list of allowed hooks;')
                 . $s . $this->l('Or a list of not-allowed hooks by prefixing with "!".')
                 . $s . $this->l('Use "*" for all hooks allowed; leave blank to disable renderWidget injection.'),
+            ],
+            [
+                'type' => 'textarea',
+                'label' => $this->labels['argument'],
+                'name' => 'argument',
+                'hint' => $this->l('The template variable name of widget or hook method'),
+                'readonly' => $disabled,
+                'desc' => $this->l('Only the key Variable Name of your template, such as: product.id'),
             ],
             [
                 'type' => 'switch',

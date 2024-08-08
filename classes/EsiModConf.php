@@ -37,6 +37,10 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     // avail fields
     const FLD_PRIV = 'priv';
 
+    const FLD_DISABLED = 'disableESI';
+
+    const FLD_TEMPLATE_ARGUMENT = 'argument';
+
     const FLD_TAG = 'tag';
 
     const FLD_TTL = 'ttl';
@@ -78,6 +82,9 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         $this->data = [];
         //sanatize data
         $this->data[self::FLD_PRIV] = $data[self::FLD_PRIV] ? 1 : 0;
+
+        $this->data[self::FLD_DISABLED] = $data[self::FLD_DISABLED] ? 1 : 0;
+
         if (isset($data[self::FLD_TAG])) {
             $this->data[self::FLD_TAG] = is_array($data[self::FLD_TAG])
                 ? $data[self::FLD_TAG] : [$data[self::FLD_TAG]];
@@ -97,6 +104,11 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         if (isset($data[self::FLD_RENDER_WIDGETS])) {
             $this->data[self::FLD_RENDER_WIDGETS] = $data[self::FLD_RENDER_WIDGETS];
         }
+
+        if (isset($data[self::FLD_TEMPLATE_ARGUMENT])) {
+            $this->data[self::FLD_TEMPLATE_ARGUMENT] = $data[self::FLD_TEMPLATE_ARGUMENT];
+        }
+
         if (isset($data[self::FLD_ASVAR])) {
             $this->data[self::FLD_ASVAR] = $data[self::FLD_ASVAR];
         }
@@ -123,6 +135,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         $cdata = [
             'id' => $this->moduleName,
             'name' => $this->moduleName,
+            'disableESI' => $this->isDisabled(),
             'priv' => $this->isPrivate(),
             'ttl' => $this->getTTL(),
             'tag' => implode(', ', $this->getTags()),
@@ -135,6 +148,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             'ie' => $this->getFieldValue(self::FLD_IGNORE_EMPTY, true),
             'ce' => $this->getFieldValue(self::FLD_ONLY_CACHE_EMPTY, true),
             'tipurl' => $this->getFieldValue(self::FLD_TIPURL),
+            'argument' => $this->getFieldValue(self::FLD_TEMPLATE_ARGUMENT),
         ];
         if ($tmp_instance = Module::getInstanceByName($this->moduleName)) {
             $cdata['name'] = htmlspecialchars_decode($tmp_instance->displayName);
@@ -165,6 +179,13 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         }
         return $this->data[self::FLD_PRIV] != null;
     }
+
+
+    public function isDisabled($params=[])
+    {
+        return $this->data[self::FLD_DISABLED] != null;
+    }
+
 
     public function getTTL($params=[])
     {
@@ -356,4 +377,11 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         }
         $this->parsed[$field] = $res;
     }
+
+
+    public function getTemplateArgs()
+    {
+        return $this->getFieldValue(self::FLD_TEMPLATE_ARGUMENT);
+    }
+        
 }
