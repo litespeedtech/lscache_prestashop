@@ -50,7 +50,7 @@ class Hook extends HookCore
         $html = parent::coreCallHook($module, $method, $params);
 
         if (defined('_LITESPEED_CACHE_')
-                && ($marker = LiteSpeedCache::injectCallHook($module, $method)) !== false) {
+                && ($marker = LiteSpeedCache::injectCallHook($module, $method, $params)) !== false) {
             $html = $marker . $html . LiteSpeedCache::ESI_MARKER_END;
         }
 
@@ -70,7 +70,7 @@ class Hook extends HookCore
         $html = parent::coreRenderWidget($module, $hook_name, $params);
 
         if (defined('_LITESPEED_CACHE_')
-                && ($marker = LiteSpeedCache::injectRenderWidget($module, $hook_name)) !== false) {
+                && ($marker = LiteSpeedCache::injectRenderWidget($module, $hook_name,$params)) !== false) {
             $html = $marker . $html . LiteSpeedCache::ESI_MARKER_END;
         }
 
