@@ -109,6 +109,10 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             $this->data[self::FLD_TEMPLATE_ARGUMENT] = $data[self::FLD_TEMPLATE_ARGUMENT];
         }
 
+        if (isset($data[self::FLD_DISABLED])) {
+            $this->data[self::FLD_DISABLED] = $data[self::FLD_DISABLED];
+        }
+
         if (isset($data[self::FLD_ASVAR])) {
             $this->data[self::FLD_ASVAR] = $data[self::FLD_ASVAR];
         }
@@ -276,7 +280,11 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
 
     public function canInject(&$params)
     {
-        if (empty($params['pt'])) {
+        if ($this->isDisabled()) {
+            return false;
+        }
+
+       if (empty($params['pt'])) {
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED) {
                 LSLog::log(__FUNCTION__ . ' missing pt', LSLog::LEVEL_UNEXPECTED);
             }

@@ -484,7 +484,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'label' => $this->labels['disableESI'],
                 'desc' => $this->l('Disable this ESI block'),
                 'name' => 'disableESI',
-                'disabled' => false,
+                'disabled' => $disabled,
                 'is_bool' => true,
                 'values' => [['value' => 1, 'disableESI' => '1'], ['value' => 0, 'disableESI' => 'priv_off']],
             ],
@@ -611,7 +611,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 . $this->l('If you need help, you can order Support service from LiteSpeed Tech.'),
             'input' => $input,
         ];
-        if (!$disabled) {
+        if ($this->display =='edit') {
             $form['submit'] = ['title' => $this->l('Save')];
         }
 
