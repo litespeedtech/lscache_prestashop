@@ -486,7 +486,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'name' => 'disableESI',
                 'disabled' => $disabled,
                 'is_bool' => true,
-                'values' => [['value' => 1, 'disableESI' => '1'], ['value' => 0, 'disableESI' => 'priv_off']],
+                'values' => [['value' => 1, 'disableESI' => '1'], ['value' => 0, 'disableESI' => '0']],
             ],
 
             [

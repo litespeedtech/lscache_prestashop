@@ -187,7 +187,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
 
     public function isDisabled($params=[])
     {
-        return $this->data[self::FLD_DISABLED] != null;
+        return $this->data[self::FLD_DISABLED];
     }
 
 
