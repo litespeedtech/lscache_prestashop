@@ -565,7 +565,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'name' => 'argument',
                 'hint' => $this->l('The template variable name of widget or hook method'),
                 'readonly' => $disabled,
-                'desc' => $this->l('Only the key Variable Name of your template, such as: product.id'),
+                'desc' => $this->l('Specify a comma-delimited list of Variable Name of widget template, such as: product.id,product.id_product_attribute'),
             ],
             [
                 'type' => 'switch',
@@ -611,7 +611,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 . $this->l('If you need help, you can order Support service from LiteSpeed Tech.'),
             'input' => $input,
         ];
-        if ($this->display =='edit') {
+        if ($this->display !='view') {
             $form['submit'] = ['title' => $this->l('Save')];
         }
 
