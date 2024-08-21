@@ -152,7 +152,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             'ie' => $this->getFieldValue(self::FLD_IGNORE_EMPTY, true),
             'ce' => $this->getFieldValue(self::FLD_ONLY_CACHE_EMPTY, true),
             'tipurl' => $this->getFieldValue(self::FLD_TIPURL),
-            'argument' => $this->getFieldValue(self::FLD_TEMPLATE_ARGUMENT),
+            'argument' => $this->getFieldValue(self::FLD_TEMPLATE_ARGUMENT, false, true),
         ];
         if ($tmp_instance = Module::getInstanceByName($this->moduleName)) {
             $cdata['name'] = htmlspecialchars_decode($tmp_instance->displayName);
@@ -389,7 +389,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
 
     public function getTemplateArgs()
     {
-        return $this->getFieldValue(self::FLD_TEMPLATE_ARGUMENT);
+        return $this->getFieldValue(self::FLD_TEMPLATE_ARGUMENT,false,true);
     }
         
 }

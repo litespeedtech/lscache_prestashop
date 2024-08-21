@@ -81,6 +81,8 @@ class LiteSpeedCache extends Module
 
     public function __construct()
     {
+        $_SERVER['X-LSCACHE'] = 'on';
+    
         $this->name = 'litespeedcache'; // self::MODULE_NAME was rejected by validator
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
@@ -705,7 +707,7 @@ class LiteSpeedCache extends Module
     }
 
     // used by override hook, return false or marker
-    public static function injectRenderWidget($module, $hook_name)
+    public static function injectRenderWidget($module, $hook_name, $params=false)
     {
         if ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) == 0) {
             return false;
@@ -722,6 +724,14 @@ class LiteSpeedCache extends Module
         }
         if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_ESI_INCLUDE) {
             LiteSpeedCacheLog::log(__FUNCTION__ . " $m : $hook_name", LiteSpeedCacheLog::LEVEL_ESI_INCLUDE);
+        }
+
+        if($params && isset($params['smarty'])){
+            $mp = self::getModuleParams($params['smarty'], $conf->getTemplateArgs());
+
+            if(!empty($mp)){
+                $esiParam['mp']= implode(",", $mp);
+            }
         }
 
         return $lsc->registerEsiMarker($esiParam, $conf);
@@ -747,23 +757,34 @@ class LiteSpeedCache extends Module
             LiteSpeedCacheLog::log(__FUNCTION__ . " $m : $method", LiteSpeedCacheLog::LEVEL_ESI_INCLUDE);
         }
 
-        $mv = $conf->getTemplateArgs();
-        if($mv && $params && isset($params['smarty'])){
-            $smarty = $params['smarty'];
-            $mvs = explode('.', $mv);
-            $mp = $smarty->getTemplateVars($mvs[0]);
-            if($mp && ($arg = $mvs[1])){
-                $mp = $mp->$arg;
-            }
+        if($params && isset($params['smarty'])){
+            $mp = self::getModuleParams($params['smarty'], $conf->getTemplateArgs());
 
-            if($mp){
-                $esiParam['mp']=$mp;
-            }    
+            if(!empty($mp)){
+                $esiParam['mp']= implode(",", $mp);
+            }
         }
 
         return $lsc->registerEsiMarker($esiParam, $conf);
     }
     
+    private static function getModuleParams($smart, $tas){
+        if(!tas) {
+            return false;
+        }
+
+        $smarty = $params['smarty'];
+        $tas1 = explode(',', $tas);
+        $mp = [];
+        foreach($tas1 as $mv){
+            $mvs = explode('.', $mv);
+            $mp1 = $smarty->getTemplateVars($mvs[0]);
+            if($mp1 && ($arg = $mvs[1])){
+                $mp[] = $mp1->$arg;
+            }
+        }
+    }
+
     public static function forceNotCacheable($reason)
     {
         $lsc = self::myInstance();
