@@ -768,12 +768,11 @@ class LiteSpeedCache extends Module
         return $lsc->registerEsiMarker($esiParam, $conf);
     }
     
-    private static function getModuleParams($smart, $tas){
-        if(!tas) {
+    private static function getModuleParams($smarty, $tas){
+        if(!$tas || !$smarty) {
             return false;
         }
 
-        $smarty = $params['smarty'];
         $tas1 = explode(',', $tas);
         $mp = [];
         foreach($tas1 as $mv){
@@ -783,6 +782,8 @@ class LiteSpeedCache extends Module
                 $mp[] = $mp1->$arg;
             }
         }
+
+        return $mp;
     }
 
     public static function forceNotCacheable($reason)

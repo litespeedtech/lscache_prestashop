@@ -83,7 +83,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         //sanatize data
         $this->data[self::FLD_PRIV] = $data[self::FLD_PRIV] ? 1 : 0;
 
-        $this->data[self::FLD_DISABLED] = $data[self::FLD_DISABLED] ? 1 : 0;
+        $this->data[self::FLD_DISABLED] = isset($data[self::FLD_DISABLED]) ? $data[self::FLD_DISABLED] : 0;
 
         if (isset($data[self::FLD_TAG])) {
             $this->data[self::FLD_TAG] = is_array($data[self::FLD_TAG])

@@ -99,7 +99,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             'ctrl' => $this->l('Purge Controllers'),
             'methods' => $this->l('Hooked Methods'),
             'render' => $this->l('Widget Render Hooks'),
-            'argument' => $this->l('Template Variable Name'),
+            'argument' => $this->l('Widget Template Variables'),
             'asvar' => $this->l('As Variable'),
             'ie' => $this->l('Ignore If Empty'),
             'ce' => $this->l('Only Cache When Empty'),
