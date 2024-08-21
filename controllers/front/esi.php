@@ -183,16 +183,15 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
                 $mvs = explode('.', $mv);
                 if(!$mvs[1]){
                     $smarty->assign($mvs[0],$mp1[$i]);
-                    continue;
-                }
-
-                $mv2 = $smarty->getTemplateVars($mvs[0]);
-                if($mv2){
-                    $mv2[$mvs[1]] = $mp1[$i];
-                    $smarty->assign($mvs[0],$mv2);
                 } else {
-                    $mp2 = [$mvs[1]=>$mp1[$i]];
-                    $smarty->assign($mvs[0],$mp2);
+                    $mv2 = $smarty->getTemplateVars($mvs[0]);
+                    if($mv2){
+                        $mv2[$mvs[1]] = $mp1[$i];
+                        $smarty->assign($mvs[0],$mv2);
+                    } else {
+                        $mp2 = [$mvs[1]=>$mp1[$i]];
+                        $smarty->assign($mvs[0],$mp2);
+                    }
                 }
                 $i++;
             }
