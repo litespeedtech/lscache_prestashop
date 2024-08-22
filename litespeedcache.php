@@ -774,7 +774,7 @@ class LiteSpeedCache extends Module
         $tas1 = explode(',', $tas);
         $mp = [];
         foreach($tas1 as $mv){
-            $mvs = explode('.', $mv);
+            $mvs = explode('.', trim($mv));
             if( $mvs[0]=='smarty' ){
                 $mp1 = $smarty->getTemplateVars($mvs[1]);
                 if($mp1 && ($arg = $mvs[2])){

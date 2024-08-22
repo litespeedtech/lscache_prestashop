@@ -173,7 +173,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         }
     }
 
-    private function handleModuleVariables($params, $item){
+    private function handleModuleVariables(&$params, $item){
         $smarty = $params['smarty'];
 
         if(($mp=$item->getParam('mp')) && ($tas = $item->getConf()->getTemplateArgs())){
@@ -181,7 +181,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             $mp1 =  explode(',', $mp);
             $i=0;
             foreach($tas1 as $mv){
-                $mvs = explode('.', $mv);
+                $mvs = explode('.', trim($mv));
                 if($mvs[0]!='smarty'){
                     if(!$mvs[1]){
                         $params[$mvs[0]] = $mp1[$i];                        
