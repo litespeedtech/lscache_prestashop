@@ -150,7 +150,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         } else {
             $this->context->smarty->assign($module->getWidgetVariables('', $params));
 
-            $this->handleModuleVariables($params['smarty'], $item);
+            $this->handleModuleVariables($params, $item);
 
             $item->setContent($this->context->smarty->fetch($item->getParam('t')));
         }
@@ -167,13 +167,14 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             }
             $method = $item->getParam('mt');
 
-            $this->handleModuleVariables($params['smarty'], $item);
+            $this->handleModuleVariables($params, $item);
 
             $item->setContent($module->$method($params));
         }
     }
 
-    private function handleModuleVariables($smarty, $item){
+    private function handleModuleVariables($params, $item){
+        $smarty = $params['smarty'];
 
         if(($mp=$item->getParam('mp')) && ($tas = $item->getConf()->getTemplateArgs())){
             $tas1 = explode(',', $tas);
@@ -181,16 +182,27 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             $i=0;
             foreach($tas1 as $mv){
                 $mvs = explode('.', $mv);
-                if(!$mvs[1]){
-                    $smarty->assign($mvs[0],$mp1[$i]);
-                } else {
-                    $mv2 = $smarty->getTemplateVars($mvs[0]);
-                    if($mv2){
-                        $mv2[$mvs[1]] = $mp1[$i];
-                        $smarty->assign($mvs[0],$mv2);
+                if($mvs[0]!='smarty'){
+                    if(!$mvs[1]){
+                        $params[$mvs[0]] = $mp1[$i];                        
                     } else {
-                        $mp2 = [$mvs[1]=>$mp1[$i]];
-                        $smarty->assign($mvs[0],$mp2);
+                        $mv2 = $params[$mvs[0]];
+                        if($mv2){
+                            $params[$mvs[0]][$mvs[1]] = $mp1[$i];
+                        } else {
+                            $params[$mvs[0]] = [$mvs[1]=>$mp1[$i]];
+                        }
+                    }
+                } else if(!$mvs[2]){
+                    $smarty->assign($mvs[1],$mp1[$i]);
+                } else {
+                    $mv2 = $smarty->getTemplateVars($mvs[1]);
+                    if($mv2){
+                        $mv2[$mvs[2]] = $mp1[$i];
+                        $smarty->assign($mvs[1],$mv2);
+                    } else {
+                        $mp2 = [$mvs[2]=>$mp1[$i]];
+                        $smarty->assign($mvs[1],$mp2);
                     }
                 }
                 $i++;

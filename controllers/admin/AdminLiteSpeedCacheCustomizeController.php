@@ -99,7 +99,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             'ctrl' => $this->l('Purge Controllers'),
             'methods' => $this->l('Hooked Methods'),
             'render' => $this->l('Widget Render Hooks'),
-            'argument' => $this->l('Widget Template Variables'),
+            'argument' => $this->l('Hook Parameters'),
             'asvar' => $this->l('As Variable'),
             'ie' => $this->l('Ignore If Empty'),
             'ce' => $this->l('Only Cache When Empty'),
@@ -563,9 +563,10 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'type' => 'textarea',
                 'label' => $this->labels['argument'],
                 'name' => 'argument',
-                'hint' => $this->l('The template variable name of widget or hook method'),
+                'hint' => $this->l('parameters used by Hooked Methods/Widgets'),
                 'readonly' => $disabled,
-                'desc' => $this->l('Specify a comma-delimited list of Variable Name of widget template, such as: product.id,product.id_product_attribute'),
+                'desc' => $this->l('Specify a comma-delimited list of parameters used by Hooked Methods/Widgets, such as: ')
+                . '<br> ' . 'product.id_product,smarty.product.id',
             ],
             [
                 'type' => 'switch',

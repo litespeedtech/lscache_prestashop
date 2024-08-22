@@ -726,12 +726,10 @@ class LiteSpeedCache extends Module
             LiteSpeedCacheLog::log(__FUNCTION__ . " $m : $hook_name", LiteSpeedCacheLog::LEVEL_ESI_INCLUDE);
         }
 
-        if($params && isset($params['smarty'])){
-            $mp = self::getModuleParams($params['smarty'], $conf->getTemplateArgs());
+        $mp = self::getModuleParams($params, $conf->getTemplateArgs());
 
-            if(!empty($mp)){
-                $esiParam['mp']= implode(",", $mp);
-            }
+        if(!empty($mp)){
+            $esiParam['mp']= implode(",", $mp);
         }
 
         return $lsc->registerEsiMarker($esiParam, $conf);
@@ -757,29 +755,40 @@ class LiteSpeedCache extends Module
             LiteSpeedCacheLog::log(__FUNCTION__ . " $m : $method", LiteSpeedCacheLog::LEVEL_ESI_INCLUDE);
         }
 
-        if($params && isset($params['smarty'])){
-            $mp = self::getModuleParams($params['smarty'], $conf->getTemplateArgs());
+        $mp = self::getModuleParams($params, $conf->getTemplateArgs());
 
-            if(!empty($mp)){
-                $esiParam['mp']= implode(",", $mp);
-            }
+        if(!empty($mp)){
+            $esiParam['mp']= implode(",", $mp);
         }
 
         return $lsc->registerEsiMarker($esiParam, $conf);
     }
     
-    private static function getModuleParams($smarty, $tas){
-        if(!$tas || !$smarty) {
+    private static function getModuleParams($params, $tas){
+        if(!$tas || !$params) {
             return false;
         }
+
+        $smarty = $params['smarty'];
 
         $tas1 = explode(',', $tas);
         $mp = [];
         foreach($tas1 as $mv){
             $mvs = explode('.', $mv);
-            $mp1 = $smarty->getTemplateVars($mvs[0]);
-            if($mp1 && ($arg = $mvs[1])){
-                $mp[] = $mp1->$arg;
+            if( $mvs[0]=='smarty' ){
+                $mp1 = $smarty->getTemplateVars($mvs[1]);
+                if($mp1 && ($arg = $mvs[2])){
+                    $mp[] = $mp1->$arg;
+                } else {
+                    $mp[] = $mp1;
+                }
+            } else {
+                $mp1 = $params[$mvs[0]];
+                if($mp1 && $mvs[1]){
+                    $mp[] = $mp1[ $mvs[1]];
+                } else {
+                    $mp[] = $mp1;
+                }
             }
         }
 
