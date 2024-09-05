@@ -435,6 +435,11 @@ class LiteSpeedCache extends Module
             return 'cacheable guest';
         }
 
+        if (isset($_SERVER['X-LSCACHE']) && strpos($_SERVER['X-LSCACHE'],'esi')===false){
+            self::$ccflag |= self::CCBM_CACHEABLE;
+            return 'cacheable & esi disabled';
+        }
+
         self::$ccflag |= (self::CCBM_CACHEABLE | self::CCBM_CAN_INJECT_ESI);
 
         return 'cacheable & allow esiInject';

@@ -231,7 +231,6 @@ class LiteSpeedCacheHelper
                 $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=guest]';
             }
         }
-        $ls[] = 'CacheEngine On esi crawler';
         $ls[] = '</IfModule>';
         $ls[] = '### LITESPEED_CACHE_END';
         $newcontent = implode("\n", $ls) . "\n";
