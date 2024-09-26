@@ -81,8 +81,6 @@ class LiteSpeedCache extends Module
 
     public function __construct()
     {
-        $_SERVER['X-LSCACHE'] = 'on';
-    
         $this->name = 'litespeedcache'; // self::MODULE_NAME was rejected by validator
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';

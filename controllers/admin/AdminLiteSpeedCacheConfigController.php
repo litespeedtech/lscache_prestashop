@@ -87,6 +87,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         }
 
         $this->original_values = $this->config->getAllConfigValues();
+        $this->original_values['esi'] = (isset($_SERVER['X-LSCACHE']) && strpos($_SERVER['X-LSCACHE'],'esi')!==false) ? 1 : 0 ;
         $this->current_values = $this->original_values;
         $this->labels = [
             Conf::CFG_ENABLED => $this->l('Enable LiteSpeed Cache'),
@@ -501,6 +502,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         $s = ' - '; // spacer
         $fg = $this->newFieldForm($this->l('General') . ' v' . LiteSpeedCache::getVersion(), 'cogs');
         $fg['input'][] = $this->addInputSwitch(Conf::CFG_ENABLED, $this->labels[Conf::CFG_ENABLED], '', $disabled);
+        $fg['input'][] = $this->addInputSwitch('esi', $this->l('Enabled LiteSpeed ESI'), '', true);
         $fg['input'][] = $this->addInputText(
             Conf::CFG_PUBLIC_TTL,
             $this->labels[Conf::CFG_PUBLIC_TTL],
