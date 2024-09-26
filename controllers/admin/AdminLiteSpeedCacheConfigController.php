@@ -406,11 +406,6 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 if (count($clean) == 0) {
                     $postVal = '';
                 } else {
-                    foreach ($clean as $url) {
-                        if ($url[0] != '/') {
-                            $this->errors[] = $invalid . $s . $this->l('Relative URL must start with "/".');
-                        }
-                    }
                     $postVal = implode("\n", $clean);
                 }
                 if ($postVal != $origVal) {
@@ -632,10 +627,11 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         $formUser['input'][] = $this->addInputTextArea(
             Conf::CFG_NOCACHE_URL,
             $this->labels[Conf::CFG_NOCACHE_URL],
-            $this->l('List of relative URLs contained in Cacheable Routes to be excluded from caching.') . ' '
+            $this->l('List of relative URLs contained in Cacheable Routes to be excluded from caching.') . '<br>'
             . $this->l('They start with "/" and don\’t include the domain name.') . ' '
             . $this->l('Partial matches can be performed by adding an "*" to the end of a URL.') . ' '
-            . $this->l('Enter one relative URL per line.'),
+            . $this->l('Enter one relative URL per line.') . '<br>'
+            . $this->l('if not start with "/". it will be treated as an URL REGEX rule') . ' ',
             $disabled
         );
         $formUser['input'][] = $this->addInputTextArea(

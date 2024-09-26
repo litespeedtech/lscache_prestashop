@@ -110,6 +110,20 @@ class LiteSpeedCacheCore
         $nocache = $this->config->getNoCacheConf();
         $requrl = $_SERVER['REQUEST_URI'];
         foreach ($nocache[Conf::CFG_NOCACHE_URL] as $url) {
+
+            if($url[0]!='/'){
+                if ((strpos($url, '/') !== FALSE) && (strpos($url, '\/') === FALSE)) {
+                    $url = str_replace('/', '\/', $url);
+                }
+
+                if(preg_match('/' . $url . '/is', $requrl)){
+                    $reason = 'disabled url (regex match) ' . $url;
+                    return true;
+                } else {
+                    continue;
+                }
+            }
+
             $url1 = rtrim($url, '*');
             if ($url1 !== $url) { // contains *
                 if (strpos($requrl, $url1) !== false) {
