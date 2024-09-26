@@ -550,6 +550,15 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             ],
             [
                 'type' => 'textarea',
+                'label' => $this->labels['argument'],
+                'name' => 'argument',
+                'hint' => $this->l('parameters used by Hooked Methods/Widgets'),
+                'readonly' => $disabled,
+                'desc' => $this->l('Specify a comma-delimited list of parameters used by Hooked Methods/Widgets, such as: ')
+                . '<br> ' . 'product.id_product, smarty.product.id',
+            ],
+            [
+                'type' => 'textarea',
                 'label' => $this->labels['render'],
                 'name' => 'render',
                 'hint' => $this->l('This is only available for PS1.7.'),
@@ -558,15 +567,6 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 . '<br> ' . $this->l('Specify a comma-delimited list of allowed hooks;')
                 . $s . $this->l('Or a list of not-allowed hooks by prefixing with "!".')
                 . $s . $this->l('Use "*" for all hooks allowed; leave blank to disable renderWidget injection.'),
-            ],
-            [
-                'type' => 'textarea',
-                'label' => $this->labels['argument'],
-                'name' => 'argument',
-                'hint' => $this->l('parameters used by Hooked Methods/Widgets'),
-                'readonly' => $disabled,
-                'desc' => $this->l('Specify a comma-delimited list of parameters used by Hooked Methods/Widgets, such as: ')
-                . '<br> ' . 'product.id_product,smarty.product.id',
             ],
             [
                 'type' => 'switch',
