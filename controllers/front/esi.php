@@ -186,8 +186,8 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
                     if(!$mvs[1]){
                         $params[$mvs[0]] = $mp1[$i];                        
                     } else {
-                        $mv2 = $params[$mvs[0]];
-                        if($mv2){
+                        if(isset($params[$mvs[0]])){
+
                             $params[$mvs[0]][$mvs[1]] = $mp1[$i];
                         } else {
                             $params[$mvs[0]] = [$mvs[1]=>$mp1[$i]];

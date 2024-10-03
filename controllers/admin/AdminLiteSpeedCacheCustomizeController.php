@@ -304,7 +304,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                     // ok, will use default value
                 } elseif (!Validate::isUnsignedInt($postVal)) {
                     $this->errors[] = $invalid;
-                } elseif ($postVal < 60) {
+                } elseif (($postVal < 60) && ($postVal !=0)) {
                     $this->errors[] = $invalid . $s . $this->l('Must be greater than 60 seconds.');
                 } elseif ($this->current_values['priv'] == 1 && $postVal > 7200) {
                     $this->errors[] = $invalid . $s . $this->l('Private TTL must be less than 7200 seconds.');
