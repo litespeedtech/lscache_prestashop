@@ -580,17 +580,26 @@ class LiteSpeedCacheCore
 
             case 'actionproductadd':
             case 'actionproductdelete':
-                return $this->getPurgeTagsByProduct($args['id_product'], $args['product'], false);
+                if (isset($args['id_product']) && isset($args['product'])) {
+                    return $this->getPurgeTagsByProduct($args['id_product'], $args['product'], false);
+                }
+                break;
 
             case 'actionproductsave':
             case 'actionproductupdate':
-                return $this->getPurgeTagsByProduct($args['id_product'], $args['product'], true);
+                if (isset($args['id_product']) && isset($args['product'])) {
+                    return $this->getPurgeTagsByProduct($args['id_product'], $args['product'], true);
+                }
+                break;
 
             case 'actionobjectspecificpricecoreaddafter':
             case 'actionobjectspecificpricecoredeleteafter':
             case 'actionobjectspecificpriceCoreupdateafter':
-                return $this->getPurgeTagsByProduct($args['object']->id_product, null, true);
-                
+                if (isset($args['object']->id_product)) {
+                    return $this->getPurgeTagsByProduct($args['object']->id_product, null, true);
+                }
+                break;
+                                
             case 'actionwatermark':
             case 'updateproduct':
             case 'actionupdatequantity':
