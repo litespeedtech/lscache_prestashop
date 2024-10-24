@@ -196,7 +196,7 @@ class LiteSpeedCache extends Module
     public function hookActionDispatcher($params)
     {
         if (!self::isActiveForUser()) {
-            return $params;
+            return;
         }
         $controllerType = $params['controller_type'];
         $controllerClass = $params['controller_class'];
@@ -217,7 +217,6 @@ class LiteSpeedCache extends Module
                 . ' req=' . $_SERVER['REQUEST_URI'] . ' :' . $status, LiteSpeedCacheLog::LEVEL_CACHE_ROUTE);
         }
 
-        return $params;
     }
 
     public function hookOverrideLayoutTemplate($params)
@@ -229,17 +228,15 @@ class LiteSpeedCache extends Module
                 $this->cache->initCacheTagsByController($params);
             }
         }
-        return $params;
     }
 
     public function hookDisplayOverrideTemplate($params)
     {
         //if (self::isCacheable() && isset($params['entity']) && isset($params['id'])) {
         if (!self::isCacheable()) {
-            return $params;
+            return;
         }
         $this->cache->initCacheTagsByController($params);
-        return $params;
     }
 
     public function hookActionProductSearchAfter($params)
