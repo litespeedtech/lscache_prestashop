@@ -110,6 +110,20 @@ class LiteSpeedCacheCore
         $nocache = $this->config->getNoCacheConf();
         $requrl = $_SERVER['REQUEST_URI'];
         foreach ($nocache[Conf::CFG_NOCACHE_URL] as $url) {
+
+            if($url[0]!='/'){
+                if ((strpos($url, '/') !== FALSE) && (strpos($url, '\/') === FALSE)) {
+                    $url = str_replace('/', '\/', $url);
+                }
+
+                if(preg_match('/' . $url . '/is', $requrl)){
+                    $reason = 'disabled url (regex match) ' . $url;
+                    return true;
+                } else {
+                    continue;
+                }
+            }
+
             $url1 = rtrim($url, '*');
             if ($url1 !== $url) { // contains *
                 if (strpos($requrl, $url1) !== false) {
@@ -566,17 +580,26 @@ class LiteSpeedCacheCore
 
             case 'actionproductadd':
             case 'actionproductdelete':
-                return $this->getPurgeTagsByProduct($args['id_product'], $args['product'], false);
+                if (isset($args['id_product']) && isset($args['product'])) {
+                    return $this->getPurgeTagsByProduct($args['id_product'], $args['product'], false);
+                }
+                break;
 
             case 'actionproductsave':
             case 'actionproductupdate':
-                return $this->getPurgeTagsByProduct($args['id_product'], $args['product'], true);
+                if (isset($args['id_product']) && isset($args['product'])) {
+                    return $this->getPurgeTagsByProduct($args['id_product'], $args['product'], true);
+                }
+                break;
 
             case 'actionobjectspecificpricecoreaddafter':
             case 'actionobjectspecificpricecoredeleteafter':
             case 'actionobjectspecificpriceCoreupdateafter':
-                return $this->getPurgeTagsByProduct($args['object']->id_product, null, true);
-                
+                if (isset($args['object']->id_product)) {
+                    return $this->getPurgeTagsByProduct($args['object']->id_product, null, true);
+                }
+                break;
+                                
             case 'actionwatermark':
             case 'updateproduct':
             case 'actionupdatequantity':

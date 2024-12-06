@@ -33,9 +33,9 @@ class LscStShoppingcart extends LscIntegration
         $confData = [
             EsiConf::FLD_PRIV => 1,
             EsiConf::FLD_TAG => LiteSpeedCacheConfig::TAG_CART,
-            EsiConf::FLD_PURGE_CONTROLLERS => 'CartController?id_product',
+            EsiConf::FLD_PURGE_CONTROLLERS => 'CartController?id_product,StShoppingcartAjaxModuleFrontController',
             EsiConf::FLD_RENDER_WIDGETS => '*',
-            EsiConf::FLD_HOOK_METHODS => 'hookdisplaySideBar',
+            EsiConf::FLD_HOOK_METHODS => 'hookDisplaySideBar',
             EsiConf::FLD_IGNORE_EMPTY => 1,
         ];
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);

@@ -37,6 +37,10 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     // avail fields
     const FLD_PRIV = 'priv';
 
+    const FLD_DISABLED = 'disableESI';
+
+    const FLD_TEMPLATE_ARGUMENT = 'argument';
+
     const FLD_TAG = 'tag';
 
     const FLD_TTL = 'ttl';
@@ -78,6 +82,9 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         $this->data = [];
         //sanatize data
         $this->data[self::FLD_PRIV] = $data[self::FLD_PRIV] ? 1 : 0;
+
+        $this->data[self::FLD_DISABLED] = isset($data[self::FLD_DISABLED]) ? $data[self::FLD_DISABLED] : 0;
+
         if (isset($data[self::FLD_TAG])) {
             $this->data[self::FLD_TAG] = is_array($data[self::FLD_TAG])
                 ? $data[self::FLD_TAG] : [$data[self::FLD_TAG]];
@@ -97,6 +104,15 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         if (isset($data[self::FLD_RENDER_WIDGETS])) {
             $this->data[self::FLD_RENDER_WIDGETS] = $data[self::FLD_RENDER_WIDGETS];
         }
+
+        if (isset($data[self::FLD_TEMPLATE_ARGUMENT])) {
+            $this->data[self::FLD_TEMPLATE_ARGUMENT] = $data[self::FLD_TEMPLATE_ARGUMENT];
+        }
+
+        if (isset($data[self::FLD_DISABLED])) {
+            $this->data[self::FLD_DISABLED] = $data[self::FLD_DISABLED];
+        }
+
         if (isset($data[self::FLD_ASVAR])) {
             $this->data[self::FLD_ASVAR] = $data[self::FLD_ASVAR];
         }
@@ -123,6 +139,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         $cdata = [
             'id' => $this->moduleName,
             'name' => $this->moduleName,
+            'disableESI' => $this->isDisabled(),
             'priv' => $this->isPrivate(),
             'ttl' => $this->getTTL(),
             'tag' => implode(', ', $this->getTags()),
@@ -135,6 +152,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             'ie' => $this->getFieldValue(self::FLD_IGNORE_EMPTY, true),
             'ce' => $this->getFieldValue(self::FLD_ONLY_CACHE_EMPTY, true),
             'tipurl' => $this->getFieldValue(self::FLD_TIPURL),
+            'argument' => $this->getFieldValue(self::FLD_TEMPLATE_ARGUMENT, false, true),
         ];
         if ($tmp_instance = Module::getInstanceByName($this->moduleName)) {
             $cdata['name'] = htmlspecialchars_decode($tmp_instance->displayName);
@@ -143,7 +161,8 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         return $cdata;
     }
 
-    public function jsonSerialize(): mixed
+    #[\ReturnTypeWillChange]
+    public function jsonSerialize()
     {
         $sdata = $this->data;
         $sdata['id'] = $this->moduleName;
@@ -165,6 +184,13 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         }
         return $this->data[self::FLD_PRIV] != null;
     }
+
+
+    public function isDisabled($params=[])
+    {
+        return $this->data[self::FLD_DISABLED];
+    }
+
 
     public function getTTL($params=[])
     {
@@ -229,7 +255,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             return null;
         }
         $controllers = [];
-        $list = preg_split("/[\s,]+/", $this->data[self::FLD_PURGE_CONTROLLERS], null, PREG_SPLIT_NO_EMPTY);
+        $list = preg_split("/[\s,]+/", $this->data[self::FLD_PURGE_CONTROLLERS], -1, PREG_SPLIT_NO_EMPTY);
         foreach ($list as $item) {
             // allow ClassName?param1&param2
             $ct = explode('?', $item);
@@ -247,7 +273,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     public function getPurgeEvents()
     {
         if (isset($this->data[self::FLD_PURGE_EVENTS])) {
-            return preg_split("/[\s,]+/", $this->data[self::FLD_PURGE_EVENTS], null, PREG_SPLIT_NO_EMPTY);
+            return preg_split("/[\s,]+/", $this->data[self::FLD_PURGE_EVENTS], -1, PREG_SPLIT_NO_EMPTY);
         }
 
         return null;
@@ -255,7 +281,11 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
 
     public function canInject(&$params)
     {
-        if (empty($params['pt'])) {
+        if ($this->isDisabled()) {
+            return false;
+        }
+
+       if (empty($params['pt'])) {
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED) {
                 LSLog::log(__FUNCTION__ . ' missing pt', LSLog::LEVEL_UNEXPECTED);
             }
@@ -292,7 +322,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
             $value = ($value) ? true : false;
         }
         if ($splitClean && $value) {
-            $dv = preg_split("/[\s,]+/", $value, null, PREG_SPLIT_NO_EMPTY);
+            $dv = preg_split("/[\s,]+/", $value, -1, PREG_SPLIT_NO_EMPTY);
             $value = implode(', ', $dv);
         }
 
@@ -328,7 +358,7 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         } elseif ($this->data[$field] == '*') {
             $res[0] = 9; // all
         } else {
-            $list = preg_split("/[\s,]+/", $this->data[$field], null, PREG_SPLIT_NO_EMPTY);
+            $list = preg_split("/[\s,]+/", $this->data[$field], -1, PREG_SPLIT_NO_EMPTY);
             $isInclude = 0; // included is 1, excluded is 2
             foreach ($list as $d) {
                 $d = Tools::strtolower($d);
@@ -356,4 +386,11 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
         }
         $this->parsed[$field] = $res;
     }
+
+
+    public function getTemplateArgs()
+    {
+        return $this->getFieldValue(self::FLD_TEMPLATE_ARGUMENT,false,true);
+    }
+        
 }

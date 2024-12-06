@@ -88,6 +88,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         $this->initDisplayValues();
         $this->labels = [
             'id' => $this->l('Module'),
+            'disableESI' => $this->l('Disable this ESI block'),
             'name' => $this->l('Name'),
             'pubpriv' => $this->l('Cache'),
             'priv' => $this->l('Is Private'),
@@ -98,6 +99,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             'ctrl' => $this->l('Purge Controllers'),
             'methods' => $this->l('Hooked Methods'),
             'render' => $this->l('Widget Render Hooks'),
+            'argument' => $this->l('Hook Parameters'),
             'asvar' => $this->l('As Variable'),
             'ie' => $this->l('Ignore If Empty'),
             'ce' => $this->l('Only Cache When Empty'),
@@ -163,6 +165,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'id' => '',
                 'name' => '',
                 'priv' => 1,
+                'disableESI' => 0,
                 'ttl' => 1800,
                 'tag' => '',
                 'events' => '',
@@ -172,6 +175,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 'asvar' => '',
                 'ie' => '',
                 'ce' => '',
+                'argument' => '',
             ];
         } else { // list
             $this->original_values = $this->config_values;
@@ -284,11 +288,14 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
         switch ($name) {
             case 'id':
                 break;
+            case 'argument':
+                break;
 
             case 'priv':
             case 'asvar':
             case 'ie':
             case 'ce':
+            case 'disableESI':
                 $postVal = (int) $postVal;
                 break;
 
@@ -297,7 +304,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                     // ok, will use default value
                 } elseif (!Validate::isUnsignedInt($postVal)) {
                     $this->errors[] = $invalid;
-                } elseif ($postVal < 60) {
+                } elseif (($postVal < 60) && ($postVal !=0)) {
                     $this->errors[] = $invalid . $s . $this->l('Must be greater than 60 seconds.');
                 } elseif ($this->current_values['priv'] == 1 && $postVal > 7200) {
                     $this->errors[] = $invalid . $s . $this->l('Private TTL must be less than 7200 seconds.');
@@ -353,7 +360,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                     $postVal = '';
                 } else {
                     foreach ($clean as $ci) {
-                        if (!preg_match('/^(\!)?([a-zA-Z_]+)$/', $ci, $m)) {
+                        if (!preg_match('/^(\!)?([a-zA-Z_0-9]+)$/', $ci, $m)) {
                             $this->errors[] = $invalid . $s . $invalidChars;
                         } else {
                             // no further validation for now
@@ -391,7 +398,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
 
     private function processFormSave()
     {
-        $inputs = ['id', 'priv', 'ttl', 'tag', 'events', 'ctrl', 'methods', 'render', 'asvar', 'ie', 'ce'];
+        $inputs = ['id', 'priv', 'ttl', 'tag', 'events', 'ctrl', 'methods', 'render', 'asvar', 'ie', 'ce', 'disableESI', 'argument'];
         $this->changed = 0;
         foreach ($inputs as $field) {
             $this->validateInput($field);
@@ -474,6 +481,16 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             ],
             [
                 'type' => 'switch',
+                'label' => $this->labels['disableESI'],
+                'desc' => $this->l('Disable this ESI block'),
+                'name' => 'disableESI',
+                'disabled' => $disabled,
+                'is_bool' => true,
+                'values' => [['value' => 1, 'disableESI' => '1'], ['value' => 0, 'disableESI' => '0']],
+            ],
+
+            [
+                'type' => 'switch',
                 'label' => $this->labels['priv'],
                 'desc' => $this->l('A public block will only have one cached copy which is shared by everyone.')
                 . $s . $this->l('A private block will be cached individually for each user.'),
@@ -533,6 +550,15 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             ],
             [
                 'type' => 'textarea',
+                'label' => $this->labels['argument'],
+                'name' => 'argument',
+                'hint' => $this->l('parameters used by Hooked Methods/Widgets'),
+                'readonly' => $disabled,
+                'desc' => $this->l('Specify a comma-delimited list of parameters used by Hooked Methods/Widgets, such as: ')
+                . '<br> ' . 'product.id_product, smarty.product.id',
+            ],
+            [
+                'type' => 'textarea',
                 'label' => $this->labels['render'],
                 'name' => 'render',
                 'hint' => $this->l('This is only available for PS1.7.'),
@@ -586,7 +612,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 . $this->l('If you need help, you can order Support service from LiteSpeed Tech.'),
             'input' => $input,
         ];
-        if (!$disabled) {
+        if ($this->display !='view') {
             $form['submit'] = ['title' => $this->l('Save')];
         }
 

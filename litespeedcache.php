@@ -122,7 +122,7 @@ class LiteSpeedCache extends Module
     
     public static function getVersion()
     {
-        return '1.4.1';
+        return '1.5.1';
     }
 
     public static function isActive()
@@ -216,6 +216,7 @@ class LiteSpeedCache extends Module
             LiteSpeedCacheLog::log(__FUNCTION__ . ' type=' . $controllerType . ' controller=' . $controllerClass
                 . ' req=' . $_SERVER['REQUEST_URI'] . ' :' . $status, LiteSpeedCacheLog::LEVEL_CACHE_ROUTE);
         }
+
     }
 
     public function hookOverrideLayoutTemplate($params)
@@ -248,6 +249,7 @@ class LiteSpeedCache extends Module
                 }
             }
         }
+        return $params;
     }
 
     public function hookFilterCategoryContent($params)
@@ -431,6 +433,11 @@ class LiteSpeedCache extends Module
             && ($_SERVER['LSCACHE_VARY_VALUE'] == 'guest' || $_SERVER['LSCACHE_VARY_VALUE'] == 'guestm')) {
             self::$ccflag |= self::CCBM_CACHEABLE | self::CCBM_GUEST; // no ESI allowed
             return 'cacheable guest';
+        }
+
+        if (isset($_SERVER['X-LSCACHE']) && strpos($_SERVER['X-LSCACHE'],'esi')===false){
+            self::$ccflag |= self::CCBM_CACHEABLE;
+            return 'cacheable & esi disabled';
         }
 
         self::$ccflag |= (self::CCBM_CACHEABLE | self::CCBM_CAN_INJECT_ESI);
@@ -705,7 +712,7 @@ class LiteSpeedCache extends Module
     }
 
     // used by override hook, return false or marker
-    public static function injectRenderWidget($module, $hook_name)
+    public static function injectRenderWidget($module, $hook_name, $params=false)
     {
         if ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) == 0) {
             return false;
@@ -724,11 +731,19 @@ class LiteSpeedCache extends Module
             LiteSpeedCacheLog::log(__FUNCTION__ . " $m : $hook_name", LiteSpeedCacheLog::LEVEL_ESI_INCLUDE);
         }
 
+        /*
+        $mp = self::getModuleParams($params, $conf->getTemplateArgs());
+
+        if(!empty($mp)){
+            $esiParam['mp']= implode(",", $mp);
+        }
+        */
+
         return $lsc->registerEsiMarker($esiParam, $conf);
     }
 
     // used by override hook
-    public static function injectCallHook($module, $method)
+    public static function injectCallHook($module, $method, $params=false)
     {
         if ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) == 0) {
             return false;
@@ -747,9 +762,46 @@ class LiteSpeedCache extends Module
             LiteSpeedCacheLog::log(__FUNCTION__ . " $m : $method", LiteSpeedCacheLog::LEVEL_ESI_INCLUDE);
         }
 
+        $mp = self::getModuleParams($params, $conf->getTemplateArgs());
+
+        if(!empty($mp)){
+            $esiParam['mp']= implode(",", $mp);
+        }
+
         return $lsc->registerEsiMarker($esiParam, $conf);
     }
     
+    private static function getModuleParams($params, $tas){
+        if(!$tas || !$params) {
+            return false;
+        }
+
+        $smarty = $params['smarty'];
+
+        $tas1 = explode(',', $tas);
+        $mp = [];
+        foreach($tas1 as $mv){
+            $mvs = explode('.', trim($mv));
+            if( $mvs[0]=='smarty' ){
+                $mp1 = $smarty->getTemplateVars($mvs[1]);
+                if($mp1 && ($arg = $mvs[2])){
+                    $mp[] = $mp1->$arg;
+                } else {
+                    $mp[] = $mp1;
+                }
+            } else {
+                $mp1 = $params[$mvs[0]];
+                if($mp1 && $mvs[1]){
+                    $mp[] = $mp1[ $mvs[1]];
+                } else {
+                    $mp[] = $mp1;
+                }
+            }
+        }
+
+        return $mp;
+    }
+
     public static function forceNotCacheable($reason)
     {
         $lsc = self::myInstance();
