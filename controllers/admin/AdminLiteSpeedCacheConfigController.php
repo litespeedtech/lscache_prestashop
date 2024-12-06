@@ -502,7 +502,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
         $s = ' - '; // spacer
         $fg = $this->newFieldForm($this->l('General') . ' v' . LiteSpeedCache::getVersion(), 'cogs');
         $fg['input'][] = $this->addInputSwitch(Conf::CFG_ENABLED, $this->labels[Conf::CFG_ENABLED], '', $disabled);
-        $fg['input'][] = $this->addInputSwitch('esi', $this->l('Enabled LiteSpeed ESI'), '', true);
+        $fg['input'][] = $this->addInputSwitch('esi', $this->l('Enable LiteSpeed ESI'), '', true);
         $fg['input'][] = $this->addInputText(
             Conf::CFG_PUBLIC_TTL,
             $this->labels[Conf::CFG_PUBLIC_TTL],
@@ -549,8 +549,8 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             ['id' => 1, 'name' => $this->l('Yes') . $s . $this->l('Each group has its own view')],
             ['id' => 2, 'name' => $this->l('Two views') . $s .
                 $this->l('One for all logged-in users and another for logged-out users'), ],
-            ['id' => 3, 'name' => $this->l('Do Not cache logged-in') . $s .
-            $this->l('No cache for logged-in users'), ],
+            ['id' => 3, 'name' => $this->l('One view') . $s .
+            $this->l('Only cache logged-out view'), ],
 
         ];
         $fg['input'][] = $this->addInputSelect(
@@ -633,7 +633,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             . $this->l('They start with "/" and don\’t include the domain name.') . ' '
             . $this->l('Partial matches can be performed by adding an "*" to the end of a URL.') . ' '
             . $this->l('Enter one relative URL per line.') . '<br>'
-            . $this->l('if not start with "/". it will be treated as an URL REGEX rule') . ' ',
+            . $this->l('URLs that do not start with "/" will be treated as URL REGEX rules.') . ' ',
             $disabled
         );
         $formUser['input'][] = $this->addInputTextArea(
