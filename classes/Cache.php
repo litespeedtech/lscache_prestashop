@@ -575,7 +575,7 @@ class LiteSpeedCacheCore
 
             case 'actionclearcompilecache':
             case 'actionclearsf2cache':
-                $tags['pub'] = ['*'];
+                //$tags['pub'] = ['*'];
                 break;
 
             case 'actionproductadd':
