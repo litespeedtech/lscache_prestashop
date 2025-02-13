@@ -573,11 +573,6 @@ class LiteSpeedCacheCore
                 $tags['priv'] = ['*'];
                 break;
 
-            case 'actionclearcompilecache':
-            case 'actionclearsf2cache':
-                //$tags['pub'] = ['*'];
-                break;
-
             case 'actionproductadd':
             case 'actionproductdelete':
                 if (isset($args['id_product']) && isset($args['product'])) {
