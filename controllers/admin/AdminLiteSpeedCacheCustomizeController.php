@@ -362,8 +362,6 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                     foreach ($clean as $ci) {
                         if (!preg_match('/^(\!)?([a-zA-Z_0-9]+)$/', $ci, $m)) {
                             $this->errors[] = $invalid . $s . $invalidChars;
-                        } else {
-                            // no further validation for now
                         }
                     }
                     $postVal = implode(', ', $clean);
