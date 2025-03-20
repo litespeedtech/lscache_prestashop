@@ -150,7 +150,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         } else {
             $this->context->smarty->assign($module->getWidgetVariables('', $params));
 
-            //$this->handleModuleVariables($params, $item);
+            $this->handleModuleVariables($params, $item);
 
             $item->setContent($this->context->smarty->fetch($item->getParam('t')));
         }

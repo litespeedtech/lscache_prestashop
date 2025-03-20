@@ -726,13 +726,11 @@ class LiteSpeedCache extends Module
             LiteSpeedCacheLog::log(__FUNCTION__ . " $m : $hook_name", LiteSpeedCacheLog::LEVEL_ESI_INCLUDE);
         }
 
-        /*
         $mp = self::getModuleParams($params, $conf->getTemplateArgs());
 
         if(!empty($mp)){
             $esiParam['mp']= implode(",", $mp);
         }
-        */
 
         return $lsc->registerEsiMarker($esiParam, $conf);
     }
