@@ -99,7 +99,7 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             'ctrl' => $this->l('Purge Controllers'),
             'methods' => $this->l('Hooked Methods'),
             'render' => $this->l('Widget Render Hooks'),
-            'argument' => $this->l('Hooked Method Parameters'),
+            'argument' => $this->l('Parameters of Hooked Method or Widgets'),
             'asvar' => $this->l('As Variable'),
             'ie' => $this->l('Ignore If Empty'),
             'ce' => $this->l('Only Cache When Empty'),
@@ -550,15 +550,6 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
             ],
             [
                 'type' => 'textarea',
-                'label' => $this->labels['argument'],
-                'name' => 'argument',
-                'hint' => $this->l('parameters used by Hooked Methods'),
-                'readonly' => $disabled,
-                'desc' => $this->l('Specify a comma-delimited list of parameters used by Hooked Methods, such as: ')
-                . '<br> ' . 'product.id_product,  smarty.product.id',
-            ],
-            [
-                'type' => 'textarea',
                 'label' => $this->labels['render'],
                 'name' => 'render',
                 'hint' => $this->l('This is only available for PS1.7.'),
@@ -567,6 +558,15 @@ class AdminLiteSpeedCacheCustomizeController extends ModuleAdminController
                 . '<br> ' . $this->l('Specify a comma-delimited list of allowed hooks;')
                 . $s . $this->l('Or a list of not-allowed hooks by prefixing with "!".')
                 . $s . $this->l('Use "*" for all hooks allowed; leave blank to disable renderWidget injection.'),
+            ],
+            [
+                'type' => 'textarea',
+                'label' => $this->labels['argument'],
+                'name' => 'argument',
+                'hint' => $this->l('parameters used by Hooked Methods or Widgets'),
+                'readonly' => $disabled,
+                'desc' => $this->l('Specify a comma-delimited list of parameters used by Hooked Methods or Widgets, such as: ')
+                . '<br> ' . 'product.id_product,  smarty.product.id',
             ],
             [
                 'type' => 'switch',
