@@ -122,7 +122,7 @@ class LiteSpeedCache extends Module
     
     public static function getVersion()
     {
-        return '1.5.1';
+        return '1.5.2';
     }
 
     public static function isActive()
@@ -383,11 +383,18 @@ class LiteSpeedCache extends Module
         if ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) == 0) {
             return;
         }
-        
+
+        $conf = LiteSpeedCacheConfig::getInstance();
+        // $diffCustomerGroup 0: No; 1: Yes; 2: login_out; 3: out_only
+        $diffCustomerGroup = $conf->getDiffCustomerGroup();
+
 		if (self::isCacheable() && isset($jsDef['prestashop'])) {
 			// always filter out cart & customer personal info
 			unset($jsDef['prestashop']['cart']);
-			unset($jsDef['prestashop']['customer']);
+
+            if($diffCustomerGroup==0){
+			    unset($jsDef['prestashop']['customer']);
+            }
 		}
 
         $injected = LscIntegration::filterJSDef($jsDef);
