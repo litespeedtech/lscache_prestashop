@@ -409,6 +409,7 @@ class LiteSpeedCacheConfig
             'IndexController' => self::TAG_HOME, // controller name - tag linked to it
             'ProductController' => '',
             'CategoryController' => '',
+            'prestablogblogModuleFrontController' => '',// permit to cache prestablog module page                          
             'CmsController' => '',
             'ManufacturerController' => '',
             'SupplierController' => '',
