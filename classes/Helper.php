@@ -226,11 +226,19 @@ class LiteSpeedCacheHelper
                 $ls[] = 'RewriteCond %{HTTP_COOKIE} !PrestaShop-';
                 $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "!(phone|mobile|android|Opera Mini)" [NC]';
                 $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=guest]';
+                $ls[] = 'RewriteCond %{HTTP_COOKIE} PrestaShop-';
+                $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "phone|mobile|android|Opera Mini" [NC]';
+                $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=ismobile]';
             } else {
                 $ls[] = 'RewriteCond %{HTTP_COOKIE} !PrestaShop-';
                 $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=guest]';
             }
+        } else if ($mobileView) {
+            $ls[] = 'RewriteEngine on';
+            $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "phone|mobile|android|Opera Mini" [NC]';
+            $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=ismobile]';
         }
+
         $ls[] = '</IfModule>';
         $ls[] = '### LITESPEED_CACHE_END';
         $newcontent = implode("\n", $ls) . "\n";
