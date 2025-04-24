@@ -221,13 +221,13 @@ class LiteSpeedCacheHelper
             $ls[] = 'RewriteEngine on';
             if ($mobileView) {
                 $ls[] = 'RewriteCond %{HTTP_COOKIE} !PrestaShop-';
-                $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "phone|mobile|android|Opera Mini" [NC]';
+                $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "phone|iPhone|iPod|BlackBerry|Palm|Googlebot-Mobile|Mobile|mobile|mobi|Windows_Mobile|Safari_Mobile|Android|Opera_Mini" [NC]';
                 $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=guestm]';
                 $ls[] = 'RewriteCond %{HTTP_COOKIE} !PrestaShop-';
-                $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "!(phone|mobile|android|Opera Mini)" [NC]';
+                $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "!(phone|iPhone|iPod|BlackBerry|Palm|Googlebot-Mobile|Mobile|mobile|mobi|Windows_Mobile|Safari_Mobile|Android|Opera_Mini)" [NC]';
                 $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=guest]';
                 $ls[] = 'RewriteCond %{HTTP_COOKIE} PrestaShop-';
-                $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "phone|mobile|android|Opera Mini" [NC]';
+                $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "phone|iPhone|iPod|BlackBerry|Palm|Googlebot-Mobile|Mobile|mobile|mobi|Windows_Mobile|Safari_Mobile|Android|Opera_Mini" [NC]';
                 $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=ismobile]';
             } else {
                 $ls[] = 'RewriteCond %{HTTP_COOKIE} !PrestaShop-';
@@ -235,7 +235,7 @@ class LiteSpeedCacheHelper
             }
         } else if ($mobileView) {
             $ls[] = 'RewriteEngine on';
-            $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "phone|mobile|android|Opera Mini" [NC]';
+            $ls[] = 'RewriteCond %{HTTP_USER_AGENT} "phone|iPhone|iPod|BlackBerry|Palm|Googlebot-Mobile|Mobile|mobile|mobi|Windows_Mobile|Safari_Mobile|Android|Opera_Mini" [NC]';
             $ls[] = 'RewriteRule .* - [E=Cache-Control:vary=ismobile]';
         }
 
