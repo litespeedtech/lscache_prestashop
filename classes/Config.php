@@ -742,6 +742,11 @@ class LiteSpeedCacheConfig
             'actionUpdateQuantity', // from StockAvailable array('id_product' => $id_product,...)
         ];
 
+        if (version_compare(_PS_VERSION_, '1.7.1.0', '>=')) {
+            $hooks[] = 'actionClearCompileCache';
+            $hooks[] = 'actionClearSf2Cache';
+        }
+
         return $hooks;
     }
 }

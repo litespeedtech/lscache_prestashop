@@ -155,6 +155,11 @@ class LiteSpeedCache extends Module
         return (self::$ccflag & self::CCBM_CAN_INJECT_ESI) != 0;
     }
 
+    public static function isFrontController()
+    {
+        return (self::$ccflag & self::CCBM_FRONT_CONTROLLER) != 0;
+    }
+
     public static function getCCFlag()
     {
         return self::$ccflag;
