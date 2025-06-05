@@ -122,7 +122,7 @@ class LiteSpeedCache extends Module
     
     public static function getVersion()
     {
-        return '1.5.2';
+        return '1.5.3';
     }
 
     public static function isActive()
@@ -521,6 +521,11 @@ class LiteSpeedCache extends Module
             // if no injection, but cacheable, still need to check token
             $buffer = $lsc->replaceEsiMarker($buffer);
         }
+
+        if ( ((self::$ccflag & self::CCBM_NOT_CACHEABLE) == 0) && ((self::$ccflag & self::CCBM_CACHEABLE) != 0) && isset($_SERVER['HTTP_USER_AGENT']) ) {
+            $comment = '<!-- LiteSpeed Cache created with user_agent: ' . $_SERVER['HTTP_USER_AGENT'] . ' -->' . PHP_EOL;
+            $buffer = $comment . $buffer;
+        }   
 
         $lsc->cache->setCacheControlHeader();
         /* for testing
