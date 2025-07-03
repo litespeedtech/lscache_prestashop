@@ -347,13 +347,15 @@ class LiteSpeedCache extends Module
         if ($err && _LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_PURGE_EVENT) {
             LiteSpeedCacheLog::log($err, LiteSpeedCacheLog::LEVEL_PURGE_EVENT);
         }
+        return $params;
+
     }
 
     // allow other modules to set
     public function hookLitespeedNotCacheable($params)
     {
         if (!self::isActiveForUser()) {
-            return;
+            return $params;
         }
         
         $reason = '';
@@ -364,6 +366,7 @@ class LiteSpeedCache extends Module
             $reason .= ' from ' . $params['from'];
         }
         $this->setNotCacheable($reason);
+        return $params;
     }
 
     // if debug enabled, show generation timestamp in comments
