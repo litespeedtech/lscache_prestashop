@@ -91,6 +91,8 @@ class LiteSpeedCacheConfig
 
     const CFG_FLUSH_PRODCAT = 'flush_prodcat';
 
+    const CFG_FLUSH_ALL = 'flush_all';
+
     const CFG_FLUSH_HOME = 'flush_home';
 
     const CFG_FLUSH_HOME_INPUT = 'flush_homeinput';
@@ -159,6 +161,7 @@ class LiteSpeedCacheConfig
             case self::CFG_NOCACHE_URL:
             case self::CFG_VARY_BYPASS:
             case self::CFG_FLUSH_PRODCAT:
+            case self::CFG_FLUSH_ALL:
             case self::CFG_FLUSH_HOME:
             case self::CFG_FLUSH_HOME_INPUT:
             // in global developer form
@@ -224,6 +227,7 @@ class LiteSpeedCacheConfig
                 self::CFG_NOCACHE_URL => '',
                 self::CFG_VARY_BYPASS => '',
                 self::CFG_FLUSH_PRODCAT => 0,
+                self::CFG_FLUSH_ALL => 0,
                 self::CFG_FLUSH_HOME => 0,
                 self::CFG_FLUSH_HOME_INPUT => '',
                 self::CFG_DEBUG => 0,
@@ -334,6 +338,7 @@ class LiteSpeedCacheConfig
                     self::CFG_NOCACHE_URL => $values[self::CFG_NOCACHE_URL],
                     self::CFG_VARY_BYPASS => $values[self::CFG_VARY_BYPASS],
                     self::CFG_FLUSH_PRODCAT => $values[self::CFG_FLUSH_PRODCAT],
+                    self::CFG_FLUSH_ALL => $values[self::CFG_FLUSH_ALL],
                     self::CFG_FLUSH_HOME => $values[self::CFG_FLUSH_HOME],
                     self::CFG_FLUSH_HOME_INPUT => $values[self::CFG_FLUSH_HOME_INPUT],
                     self::CFG_DEBUG => $values[self::CFG_DEBUG],

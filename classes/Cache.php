@@ -575,7 +575,9 @@ class LiteSpeedCacheCore
 
             case 'actionclearcompilecache':
             case 'actionclearsf2cache':
-                if(!LSC::isFrontController()) {
+                $flushAll = $this->config->get(Conf::CFG_FLUSH_ALL);
+
+                if($flushAll && !LSC::isFrontController()) {
                     $tags['pub'] = ['*'];
                 }
                 break;

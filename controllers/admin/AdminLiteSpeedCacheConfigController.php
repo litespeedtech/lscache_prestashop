@@ -98,6 +98,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             Conf::CFG_PCOMMENTS_TTL => $this->l('Product Comments TTL'),
             Conf::CFG_DIFFMOBILE => $this->l('Separate Mobile View'),
             Conf::CFG_DIFFCUSTGRP => $this->l('Separate Cache Copy per Customer Group'),
+            Conf::CFG_FLUSH_ALL => $this->l('Flush All Pages When Cache Cleared'),
             Conf::CFG_FLUSH_PRODCAT => $this->l('Flush Product and Categories When Order Placed'),
             Conf::CFG_FLUSH_HOME => $this->l('Flush Home Page When Order Placed'),
             Conf::CFG_FLUSH_HOME_INPUT => $this->l('Specify Product IDs for Home Page Flush'),
@@ -157,6 +158,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 Conf::CFG_NOCACHE_URL,
                 Conf::CFG_VARY_BYPASS,
                 Conf::CFG_FLUSH_PRODCAT,
+                Conf::CFG_FLUSH_ALL,
                 Conf::CFG_FLUSH_HOME,
                 Conf::CFG_FLUSH_HOME_INPUT,
                 Conf::CFG_DEBUG_HEADER,
@@ -342,6 +344,17 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 }
                 break;
 
+            case Conf::CFG_FLUSH_ALL:
+                $postVal = (int) $postVal;
+                if ($postVal < 0 || $postVal > 4) {
+                    // should not happen in drop down
+                    $postVal = 0;
+                }
+                if ($postVal != $origVal) {
+                    $this->changed |= self::BMC_ALL | self::BMC_NONEED_PURGE;
+                }
+                break;
+                                
             case Conf::CFG_FLUSH_PRODCAT:
                 $postVal = (int) $postVal;
                 if ($postVal < 0 || $postVal > 4) {
@@ -559,6 +572,8 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
             $custgrpOptions,
             $this->l('Enable this option if there is different pricing based on customer groups.')
         );
+
+        $fg['input'][] = $this->addInputSwitch(Conf::CFG_FLUSH_ALL, $this->labels[Conf::CFG_FLUSH_ALL], 'If disabled, please manually flush all pages after clearing the Prestashop cache.', $disabled);
 
         $flushprodOptions = [
             ['id' => 0, 'name' => $this->l('Flush product when quantity or stock status change, flush categories only when stock status changes')],
