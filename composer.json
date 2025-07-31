@@ -1,0 +1,20 @@
+{
+    "name": "iitespeedtech/litespeedcache",
+    "description": "PrestaShop Full Page Cache Module for LiteSpeed Web Server",
+    "homepage": "https://github.com/litespeedtech/lscache_prestashop",
+    "type": "prestashop-module",
+    "config": {
+        "preferred-install": "dist",
+        "classmap-authoritative": true,
+        "optimize-autoloader": true,
+        "prepend-autoloader": false
+    },
+    "autoload": {
+        "psr-4": {
+            "LiteSpeed\\Cache\\": "src/"
+        }
+    },
+    "author": "LiteSpeedTech",
+    "license": "GPL-3.0+"
+
+}
