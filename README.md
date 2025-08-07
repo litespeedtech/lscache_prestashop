@@ -36,6 +36,27 @@ Otherwise request that the server admin configure the cache root for the server.
 * The cache can be manually flushed from within the PrestaShop admin.
 * If a page contains products with specific prices, TTL will be auto adjusted based on special price effective dates.
 
+
+### CLI commands
+
+CLI commands are only allowed to execute from the website host server.
+
+**WarmUp whole website**
+
+ in `/prestashop_root/` folder, execute `bin/console` command:
+
+```
+bin/console litespeedcache:warmup https://example.com/sitemap.xml
+```
+
+**WarmUp with cookie if enabled Guest Mode**
+
+ in `/prestashop_root/` folder, execute `bin/console` command:
+
+```
+bin/console litespeedcache:guestmodewarmup https://example.com/sitemap.xml
+```
+
 ### Testing the Module
 
 LSCPS utilizes LiteSpeed-specific response headers. Use your browser’s developer tools to check them: Select the **Network** tab and look at the response headers for the first file listed.
