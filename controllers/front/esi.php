@@ -179,7 +179,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
         if(($mp=$item->getParam('mp')) && ($tas = $item->getConf()->getTemplateArgs())){
             $tas1 = explode(',', $tas);
-            $mp1 =  explode(',', $mp);
+            $mp1 = json_decode($mp, true);
             $i=0;
             foreach($tas1 as $mv){
                 $mvs = explode('.', trim($mv));
