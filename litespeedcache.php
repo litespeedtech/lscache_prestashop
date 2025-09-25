@@ -905,7 +905,7 @@ class LiteSpeedCache extends Module
 
     private function installTab()
     {
-        $definedtabs = $this->uninstallTab();
+        $definedtabs =  $this->initTabs();
         if ($definedtabs == null) {
             return;
         }
