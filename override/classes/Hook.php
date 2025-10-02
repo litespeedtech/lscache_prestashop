@@ -54,7 +54,7 @@ class Hook extends HookCore
             $html = $marker . $html . LiteSpeedCache::ESI_MARKER_END;
         }
 
-        if(is_string($html) || is_array($html)){
+        if(is_string($html) || is_array($html) || ($html==null)){
             return $html;
         } else {
             return [$html];
@@ -78,7 +78,7 @@ class Hook extends HookCore
             $html = $marker . $html . LiteSpeedCache::ESI_MARKER_END;
         }
 
-        if(is_string($html) || is_array($html)){
+        if(is_string($html) || is_array($html) || ($html==null)){
             return $html;
         } else {
             return [$html];
