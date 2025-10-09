@@ -254,7 +254,6 @@ class LiteSpeedCache extends Module
                 }
             }
         }
-        return $params;
     }
 
     public function hookFilterCategoryContent($params)
