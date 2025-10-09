@@ -57,7 +57,7 @@ class Hook extends HookCore
         if(is_string($html) || is_array($html) || ($html==null)){
             return $html;
         } else {
-            return [$html];
+            return ['object' => $html];
         }
     }
 
@@ -81,7 +81,7 @@ class Hook extends HookCore
         if(is_string($html) || is_array($html) || ($html==null)){
             return $html;
         } else {
-            return [$html];
+            return ['object' => $html];
         }        
     }
 }
