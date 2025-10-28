@@ -148,9 +148,9 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
             $item->setFailed();
         } else {
-            $this->handleModuleVariables($params, $item);
-
             $this->context->smarty->assign($module->getWidgetVariables('', $params));
+
+            $this->handleModuleVariables($params, $item);
 
             $item->setContent($this->context->smarty->fetch($item->getParam('t')));
         }
@@ -162,13 +162,12 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
             $item->setFailed();
         } else {
-            $this->handleModuleVariables($params, $item);
-
             if (method_exists($module, 'getWidgetVariables')) {
                 $this->context->smarty->assign($module->getWidgetVariables('', $params));
             }
-
             $method = $item->getParam('mt');
+
+            $this->handleModuleVariables($params, $item);
 
             $item->setContent($module->$method($params));
         }
