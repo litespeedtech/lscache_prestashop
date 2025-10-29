@@ -197,9 +197,11 @@ class LiteSpeedCacheVaryCookie extends CookieCore
                 $time = 1000;
             }
 
-            if (!setcookie($this->vd['cv']['name'], $val, $time, $this->_path, $this->_domain, $this->_secure, true)) {
-                $this->status |= self::BM_UPDATE_FAILED;
-            }
+            //Browser does not support cookie name start with _ 
+            //if (!setcookie($this->vd['cv']['name'], $val, $time, $this->_path, $this->_domain, $this->_secure, true)) {
+            //    $this->status |= self::BM_UPDATE_FAILED;
+            //}
+            
         }
 
         if ($this->status & self::BM_VARYVALUE_CHANGED) {
