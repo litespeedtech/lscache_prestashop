@@ -47,7 +47,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminModules'));
         }
 
-        $title = $this->trans('LiteSpeed Cache Management');
+        $title = $this->l('LiteSpeed Cache Management');
         $this->page_header_toolbar_title = $title;
         $this->meta_title = $title;
         //// -1: not multishop, 0: multishop global, 1: multishop shop or group
@@ -63,31 +63,46 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         parent::init();
         if (!LiteSpeedCacheHelper::licenseEnabled()) {
             $this->license_disabled = true;
-            $this->errors[] = $this->trans('LiteSpeed Server with LSCache module is required.') . ' '
-                    . $this->trans('Please contact your sysadmin or your host to get a valid LiteSpeed license.');
+            $this->errors[] = $this->l('LiteSpeed Server with LSCache module is required.') . ' '
+                    . $this->l('Please contact your sysadmin or your host to get a valid LiteSpeed license.');
         }
 
         $this->labels = [
-            'home' => $this->trans('Home Page'),
-            '404' => $this->trans('All 404 Pages'),
-            'search' => $this->trans('All Categories and Products Pages'),
-            'brand' => $this->trans('All Brands Pages'),
-            'supplier' => $this->trans('All Suppliers Pages'),
-            'sitemap' => $this->trans('Site Map'),
-            'cms' => $this->trans('All CMS Pages'),
-            'pc' => $this->trans('All Product Comments'),
-            'priv' => $this->trans('All Private ESI Blocks'),
-            'prod0' => $this->trans('Product'),
-            'cat0' => $this->trans('Category'),
-            'brand0' => $this->trans('Brand'),
-            'supplier0' => $this->trans('Supplier'),
-            'cms0' => $this->trans('CMS'),
-            'pc0' => $this->trans('Comments for Product ID'),
-            'shop0' => $this->trans('Shop'),
-            'affectall' => $this->trans('This will affect all shops'),
+            'home' => $this->l('Home Page'),
+            '404' => $this->l('All 404 Pages'),
+            'search' => $this->l('All Categories and Products Pages'),
+            'brand' => $this->l('All Brands Pages'),
+            'supplier' => $this->l('All Suppliers Pages'),
+            'sitemap' => $this->l('Site Map'),
+            'cms' => $this->l('All CMS Pages'),
+            'pc' => $this->l('All Product Comments'),
+            'priv' => $this->l('All Private ESI Blocks'),
+            'prod0' => $this->l('Product'),
+            'cat0' => $this->l('Category'),
+            'brand0' => $this->l('Brand'),
+            'supplier0' => $this->l('Supplier'),
+            'cms0' => $this->l('CMS'),
+            'pc0' => $this->l('Comments for Product ID'),
+            'shop0' => $this->l('Shop'),
+            'affectall' => $this->l('This will affect all shops'),
         ];
+    }
 
-        // is_shop_level -1: not multishop, 0: multishop global, 1: multishop shop or group
+    public function setMedia($isNewTheme = false)
+    {
+        parent::setMedia($isNewTheme);
+        
+        $js = '
+        (function() {
+            if (typeof $ !== "undefined") {
+                $(document).ready(function() {
+                    $("#collapse-all-id_category, #expand-all-id_category").hide();
+                    $(".tree-actions").hide();
+                });
+            }
+        })();
+        ';
+        $this->addJS('data:text/javascript;base64,' . base64_encode($js));
     }
 
     public function initPageHeaderToolbar()
@@ -95,12 +110,12 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         if ($this->is_shop_level !== 1) {
             $this->page_header_toolbar_btn['purge_shops'] = [
                 'href' => self::$currentIndex . '&purge_shops&token=' . $this->token,
-                'desc' => $this->trans('Flush All PrestaShop Pages'),
+                'desc' => $this->l('Flush All PrestaShop Pages'),
                 'icon' => 'process-icon-delete',
             ];
             $this->page_header_toolbar_btn['purge_all'] = [
                 'href' => self::$currentIndex . '&purge_all&token=' . $this->token,
-                'desc' => $this->trans('Flush Entire Cache Storage'),
+                'desc' => $this->l('Flush Entire Cache Storage'),
                 'icon' => 'process-icon-delete',
                 'class' => 'btn-warning',
             ];
@@ -126,14 +141,14 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
     private function processPurgeAll()
     {
         if ($this->doPurge(1, 'ALL')) {
-            $this->confirmations[] = $this->trans('Notified LiteSpeed Server to flush the entire cache storage.');
+            $this->confirmations[] = $this->l('Notified LiteSpeed Server to flush the entire cache storage.');
         }
     }
 
     private function processPurgeShops()
     {
         if ($this->doPurge('*')) {
-            $this->confirmations[] = $this->trans('Notified LiteSpeed Server to flush all pages of this PrestaShop.');
+            $this->confirmations[] = $this->l('Notified LiteSpeed Server to flush all pages of this PrestaShop.');
         }
     }
 
@@ -182,15 +197,15 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         }
         if ($cid = Tools::getValue('rcats')) {
             $tags[] = Conf::TAG_PREFIX_CATEGORY . $cid;
-            $info[] = $this->trans('Category with ID') . ' ' . $cid;
+            $info[] = $this->l('Category with ID') . ' ' . $cid;
         }
         if (count($tags)) {
             if ($this->doPurge($tags)) {
                 $t = implode(', ', $info);
-                $this->confirmations[] = $this->trans('Notified LiteSpeed Server to flush cached pages:') . ' ' . $t;
+                $this->confirmations[] = $this->l('Notified LiteSpeed Server to flush cached pages:') . ' ' . $t;
             }
         } else {
-            $this->warnings[] = $this->trans('Nothing selected. No action taken.');
+            $this->warnings[] = $this->l('Nothing selected. No action taken.');
         }
     }
 
@@ -227,7 +242,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
                 $desc = $this->labels['shop0'];
                 break;
             default:
-                $this->errors[] = $this->trans('Illegal entrance');
+                $this->errors[] = $this->l('Illegal entrance');
 
                 return;
         }
@@ -252,11 +267,11 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         if ($hasError) {
             $this->current_values['purgeby'] = $by;
             $this->current_values['purgeids'] = $id;
-            $this->errors[] = $this->trans('Please enter valid IDs');
+            $this->errors[] = $this->l('Please enter valid IDs');
         } else {
             if ($this->doPurge($tags)) {
                 $t = $desc . ' ' . implode(', ', $ids);
-                $this->confirmations[] = $this->trans('Notified LiteSpeed Server to flush cached pages:') . ' ' . $t;
+                $this->confirmations[] = $this->l('Notified LiteSpeed Server to flush cached pages:') . ' ' . $t;
             }
         }
     }
@@ -270,8 +285,8 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             return true;
         }
 
-        $this->warnings[] = $this->trans('No action taken.') . ' '
-                . $this->trans('This Module is not enabled. Only action allowed is Flush All Prestashop Pages.');
+        $this->warnings[] = $this->l('No action taken.') . ' '
+                . $this->l('This Module is not enabled. Only action allowed is Flush All Prestashop Pages.');
 
         return false;
     }
@@ -279,25 +294,44 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
     public function renderView()
     {
         if ($this->license_disabled) {
-            $this->warnings[] = $this->trans('No action taken.') . ' '
-                    . $this->trans('No LiteSpeed Server with LSCache available.');
+            $this->warnings[] = $this->l('No action taken.') . ' '
+                    . $this->l('No LiteSpeed Server with LSCache available.');
 
             return false;
         }
 
         $html = $this->renderPurgeSelection();
         $html .= $this->renderPurgeId();
+        
+        // Add inline script to hide non-functional buttons
+        $html .= '<script type="text/javascript">
+            (function() {
+                document.addEventListener("DOMContentLoaded", function() {
+                    var collapseBtn = document.getElementById("collapse-all-id_category");
+                    var expandBtn = document.getElementById("expand-all-id_category");
+                    if (collapseBtn) collapseBtn.style.display = "none";
+                    if (expandBtn) expandBtn.style.display = "none";
+                });
+                
+                // Also try with jQuery if available
+                if (typeof jQuery !== "undefined") {
+                    jQuery(document).ready(function($) {
+                        $("#collapse-all-id_category, #expand-all-id_category").hide();
+                    });
+                }
+            })();
+        </script>';
 
         return $html;
     }
 
     private function renderPurgeSelection()
     {
-        $title = $this->trans('Purge by Selection');
+        $title = $this->l('Purge by Selection');
         $form = $this->newFieldForm($title, 'list-ul', $title);
         $cbPurge = [
             'type' => 'checkbox',
-            'label' => $this->trans('Select All Pages You Want to Purge'),
+            'label' => $this->l('Select All Pages You Want to Purge'),
             'name' => 'cbPurge',
             'values' => [
                 'query' => [
@@ -315,7 +349,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         ];
         $selCat = [
             'type' => 'categories',
-            'label' => $this->trans('Select Categories'),
+            'label' => $this->l('Select Categories'),
             'name' => 'rcats',
             'tree' => [
                 'root_category' => 1,
@@ -346,11 +380,11 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
 
     private function renderPurgeId()
     {
-        $title = $this->trans('Purge by ID');
-        $desc = $this->trans('Cached pages should be automatically purged through related hooks.') . ' '
-                . $this->trans('This tool is mainly for testing purposes.') . ' '
-                . $this->trans('You need to know the exact IDs if you want to use this function.') . ' '
-                . $this->trans('No extra validation on the ID value.');
+        $title = $this->l('Purge by ID');
+        $desc = $this->l('Cached pages should be automatically purged through related hooks.') . ' '
+                . $this->l('This tool is mainly for testing purposes.') . ' '
+                . $this->l('You need to know the exact IDs if you want to use this function.') . ' '
+                . $this->l('No extra validation on the ID value.');
         $form = $this->newFieldForm($title, 'list-ol', $title, $desc);
         $query = [
             ['purgeby' => 'prod', 'name' => $this->labels['prod0']],
@@ -364,8 +398,8 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         $textareaIds = [
             'type' => 'textarea',
             'class' => 'input',
-            'desc' => $this->trans('You can enter multiple IDs by using a comma-delimited string.'),
-            'label' => $this->trans('Enter the IDs of the Pages You Want to Purge'),
+            'desc' => $this->l('You can enter multiple IDs by using a comma-delimited string.'),
+            'label' => $this->l('Enter the IDs of the Pages You Want to Purge'),
             'name' => 'purgeids',
         ];
         if ($this->is_shop_level !== -1) {
@@ -375,7 +409,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
 
         $form['input'][] = [
             'type' => 'select',
-            'label' => $this->trans('Select ID Type'),
+            'label' => $this->l('Select ID Type'),
             'name' => 'purgeby',
             'required' => false,
             'options' => ['query' => $query, 'id' => 'purgeby', 'name' => 'name'],
@@ -416,4 +450,15 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
 
         return $form;
     }
+
+
+/**
+ * Shim for legacy $this->l() calls on PS 8/9.
+ * Maps to Symfony translator.
+ */
+protected function l($string, $specific = null, $locale = null)
+{
+    $translator = \Context::getContext()->getTranslator();
+    return $translator->trans($string, [], 'Modules.Litespeedcache.Admin', $locale);
+}
 }
