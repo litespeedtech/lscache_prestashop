@@ -255,6 +255,10 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             'ps' => ['ov' => null, 'nv' => null], // private session
         ];
         
+        if($context->controller instanceof PageNotFoundController){
+            return;
+        }
+
         $conf = LiteSpeedCacheConfig::getInstance();
         // $diffCustomerGroup 0: No; 1: Yes; 2: login_out
         $diffCustomerGroup = $conf->getDiffCustomerGroup();
