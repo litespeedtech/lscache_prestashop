@@ -3,8 +3,3 @@ services:
         class: LiteSpeed\Cache\Warmup
         tags:
             - { name: 'console.command' }
-
-    prestashop.module.litespeedcache.guestmode.warmup:
-        class: LiteSpeed\Cache\GuestModeWarmup
-        tags:
-            - { name: 'console.command' }            

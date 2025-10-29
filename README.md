@@ -43,18 +43,18 @@ CLI commands are only allowed to execute from the website host server.
 
 **WarmUp whole website**
 
- in `/prestashop_root/` folder, execute `bin/console` command:
+ in `/prestashop_root/` folder, execute `bin/console` command :
 
 ```
 bin/console litespeedcache:warmup https://example.com/sitemap.xml
 ```
 
-**WarmUp with cookie if enabled Guest Mode**
+**WarmUp Desktop and Mobile View if enabled Separate Mobile View**
 
- in `/prestashop_root/` folder, execute `bin/console` command:
+ in `/prestashop_root/` folder, execute `bin/console` command :
 
 ```
-bin/console litespeedcache:guestmodewarmup https://example.com/sitemap.xml
+bin/console litespeedcache:guestmodewarmup https://example.com/sitemap.xml iphone
 ```
 
 ### Testing the Module
