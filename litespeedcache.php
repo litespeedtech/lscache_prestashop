@@ -369,7 +369,12 @@ class LiteSpeedCache extends Module
     public function hookDisplayFooterAfter($params)
     {
         if (self::isCacheable() && _LITESPEED_DEBUG_) {
-            $comment = '<!-- LiteSpeed Cache snapshot generated at ' . gmdate('Y/m/d H:i:s') . ' GMT -->';
+            if(isset($_SERVER['HTTP_USER_AGENT']) ) {
+                $comment = '<!-- LiteSpeed Cache created with user_agent: ' . $_SERVER['HTTP_USER_AGENT'] . ' -->' . PHP_EOL; 
+            } else {
+                $comment = '<!-- LiteSpeed Cache snapshot generated at ' . gmdate('Y/m/d H:i:s') . ' GMT -->';
+            }
+
             if (_LITESPEED_DEBUG_ >= LiteSpeedCacheLog::LEVEL_FOOTER_COMMENT) {
                 LiteSpeedCacheLog::log(
                     'Add html comments in footer ' . $comment,
@@ -520,11 +525,6 @@ class LiteSpeedCache extends Module
             // if no injection, but cacheable, still need to check token
             $buffer = $lsc->replaceEsiMarker($buffer);
         }
-
-        if ( ((self::$ccflag & self::CCBM_NOT_CACHEABLE) == 0) && ((self::$ccflag & self::CCBM_CACHEABLE) != 0) && isset($_SERVER['HTTP_USER_AGENT']) ) {
-            $comment = '<!-- LiteSpeed Cache created with user_agent: ' . $_SERVER['HTTP_USER_AGENT'] . ' -->' . PHP_EOL;
-            $buffer = $comment . $buffer;
-        }   
 
         $lsc->cache->setCacheControlHeader();
         /* for testing
