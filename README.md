@@ -54,7 +54,7 @@ bin/console litespeedcache:warmup https://example.com/sitemap.xml
  in `/prestashop_root/` folder, execute `bin/console` command :
 
 ```
-bin/console litespeedcache:guestmodewarmup https://example.com/sitemap.xml iphone
+bin/console litespeedcache:warmup https://example.com/sitemap.xml iphone
 ```
 
 ### Testing the Module
