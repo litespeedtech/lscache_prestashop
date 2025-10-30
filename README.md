@@ -24,7 +24,7 @@ Otherwise request that the server admin configure the cache root for the server.
 
 ### Module Features
 
-* Support for PrestaShop 1.6 and 1.7+.
+* Support for PrestaShop 1.7+, and Prestashop 8, Prestashop 9.
 * LSCPS supports multiple stores, multi-language, multi-currency, geolocation and mobile view.
 * Integrated into both LiteSpeed Web Server and LiteSpeed Web ADC. Works in a single-server environment using LSWS, or a clustered environment using LS Web ADC.
 * Caching is highly customizable on both a global level and a per-store basis. Tag-based caching allows purge by tag from external programs.
@@ -54,7 +54,7 @@ bin/console litespeedcache:warmup https://example.com/sitemap.xml
  in `/prestashop_root/` folder, execute `bin/console` command :
 
 ```
-bin/console litespeedcache:guestmodewarmup https://example.com/sitemap.xml iphone
+bin/console litespeedcache:warmup https://example.com/sitemap.xml iphone
 ```
 
 ### Testing the Module
