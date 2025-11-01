@@ -155,11 +155,6 @@ class LiteSpeedCache extends Module
         return (self::$ccflag & self::CCBM_CAN_INJECT_ESI) != 0;
     }
 
-    public static function isFrontController()
-    {
-        return (self::$ccflag & self::CCBM_FRONT_CONTROLLER) != 0;
-    }
-
     public static function getCCFlag()
     {
         return self::$ccflag;
@@ -254,6 +249,7 @@ class LiteSpeedCache extends Module
                 }
             }
         }
+        return $params;
     }
 
     public function hookFilterCategoryContent($params)
@@ -352,7 +348,7 @@ class LiteSpeedCache extends Module
     public function hookLitespeedNotCacheable($params)
     {
         if (!self::isActiveForUser()) {
-            return $params;
+            return;
         }
         
         $reason = '';
@@ -901,7 +897,7 @@ class LiteSpeedCache extends Module
 
     private function installTab()
     {
-        $definedtabs =  $this->initTabs();
+        $definedtabs = $this->uninstallTab();
         if ($definedtabs == null) {
             return;
         }
@@ -953,5 +949,14 @@ class LiteSpeedCache extends Module
         ];
 
         return $definedtabs;
+    }
+
+    /**
+     * Shim for legacy $this->l() in Module context on PS 8/9.
+     */
+    public function l($string, $specific = null, $locale = null)
+    {
+        $translator = \Context::getContext()->getTranslator();
+        return $translator->trans($string, [], 'Modules.Litespeedcache.Admin', $locale);
     }
 }
