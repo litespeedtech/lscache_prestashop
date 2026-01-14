@@ -54,11 +54,7 @@ class Hook extends HookCore
             $html = $marker . $html . LiteSpeedCache::ESI_MARKER_END;
         }
 
-        if(is_string($html) || is_array($html) || ($html==null)){
-            return $html;
-        } else {
-            return ['object' => $html];
-        }
+        return $html;
     }
 
     // only avail for PS 1.7
