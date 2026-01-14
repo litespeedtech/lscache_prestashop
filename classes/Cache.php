@@ -596,9 +596,9 @@ class LiteSpeedCacheCore
                 }
                 break;
 
-            case 'actionobjectspecificpricecoreaddafter':
-            case 'actionobjectspecificpricecoredeleteafter':
-            case 'actionobjectspecificpriceCoreupdateafter':
+            case 'actionobjectspecificpriceaddafter':
+            case 'actionobjectspecificpricedeleteafter':
+            case 'actionobjectspecificpriceupdateafter':
                 if (isset($args['object']->id_product)) {
                     return $this->getPurgeTagsByProduct($args['object']->id_product, null, true);
                 }
