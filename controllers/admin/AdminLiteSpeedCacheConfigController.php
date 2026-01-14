@@ -378,7 +378,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 break;
 
             case Conf::CFG_FLUSH_HOME_INPUT:
-                $clean = array_unique(preg_split($pattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                $clean = array_unique(preg_split($pattern, $postVal, -1, PREG_SPLIT_NO_EMPTY));
                 if (count($clean) == 0) {
                     $postVal = '';
                 } else {
@@ -401,7 +401,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 break;
 
             case Conf::CFG_NOCACHE_VAR:
-                $clean = array_unique(preg_split($pattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                $clean = array_unique(preg_split($pattern, $postVal, -1, PREG_SPLIT_NO_EMPTY));
                 if (count($clean) == 0) {
                     $postVal = '';
                 } else {
@@ -416,7 +416,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 break;
 
             case Conf::CFG_NOCACHE_URL:
-                $clean = array_unique(preg_split($pattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                $clean = array_unique(preg_split($pattern, $postVal, -1, PREG_SPLIT_NO_EMPTY));
                 if (count($clean) == 0) {
                     $postVal = '';
                 } else {
@@ -428,7 +428,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 break;
 
             case Conf::CFG_VARY_BYPASS:
-                $clean = array_unique(preg_split($pattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                $clean = array_unique(preg_split($pattern, $postVal, -1, PREG_SPLIT_NO_EMPTY));
                 if (count($clean) == 0) {
                     $postVal = '';
                 } else {
@@ -468,7 +468,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 }
                 break;
             case Conf::CFG_ALLOW_IPS:
-                $clean = array_unique(preg_split($pattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                $clean = array_unique(preg_split($pattern, $postVal, -1, PREG_SPLIT_NO_EMPTY));
                 if (count($clean) == 0) {
                     $postVal = '';
                 } else {
@@ -484,7 +484,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 }
                 break;
             case Conf::CFG_DEBUG_IPS:
-                $clean = array_unique(preg_split($pattern, $postVal, null, PREG_SPLIT_NO_EMPTY));
+                $clean = array_unique(preg_split($pattern, $postVal, -1, PREG_SPLIT_NO_EMPTY));
                 if (count($clean) == 0) {
                     $postVal = '';
                 } else {
