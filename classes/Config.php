@@ -711,9 +711,9 @@ class LiteSpeedCacheConfig
             'actionProductDelete',
             'actionProductAttributeDelete', // 'id_product'
             'deleteProductAttribute', // 'id_product'
-            'actionObjectSpecificPriceCoreAddAfter',
-            'actionObjectSpecificPriceCoreUpdateAfter',
-            'actionObjectSpecificPriceCoreDeleteAfter',
+            'actionObjectSpecificPriceAddAfter',
+            'actionObjectSpecificPriceUpdateAfter',
+            'actionObjectSpecificPriceDeleteAfter',
             'actionWatermark',
             'displayOrderConfirmation', // from OrderConfirmationController, array('order' => $order)
             // category
