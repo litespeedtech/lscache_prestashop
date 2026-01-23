@@ -117,6 +117,8 @@ class LiteSpeedCache extends Module
         }
         if (self::isActiveForUser()) {
             require_once _PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php';
+
+            Hook::exec('actionLiteSpeedCacheInitThirdParty');
         }
     }
     
