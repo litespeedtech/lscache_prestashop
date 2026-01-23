@@ -519,8 +519,8 @@ class LiteSpeedCacheCore
         if (!$category->is_root_category) {
             $cats = $category->getParentsCategories();
             if (!empty($cats)) {
-                foreach ($cats as $catid) {
-                    $tags['pub'][] = Conf::TAG_PREFIX_CATEGORY . $catid;
+                foreach ($cats as $cat) {
+                    $tags['pub'][] = Conf::TAG_PREFIX_CATEGORY . $cat['id_category'];
                 }
             }
         }
