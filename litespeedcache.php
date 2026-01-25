@@ -124,7 +124,7 @@ class LiteSpeedCache extends Module
     
     public static function getVersion()
     {
-        return '1.5.3';
+        return '1.6.0';
     }
 
     public static function isActive()

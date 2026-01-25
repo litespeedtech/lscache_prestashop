@@ -745,6 +745,8 @@ class LiteSpeedCacheConfig
             'addWebserviceResources',
             'updateProduct', // from Product array('id_product' => )
             'actionUpdateQuantity', // from StockAvailable array('id_product' => $id_product,...)
+            // cart quantity update
+            'actionCartUpdateQuantityBefore',
         ];
 
         if (version_compare(_PS_VERSION_, '1.7.1.0', '>=')) {

@@ -664,6 +664,14 @@ class LiteSpeedCacheCore
             case 'addwebserviceresources':
                 return $this->getPurgeTagsByWebService($args);
 
+            case 'actioncartupdatequantitybefore':
+                if (isset($args['product']) && !empty($args['product']->id)) {
+                    // On cart quantity update, purge only the affected product page cache by tagging the product.
+                    $tags['pub'][] = Conf::TAG_PREFIX_PRODUCT . $args['product']->id;
+                    return $tags;
+                }
+                break;
+
             default: // custom defined events
                 return $this->config->getPurgeTagsByEvent($event);
         }

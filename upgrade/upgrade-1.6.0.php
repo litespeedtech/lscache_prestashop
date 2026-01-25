@@ -49,6 +49,7 @@ function upgrade_module_1_6_0(LiteSpeedCache $module)
         'actionObjectSpecificPriceAddAfter',
         'actionObjectSpecificPriceUpdateAfter',
         'actionObjectSpecificPriceDeleteAfter',
+        'actionCartUpdateQuantityBefore',
     ]);
 
     return true;
