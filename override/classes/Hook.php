@@ -49,8 +49,13 @@ class Hook extends HookCore
 
         $html = parent::coreCallHook($module, $method, $params);
 
-        if (defined('_LITESPEED_CACHE_') && is_string($html)
+        // Ensure ESI markers are injected even when hooks return NULL or empty output
+        if (defined('_LITESPEED_CACHE_') && (is_string($html) || $html === null)
                 && ($marker = LiteSpeedCache::injectCallHook($module, $method, $params)) !== false) {
+            // Normalize empty hook output to avoid generating an empty ESI block
+            if ($html === null || $html === '') {
+                $html = '&nbsp;';
+            }
             $html = $marker . $html . LiteSpeedCache::ESI_MARKER_END;
         }
 

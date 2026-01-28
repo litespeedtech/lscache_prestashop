@@ -26,6 +26,8 @@ use LiteSpeedCacheEsiItem as EsiItem;
 use LiteSpeedCacheHelper as LSHelper;
 use LiteSpeedCacheLog as LSLog;
 
+require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/HookParamsResolver.php';
+
 class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 {
     public function __construct()
@@ -170,7 +172,14 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
             $method = $item->getParam('mt');
 
-            $item->setContent($module->$method($params));
+            $content = $module->$method($params);
+
+            // Avoid empty ESI fragments: some hooks/modules may return NULL or empty content
+            if ($content === null || $content === ''){
+                $content = '&nbsp;';
+            }
+
+            $item->setContent($content);
         }
     }
 
@@ -209,6 +218,10 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
                 $i++;
             }
         }
+
+        // Apply hook-specific parameter fixes for ESI rendering
+        $hookParamsResolver = new HookParamsResolver($this->context);
+        $hookParamsResolver->resolve($item, $params);
     }
 
     private function processToken($item)

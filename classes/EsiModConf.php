@@ -392,5 +392,9 @@ class LiteSpeedCacheEsiModConf implements JsonSerializable
     {
         return $this->getFieldValue(self::FLD_TEMPLATE_ARGUMENT,false,true);
     }
-        
+
+    public function getMethods()
+    {
+        return $this->getFieldValue(self::FLD_HOOK_METHODS,false,true);
+    }
 }
