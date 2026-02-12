@@ -34,6 +34,7 @@ if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) { // for PS 1.7 only
     // default built-in modules
     include __DIR__ . '/1.7/LscCustomerSignIn.php';
     include __DIR__ . '/1.7/LscShoppingcart.php';
+    include __DIR__ . '/1.7/LscEmailAlerts.php';
 
     // integrated modules, feel free to comment out the modules you don't use
     include __DIR__ . '/1.7/LscGdprPro.php';
@@ -43,7 +44,6 @@ if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) { // for PS 1.7 only
     include __DIR__ . '/1.7/iqit/loader.php';  // warehouse theme
     include __DIR__ . '/1.7/panda_transform/loader.php'; // panda or transform theme
     include __DIR__ . '/1.7/promokit/loader.php'; // alysum theme
-    
 } else { // for PS 1.6 only
     // default built-in modules
     include __DIR__ . '/1.6/LscBlockCart.php';
