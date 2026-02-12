@@ -747,7 +747,7 @@ class LiteSpeedCache extends Module
         $mp = self::getModuleParams($params, $conf->getTemplateArgs());
 
         if(!empty($mp)){
-            $esiParam['mp']= implode(",", $mp);
+            $esiParam['mp'] = json_encode($mp, JSON_UNESCAPED_UNICODE);
         }
 
         return $lsc->registerEsiMarker($esiParam, $conf);
@@ -776,7 +776,7 @@ class LiteSpeedCache extends Module
         $mp = self::getModuleParams($params, $conf->getTemplateArgs());
 
         if(!empty($mp)){
-            $esiParam['mp']= implode(",", $mp);
+            $esiParam['mp'] = json_encode($mp, JSON_UNESCAPED_UNICODE);
         }
 
         return $lsc->registerEsiMarker($esiParam, $conf);
