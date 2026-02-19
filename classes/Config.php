@@ -243,7 +243,7 @@ class LiteSpeedCacheConfig
                 self::CFG_HOME_TTL => 86400,
                 self::CFG_404_TTL => 86400,
                 self::CFG_PCOMMENTS_TTL => 7200,
-                self::CFG_DIFFCUSTGRP => 0,
+                self::CFG_DIFFCUSTGRP => 2,
             ];
         }
     }
