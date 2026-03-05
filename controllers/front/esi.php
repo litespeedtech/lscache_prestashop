@@ -88,7 +88,9 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_OUTPUT) {
             LSLog::log('ESI controller output ' . $inline . $html, LSLog::LEVEL_ESI_OUTPUT);
         }
+        ob_clean();
         echo $inline . $html;
+        ob_end_flush();        
     }
 
     private function populateItemContent($item)
