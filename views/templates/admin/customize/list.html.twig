@@ -1,0 +1,95 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-12">
+
+    {# Info panel #}
+    <div class="alert alert-info mb-3">
+      You can make an ESI block for a widget, also known as Hole-Punching. Built-in and integrated modules cannot be changed. These are advanced settings for third-party modules. <a href="https://docs.litespeedtech.com/lscache/lscps/settings/#customization-for-prestashop-17" target="_blank" rel="noopener noreferrer">Documentation</a>
+    </div>
+
+    {# Table #}
+    <div class="card">
+      <div class="card-body p-0">
+        {% if rows is empty %}
+        <div class="p-4 text-center text-muted">
+          No ESI blocks configured yet.
+          <a href="{{ path('admin_litespeedcache_customize_add') }}">Add the first one.</a>
+        </div>
+        {% else %}
+        <table class="table table-hover mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th>Module (ID)</th>
+              <th>Name</th>
+              <th>Cache</th>
+              <th>TTL</th>
+              <th>Tag</th>
+              <th>Type</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            {% set isEditable = row.id not in defaultIds %}
+            <tr>
+              <td>
+                <code>{{ row.id }}</code>
+              </td>
+              <td>{{ row.name }}</td>
+              <td>
+                {% if row.priv %}
+                  <span class="badge badge-success">Private</span>
+                {% else %}
+                  <span class="badge badge-danger">Public</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.ttl %}
+                  {{ row.ttl }} s
+                {% else %}
+                  <span class="text-muted">default</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.tag %}
+                  <code>{{ row.tag }}</code>
+                {% else %}
+                  <span class="text-muted">&mdash;</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.typeLabel == 'Customized' %}
+                  <span class="badge badge-primary">{{ row.typeLabel }}</span>
+                {% else %}
+                  <span class="badge badge-warning">{{ row.typeLabel }}</span>
+                {% endif %}
+              </td>
+              <td class="text-right">
+                {% if isEditable %}
+                  <a href="{{ editUrl|replace({'__ID__': row.id}) }}"
+                    class="btn btn-sm btn-outline-primary">Edit</a>
+                  <form method="post"
+                    action="{{ deleteUrl|replace({'__ID__': row.id}) }}"
+                    style="display:inline-block;"
+                    onsubmit="return confirm('Delete ESI block \'{{ row.id|escape('js') }}\'? This cannot be undone.');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                {% else %}
+                  <a href="{{ viewUrl|replace({'__ID__': row.id}) }}"
+                    class="btn btn-sm btn-outline-secondary">View</a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+      </div>{# /card-body #}
+    </div>{# /card #}
+
+  </div>{# /col #}
+</div>{# /row #}
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+{% endblock %}

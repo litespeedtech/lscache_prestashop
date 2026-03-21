@@ -1,0 +1,321 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block extra_javascripts %}
+  {{ parent() }}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-12">
+
+    {# ================================================================== #}
+    {# LiteSpeed Cache                                                     #}
+    {# ================================================================== #}
+    {% if lsEnabled %}
+    <div class="card mb-4">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-header-title">
+          <i class="material-icons">flash_on</i>
+          LiteSpeed Cache
+        </h3>
+        {% if lsActive %}
+          <span class="badge badge-success">Active</span>
+        {% else %}
+          <span class="badge badge-warning">No LiteSpeed license detected</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-sm-4">
+            <p class="h2 mb-1 font-weight-bold">{{ lsStats.cached_resp|number_format(0, '.', ',') }}</p>
+            <p class="text-muted mb-0">Cached responses set</p>
+            <small class="text-muted">Pages served with cache headers</small>
+          </div>
+          <div class="col-sm-4">
+            <p class="h2 mb-1 font-weight-bold">{{ lsStats.purge_count|number_format(0, '.', ',') }}</p>
+            <p class="text-muted mb-0">Purge events</p>
+          </div>
+          <div class="col-sm-4">
+            <p class="h2 mb-1 font-weight-bold">
+              {{ lsStats.last_purge ?? '—' }}
+            </p>
+            <p class="text-muted mb-0">Last purge</p>
+          </div>
+        </div>
+        <p class="text-muted mt-3 mb-0 small">
+          <i class="material-icons" style="font-size:14px;vertical-align:middle">info</i>
+          Actual cache hits are served by LiteSpeed directly without PHP execution and cannot be counted from PHP.
+        </p>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ================================================================== #}
+    {# Redis Object Cache                                                  #}
+    {# ================================================================== #}
+    {% if objEnabled %}
+    <div class="card mb-4">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-header-title">
+          <i class="material-icons">storage</i>
+          Redis Object Cache{% if redisStats %} <small class="text-muted font-weight-normal">{{ redisStats.version }}</small>{% endif %}
+        </h3>
+        {% if redisStats %}
+          <span class="badge badge-success">Since {{ redisStats.uptime_human }}</span>
+        {% else %}
+          <span class="badge badge-danger">Unreachable</span>
+        {% endif %}
+      </div>
+
+      {% if redisStats %}
+      <div class="card-body">
+
+        {# Hit Rate (left) + metrics + Memory Fragmentation (right) #}
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header"><small class="font-weight-bold">Hit Rate</small></div>
+              <div class="card-body">
+                <div style="position:relative; height:250px; width:100%;">
+                  <canvas id="hitRateChart"></canvas>
+                </div>
+                <div class="text-center mt-2">
+                  <strong>Hit Rate: {{ redisStats.ratio }}%</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 d-flex flex-column gap-3">
+            <div class="row">
+              <div class="col-6 mb-3">
+                <div class="card h-100">
+                  <div class="card-header"><small class="font-weight-bold">Started at</small></div>
+                  <div class="card-body text-center py-3">
+                    <h3 class="mb-0" style="font-size:1rem;">{{ redisStats.uptime }}</h3>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 mb-3">
+                <div class="card h-100">
+                  <div class="card-header"><small class="font-weight-bold">Used Memory</small></div>
+                  <div class="card-body text-center py-3">
+                    <h3 class="mb-0">{{ redisStats.memory }}</h3>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 mb-3">
+                <div class="card h-100">
+                  <div class="card-header"><small class="font-weight-bold">Total Keys</small></div>
+                  <div class="card-body text-center py-3">
+                    <h3 class="mb-0">{{ redisStats.keys|number_format(0, '.', ',') }}</h3>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 mb-3">
+                <div class="card h-100">
+                  <div class="card-header"><small class="font-weight-bold">Memory Fragmentation</small></div>
+                  <div class="card-body text-center py-3">
+                    <h3 class="mb-0">{{ redisStats.fragmentation }}</h3>
+                    <p class="text-muted small mb-0">Ratio &gt; 1.0 fragmentation. &lt; 1.0 swapping.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      {% else %}
+      <div class="card-body">
+        <p class="text-muted">Could not connect to Redis. Check the Object Cache configuration.</p>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {# ================================================================== #}
+    {# Cloudflare                                                          #}
+    {# ================================================================== #}
+    {% if cfEnabled %}
+    <div class="card mb-4">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-header-title">
+          <i class="material-icons">cloud</i>
+          Cloudflare Cache
+        </h3>
+        {% if cfStats %}
+          <span class="badge badge-success">Last {{ cfStats.period_hours }}h</span>
+        {% else %}
+          <span class="badge badge-warning">API unavailable</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if cfStats %}
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header"><small class="font-weight-bold">Cache Hit Rate</small></div>
+              <div class="card-body">
+                <div style="position:relative; height:250px; width:100%;">
+                  <canvas id="cfHitRateChart"></canvas>
+                </div>
+                <div class="text-center mt-2">
+                  <strong>Hit Rate: {{ cfStats.req_ratio }}%</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="row">
+              <div class="col-6 mb-3">
+                <div class="card h-100">
+                  <div class="card-header"><small class="font-weight-bold">Total Requests</small></div>
+                  <div class="card-body text-center py-3">
+                    <h3 class="mb-0">{{ cfStats.req_total|number_format(0, '.', ',') }}</h3>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 mb-3">
+                <div class="card h-100">
+                  <div class="card-header"><small class="font-weight-bold">Cached Requests</small></div>
+                  <div class="card-body text-center py-3">
+                    <h3 class="mb-0 text-success">{{ cfStats.req_cached|number_format(0, '.', ',') }}</h3>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 mb-3">
+                <div class="card h-100">
+                  <div class="card-header"><small class="font-weight-bold">Bandwidth Saved</small></div>
+                  <div class="card-body text-center py-3">
+                    <h3 class="mb-0">{{ cfStats.bw_cached_mb }} MB</h3>
+                    <p class="text-muted small mb-0">of {{ cfStats.bw_total_mb }} MB total</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6 mb-3">
+                <div class="card h-100">
+                  <div class="card-header"><small class="font-weight-bold">Hit Ratio</small></div>
+                  <div class="card-body text-center py-3">
+                    <h3 class="mb-0 {% if cfStats.req_ratio >= 80 %}text-success{% elseif cfStats.req_ratio >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                      {{ cfStats.req_ratio }}%
+                    </h3>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <p class="text-muted">Could not retrieve Cloudflare analytics.</p>
+        {% if cfError %}<p class="text-danger small"><code>{{ cfError }}</code></p>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if not lsEnabled and not objEnabled and not cfEnabled %}
+    <div class="alert alert-info">
+      No cache services are currently enabled.
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% if objEnabled and redisStats %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var ctx    = document.getElementById('hitRateChart').getContext('2d');
+  var hits   = {{ redisStats.hits|default(0)|number_format(0, '.', '') }};
+  var misses = {{ redisStats.misses|default(0)|number_format(0, '.', '') }};
+  var total  = hits + misses;
+
+  var chartData = {
+    labels: ['Hits', 'Misses'],
+    datasets: [{
+      data: [hits, misses],
+      backgroundColor: ['rgba(75,192,192,0.2)', 'rgba(255,99,132,0.2)'],
+      borderColor:     ['rgba(75,192,192,1)',   'rgba(255,99,132,1)'],
+      borderWidth: 1
+    }]
+  };
+
+  if (total === 0) {
+    chartData.labels                          = ['No Data'];
+    chartData.datasets[0].data               = [1];
+    chartData.datasets[0].backgroundColor    = ['rgba(200,200,200,0.2)'];
+    chartData.datasets[0].borderColor        = ['rgba(200,200,200,1)'];
+  }
+
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: chartData,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              if (total === 0) return ' No Data available yet';
+              return (context.label || '') + ': ' + context.raw;
+            }
+          }
+        }
+      }
+    }
+  });
+});
+</script>
+{% endif %}
+
+{% if cfEnabled and cfStats %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var ctx    = document.getElementById('cfHitRateChart').getContext('2d');
+  var hits   = {{ cfStats.req_cached }};
+  var misses = {{ cfStats.req_total - cfStats.req_cached }};
+  var total  = hits + misses;
+
+  var chartData = {
+    labels: ['Cached', 'Uncached'],
+    datasets: [{
+      data: [hits, misses],
+      backgroundColor: ['rgba(75,192,192,0.2)', 'rgba(255,99,132,0.2)'],
+      borderColor:     ['rgba(75,192,192,1)',   'rgba(255,99,132,1)'],
+      borderWidth: 1
+    }]
+  };
+
+  if (total === 0) {
+    chartData.labels                          = ['No Data'];
+    chartData.datasets[0].data               = [1];
+    chartData.datasets[0].backgroundColor    = ['rgba(200,200,200,0.2)'];
+    chartData.datasets[0].borderColor        = ['rgba(200,200,200,1)'];
+  }
+
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: chartData,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              if (total === 0) return ' No Data available yet';
+              return (context.label || '') + ': ' + context.raw.toLocaleString();
+            }
+          }
+        }
+      }
+    }
+  });
+});
+</script>
+{% endif %}
+
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+{% endblock %}

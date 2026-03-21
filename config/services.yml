@@ -1,0 +1,70 @@
+services:
+    # Console command: cache warmup
+    prestashop.module.litespeedcache.warmup:
+        class: LiteSpeed\Cache\Warmup
+        tags:
+            - { name: 'console.command' }
+
+    # Cache configuration singleton — available for injection in Symfony services
+    prestashop.module.litespeedcache.config:
+        class: LiteSpeed\Cache\Config\CacheConfig
+        factory: ['LiteSpeed\Cache\Config\CacheConfig', 'getInstance']
+        public: true
+
+    # Cache manager — handles tag generation, purge and HTTP header output
+    prestashop.module.litespeedcache.cache_manager:
+        class: LiteSpeed\Cache\Core\CacheManager
+        arguments:
+            - '@prestashop.module.litespeedcache.config'
+        public: true
+
+    # Config validator — validates and normalises admin configuration POST values
+    prestashop.module.litespeedcache.config_validator:
+        class: LiteSpeed\Cache\Admin\ConfigValidator
+        public: false
+
+    # Symfony admin controllers
+    LiteSpeed\Cache\Controller\Admin\ConfigController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    LiteSpeed\Cache\Controller\Admin\ManageController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    LiteSpeed\Cache\Controller\Admin\ObjController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    LiteSpeed\Cache\Controller\Admin\CdnController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    LiteSpeed\Cache\Controller\Admin\ExclusionsController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    LiteSpeed\Cache\Controller\Admin\CustomizeController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    LiteSpeed\Cache\Controller\Admin\WarmupController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    LiteSpeed\Cache\Controller\Admin\ToolsController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    # Adds Redis option to Performance > Caching form
+    LiteSpeed\Cache\Form\Extension\CachingTypeExtension:
+        tags:
+            - { name: form.type_extension }

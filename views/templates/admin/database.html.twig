@@ -1,0 +1,193 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-12">
+
+    {# ============ DATABASE OPTIMIZER ============ #}
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-header-title">Database Optimizer</h3></div>
+      <div class="card-body p-3">
+        <div class="row no-gutters">
+          {% for item in cleanupItems %}
+          <div class="col-lg-3 col-md-4 col-sm-6 p-2">
+            <form method="post">
+              <input type="hidden" name="cleanup_action" value="{{ item.key }}">
+              <button type="{{ item.count > 0 ? 'submit' : 'button' }}" class="btn btn-block text-left p-0 border-0" style="background:none;" {{ item.count > 0 ? 'onclick=return confirm(\'' ~ item.title ~ ': Are you sure?\');' : 'disabled' }}>
+                <div class="d-flex align-items-start p-3 rounded h-100" style="background:#f8f9fa; border:1px solid #dee2e6; min-height:90px; position:relative;">
+                  <i class="material-icons mr-3" style="font-size:40px; color:#adb5bd;">{{ item.icon }}</i>
+                  <div class="flex-grow-1">
+                    <div style="font-weight:600; color:#343a40; font-size:14px;">
+                      {{ item.title }} <span style="color:{{ item.count > 0 ? '#e84e6a' : '#70b580' }};">({{ item.count }})</span>
+                    </div>
+                    <div style="color:#6c757d; font-size:12px; line-height:1.4; margin-top:2px;">{{ item.desc }}</div>
+                  </div>
+                  <span style="position:absolute; top:10px; right:10px;">
+                    {% if item.count > 0 %}
+                      <i class="material-icons" style="color:#e84e6a; font-size:22px;">cancel</i>
+                    {% else %}
+                      <i class="material-icons" style="color:#70b580; font-size:22px;">check_circle</i>
+                    {% endif %}
+                  </span>
+                </div>
+              </button>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {# ============ DATABASE SUMMARY ============ #}
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-header-title mb-0">Database Summary</h3>
+        {% if summary.free_space > 0 %}
+          <form method="post" class="d-inline">
+            <input type="hidden" name="optimize_tables" value="1">
+            <button type="submit" class="btn btn-sm btn-secondary" onclick="return confirm('Optimize all tables? This may take a while.');">Optimize All</button>
+          </form>
+        {% else %}
+          <span class="badge badge-success">Optimized</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+
+        {# KPI row + Server info card #}
+        <div class="row mb-4">
+          <div class="col-lg-3 mb-3">
+            <div class="p-0 rounded h-100" style="background:#f8f9fa; border:1px solid #e9ecef;">
+              <table class="table mb-0" style="font-size:13px;">
+                <tbody>
+                  {% for info in [
+                    {label: 'MySQL Version', value: summary.mysql_version},
+                    {label: 'Default Engine', value: summary.default_engine},
+                    {label: 'Charset', value: summary.charset},
+                    {label: 'Collation', value: summary.collation},
+                    {label: 'Database', value: summary.db_name},
+                  ] %}
+                  <tr>
+                    <td class="text-muted" style="font-weight:600; border-color:#e9ecef;">{{ info.label }}</td>
+                    <td style="border-color:#e9ecef;"><strong>{{ info.value }}</strong></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {% set kpis = [
+            {value: summary.total_tables,              label: 'Tables',           icon: 'table_chart'},
+            {value: summary.total_rows|number_format,  label: 'Total Rows',       icon: 'format_list_numbered'},
+            {value: summary.total_size ~ ' MB',        label: 'Total Size',       icon: 'storage'},
+            {value: summary.data_size ~ ' MB',         label: 'Data',             icon: 'folder'},
+            {value: summary.index_size ~ ' MB',        label: 'Indexes',          icon: 'sort'},
+          ] %}
+          {% if summary.free_space > 0 %}
+            {% set kpis = kpis|merge([{value: summary.free_space ~ ' MB', label: 'Reclaimable', icon: 'delete_outline'}]) %}
+          {% endif %}
+          {% for kpi in kpis %}
+          <div class="col mb-3">
+            <div class="p-3 rounded text-center h-100" style="background:#f8f9fa; border:1px solid #e9ecef;">
+              <i class="material-icons mb-1" style="color:#adb5bd; font-size:22px;">{{ kpi.icon }}</i>
+              <div style="font-size:22px; font-weight:700; color:#343a40;">{{ kpi.value }}</div>
+              <small class="text-muted">{{ kpi.label }}</small>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        {# Top tables #}
+        <h6 class="text-muted mb-2">Top 15 Tables by Size</h6>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0" style="font-size:13px;">
+            <thead><tr>
+              <th>#</th>
+              <th>Table</th>
+              <th style="width:100px;">Engine</th>
+              <th style="width:100px;">Rows</th>
+              <th style="width:100px;">Size (MB)</th>
+              <th>% of Total</th>
+            </tr></thead>
+            <tbody>
+              {% for t in summary.top_tables %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td><code>{{ t.table_name }}</code></td>
+                <td><span class="badge badge-{{ t.engine|lower == 'innodb' ? 'success' : 'warning' }}">{{ t.engine }}</span></td>
+                <td>{{ t.row_count|number_format }}</td>
+                <td>{{ t.size_mb }}</td>
+                <td>
+                  {% set pct = summary.total_size > 0 ? (t.size_mb / summary.total_size * 100)|round(1) : 0 %}
+                  <div class="d-flex align-items-center">
+                    <div class="progress flex-grow-1 mr-2" style="height:6px;">
+                      <div class="progress-bar bg-info" style="width:{{ pct }}%;"></div>
+                    </div>
+                    <small class="text-muted" style="min-width:40px;">{{ pct }}%</small>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    {# ============ TABLE ENGINE CONVERTER ============ #}
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-header-title mb-0">Table Engine Converter</h3>
+        {% if nonInnodbCount > 0 %}
+          <span class="badge badge-warning">{{ nonInnodbCount }} non-InnoDB tables</span>
+        {% else %}
+          <span class="badge badge-success">Optimized</span>
+        {% endif %}
+      </div>
+      <div class="card-body {{ nonInnodbCount > 0 ? 'p-0' : '' }}">
+        {% if nonInnodbCount == 0 %}
+          <div class="alert alert-success mb-0">All tables are already using InnoDB. No conversion needed.</div>
+        {% else %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead><tr>
+              <th>#</th>
+              <th>Table</th>
+              <th style="width:120px;">Engine</th>
+              <th style="width:100px;">Rows</th>
+              <th style="width:100px;">Data (MB)</th>
+              <th style="width:100px;">Index (MB)</th>
+              <th style="width:160px;">Action</th>
+            </tr></thead>
+            <tbody>
+              {% set idx = 0 %}
+              {% for t in tables %}
+              {% if t.engine|lower != 'innodb' %}
+              {% set idx = idx + 1 %}
+              <tr>
+                <td>{{ idx }}</td>
+                <td><code>{{ t.table_name }}</code></td>
+                <td><span class="badge badge-warning">{{ t.engine }}</span></td>
+                <td>{{ t.row_count }}</td>
+                <td>{{ t.data_mb }}</td>
+                <td>{{ t.index_mb }}</td>
+                <td>
+                  <form method="post" class="d-inline">
+                    <input type="hidden" name="convert_table" value="{{ t.table_name }}">
+                    <button type="submit" class="btn btn-sm btn-outline-primary" onclick="return confirm('Convert {{ t.table_name }} to InnoDB?');">Convert to InnoDB</button>
+                  </form>
+                </td>
+              </tr>
+              {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+{% endblock %}

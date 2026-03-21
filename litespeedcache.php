@@ -1,0 +1,974 @@
+<?php
+/**
+ * LiteSpeed Cache for Prestashop.
+ *
+ * NOTICE OF LICENSE
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
+ *
+ * @author   LiteSpeed Technologies
+ * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @license     https://opensource.org/licenses/GPL-3.0
+ */
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+use LiteSpeed\Cache\Config\CacheConfig as Conf;
+use LiteSpeed\Cache\Config\CdnConfig;
+use LiteSpeed\Cache\Config\ObjConfig;
+use LiteSpeed\Cache\Config\ExclusionsConfig;
+use LiteSpeed\Cache\Integration\Cloudflare;
+use LiteSpeed\Cache\Core\CacheManager;
+use LiteSpeed\Cache\Core\CacheState;
+use LiteSpeed\Cache\Esi\EsiItem;
+use LiteSpeed\Cache\Helper\CacheHelper;
+use LiteSpeed\Cache\Helper\ObjectCacheActivator;
+use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
+use LiteSpeed\Cache\Module\TabManager;
+use LiteSpeed\Cache\Vary\VaryCookie;
+
+class LiteSpeedCache extends Module
+{
+    const MODULE_NAME = 'litespeedcache';
+
+    // Bitmask constants kept for backward compatibility with third-party integrations.
+    // The authoritative values live in CacheState; these must remain identical.
+    const CCBM_CACHEABLE      = CacheState::CACHEABLE;
+    const CCBM_PRIVATE        = CacheState::PRIV;
+    const CCBM_CAN_INJECT_ESI = CacheState::CAN_INJECT_ESI;
+    const CCBM_ESI_ON         = CacheState::ESI_ON;
+    const CCBM_ESI_REQ        = CacheState::ESI_REQ;
+    const CCBM_GUEST          = CacheState::GUEST;
+    const CCBM_ERROR_CODE     = CacheState::ERROR_CODE;
+    const CCBM_NOT_CACHEABLE  = CacheState::NOT_CACHEABLE;
+    const CCBM_VARY_CHECKED   = CacheState::VARY_CHECKED;
+    const CCBM_VARY_CHANGED   = CacheState::VARY_CHANGED;
+    const CCBM_FRONT_CONTROLLER = CacheState::FRONT_CTRL;
+    const CCBM_MOD_ACTIVE     = CacheState::MOD_ACTIVE;
+    const CCBM_MOD_ALLOWIP    = CacheState::MOD_ALLOWIP;
+
+    // ESI output marker — must be a unique string that cannot appear in normal HTML.
+    const ESI_MARKER_END = '_LSCESIEND_';
+
+    /** @var CacheManager */
+    private $cache;
+
+    /** @var Conf */
+    private $config;
+
+    /** @var array{tracker: array, marker: array} */
+    private $esiInjection;
+
+    public function __construct()
+    {
+        $this->name = 'litespeedcache'; // literal required by PS validator
+        $this->tab = 'administration';
+        $this->author = 'LiteSpeedTech';
+        $this->version = self::getVersion();
+        $this->need_instance = 0;
+        $this->module_key = '2a93f81de38cad872010f09589c279ba';
+
+        $this->ps_versions_compliancy = [
+            'min' => '1.7',
+            'max' => _PS_VERSION_,
+        ];
+
+        $this->controllers = ['esi'];
+        $this->bootstrap   = true;
+
+        parent::__construct();
+
+        $this->displayName = $this->trans('LiteSpeed Cache Plugin', [], 'Modules.Litespeedcache.Admin');
+        $this->description = $this->trans('Integrates with LiteSpeed Full Page Cache on LiteSpeed Server.', [], 'Modules.Litespeedcache.Admin');
+
+        $this->config       = Conf::getInstance();
+        $this->cache        = new CacheManager($this->config);
+        $this->esiInjection = ['tracker' => [], 'marker' => []];
+
+        CacheState::set($this->config->moduleEnabled());
+
+        if (!defined('_LITESPEED_CACHE_')) {
+            define('_LITESPEED_CACHE_', 1);
+        }
+        if (!defined('_LITESPEED_DEBUG_')) {
+            define('_LITESPEED_DEBUG_', 0);
+        }
+
+        if (self::isActiveForUser()) {
+            require_once _PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php';
+            Hook::exec('actionLiteSpeedCacheInitThirdParty');
+        }
+
+    }
+
+    public function isUsingNewTranslationSystem(): bool
+    {
+        return true;
+    }
+
+    // ---- Version ----------------------------------------------------------------
+
+    public static function getVersion(): string
+    {
+        return '2.0.0';
+    }
+
+    // ---- State accessors (delegate to CacheState) --------------------------------
+
+    public static function isActive(): bool
+    {
+        return CacheState::isActive();
+    }
+
+    public static function isActiveForUser(): bool
+    {
+        return CacheState::isActiveForUser();
+    }
+
+    public static function isRestrictedIP(): bool
+    {
+        return CacheState::isRestrictedIP();
+    }
+
+    public static function isCacheable(): bool
+    {
+        return CacheState::isCacheable();
+    }
+
+    public static function isEsiRequest(): bool
+    {
+        return CacheState::isEsiRequest();
+    }
+
+    public static function canInjectEsi(): bool
+    {
+        return CacheState::canInjectEsi();
+    }
+
+    public static function isFrontController(): bool
+    {
+        return CacheState::isFrontController();
+    }
+
+    /** Returns the raw bitmask (used by CacheManager and debug output). */
+    public static function getCCFlag(): int
+    {
+        return CacheState::flag();
+    }
+
+    public static function getCCFlagDebugInfo(): string
+    {
+        return CacheState::debugInfo();
+    }
+
+    public function setEsiOn(): void
+    {
+        CacheState::set(CacheState::ESI_ON);
+    }
+
+    // ---- Hooks ------------------------------------------------------------------
+
+    public function hookActionDispatcher(array $params): void
+    {
+        if (!self::isActiveForUser()) {
+            return;
+        }
+
+        $controllerType  = $params['controller_type'];
+        $controllerClass = $params['controller_class'];
+
+        if (_LITESPEED_DEBUG_ > 0) {
+            $silent = ['AdminDashboardController', 'AdminGamificationController', 'AdminAjaxFaviconBOController'];
+            if (in_array($controllerClass, $silent)) {
+                LSLog::setDebugLevel(0);
+            }
+        }
+
+        $status = $this->checkDispatcher($controllerType, $controllerClass);
+        LscIntegration::preDispatchAction();
+
+        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_CACHE_ROUTE) {
+            LSLog::log(
+                __FUNCTION__ . ' type=' . $controllerType . ' controller=' . $controllerClass
+                . ' req=' . $_SERVER['REQUEST_URI'] . ' :' . $status,
+                LSLog::LEVEL_CACHE_ROUTE
+            );
+        }
+    }
+
+    public function hookOverrideLayoutTemplate(array $params): void
+    {
+        if (!self::isCacheable()) {
+            return;
+        }
+        if ($this->cache->hasNotification()) {
+            $this->setNotCacheable('Has private notification');
+        } elseif (!self::isEsiRequest()) {
+            $this->cache->initCacheTagsByController($params);
+        }
+    }
+
+    public function hookDisplayOverrideTemplate(array $params): void
+    {
+        if (!self::isCacheable()) {
+            return;
+        }
+        $this->cache->initCacheTagsByController($params);
+    }
+
+    public function hookActionProductSearchAfter(array $params): void
+    {
+        if (self::isCacheable() && isset($params['products'])) {
+            foreach ($params['products'] as $p) {
+                if (!empty($p['specific_prices'])) {
+                    $this->cache->checkSpecificPrices($p['specific_prices']);
+                }
+            }
+        }
+    }
+
+    public function hookFilterCategoryContent(array $params): array
+    {
+        if (self::isCacheable() && isset($params['object']['id'])) {
+            $this->cache->addCacheTags(Conf::TAG_PREFIX_CATEGORY . $params['object']['id']);
+        }
+        return $params;
+    }
+
+    public function hookFilterProductContent(array $params): array
+    {
+        if (self::isCacheable()) {
+            if (isset($params['object']['id'])) {
+                $this->cache->addCacheTags(Conf::TAG_PREFIX_PRODUCT . $params['object']['id']);
+            }
+            if (!empty($params['object']['specific_prices'])) {
+                $this->cache->checkSpecificPrices($params['object']['specific_prices']);
+            }
+        }
+        return $params;
+    }
+
+    public function hookFilterCmsCategoryContent(array $params): array
+    {
+        if (self::isCacheable()) {
+            $this->cache->addCacheTags(Conf::TAG_PREFIX_CMS);
+        }
+        return $params;
+    }
+
+    public function hookFilterCmsContent(array $params): array
+    {
+        if (self::isCacheable() && isset($params['object']['id'])) {
+            $this->cache->addCacheTags(Conf::TAG_PREFIX_CMS . $params['object']['id']);
+        }
+        return $params;
+    }
+
+    /**
+     * Catchall hook handler for purge events.
+     *
+     * PS calls methods dynamically via __call() for any registered hook that
+     * does not have an explicit hook{HookName}() method.  We route all such
+     * calls through CacheManager::purgeByCatchAllMethod().
+     */
+    public function __call(string $method, array $args)
+    {
+        // PS may wrap args in a single-element numeric array; unwrap it.
+        if (count($args) === 1 && array_keys($args) === [0]) {
+            $args = $args[0];
+        }
+
+        $event = \Tools::strtolower(\Tools::substr($method, 4));
+
+        // Cache clear hooks must always run (even when module is disabled)
+        // so that LS purge + Redis flush + CF purge happen correctly.
+        if ($event === 'actionclearcompilecache' || $event === 'actionclearsf2cache') {
+            $this->cache->purgeByCatchAllMethod($method, $args);
+            $this->flushExternalCaches();
+            return;
+        }
+
+        if (!self::isActive()) {
+            return;
+        }
+        $this->cache->purgeByCatchAllMethod($method, $args);
+    }
+
+    /**
+     * Public hook for third-party modules to request a cache purge.
+     *
+     * Required param: $params['from'] (caller identifier string)
+     * One of: $params['public'] (array of tags), $params['private'] (array of tags),
+     *         $params['ALL'] (purge entire storage)
+     */
+    public function hookLitespeedCachePurge(array $params): void
+    {
+        if (!isset($params['from'])) {
+            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
+                LSLog::log(__FUNCTION__ . ' Illegal entrance - missing from', LSLog::LEVEL_PURGE_EVENT);
+            }
+            return;
+        }
+
+        $msg = __FUNCTION__ . ' from ' . $params['from'];
+
+        if (!self::isActive()) {
+            // When module is inactive only allow a full public purge.
+            if (isset($params['public']) && $params['public'] === '*') {
+                $this->cache->purgeByTags('*', false, $msg);
+            } elseif (_LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
+                LSLog::log($msg . ' Illegal tags - module not activated', LSLog::LEVEL_PURGE_EVENT);
+            }
+            return;
+        }
+
+        if (isset($params['public'])) {
+            $this->cache->purgeByTags($params['public'], false, $msg);
+            if ($params['public'] === '*') {
+                $this->purgeCloudflare();
+            }
+        } elseif (isset($params['private'])) {
+            $this->cache->purgeByTags($params['private'], true, $msg);
+        } elseif (isset($params['ALL'])) {
+            $this->cache->purgeEntireStorage($msg);
+            $this->purgeCloudflare();
+        } elseif (_LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
+            LSLog::log($msg . ' Illegal - missing public/private/ALL', LSLog::LEVEL_PURGE_EVENT);
+        }
+
+        \Configuration::updateGlobalValue('LITESPEED_STAT_PURGE_COUNT',
+            (int) \Configuration::getGlobalValue('LITESPEED_STAT_PURGE_COUNT') + 1
+        );
+        \Configuration::updateGlobalValue('LITESPEED_STAT_LAST_PURGE', time());
+
+        // Log purge event
+        $logDetail = 'Cache purge from ' . $params['from'];
+        if (isset($params['public'])) {
+            $tags = is_array($params['public']) ? implode(', ', $params['public']) : $params['public'];
+            $logDetail .= ' — public tags: ' . $tags;
+        } elseif (isset($params['private'])) {
+            $tags = is_array($params['private']) ? implode(', ', $params['private']) : $params['private'];
+            $logDetail .= ' — private tags: ' . $tags;
+        } elseif (isset($params['ALL'])) {
+            $logDetail .= ' — entire storage';
+        }
+        \PrestaShopLogger::addLog($logDetail, 1, null, 'LiteSpeedCache', 0, true);
+    }
+
+    private function purgeCloudflare(): void
+    {
+        $cdn    = CdnConfig::getAll();
+        $zoneId = $cdn[CdnConfig::CF_ZONE_ID] ?? '';
+
+        if (!$cdn[CdnConfig::CF_ENABLE] || !$cdn[CdnConfig::CF_PURGE] || !$zoneId || !$cdn[CdnConfig::CF_KEY]) {
+            return;
+        }
+
+        (new Cloudflare($cdn[CdnConfig::CF_KEY], $cdn[CdnConfig::CF_EMAIL]))->purgeAll($zoneId);
+        \PrestaShopLogger::addLog('CDN purge — Cloudflare zone ' . $zoneId, 1, null, 'LiteSpeedCache', 0, true);
+    }
+
+    /** Hook allowing other modules to mark the current response as non-cacheable. */
+    public function hookLitespeedNotCacheable(array $params): void
+    {
+        if (!self::isActiveForUser()) {
+            return;
+        }
+        $reason = ($params['reason'] ?? '') . (isset($params['from']) ? ' from ' . $params['from'] : '');
+        $this->setNotCacheable($reason);
+    }
+
+    /**
+     * Re-injects the LiteSpeed Cache .htaccess block every time PrestaShop
+     * regenerates the .htaccess file (e.g. from the Performance settings page).
+     */
+    public function hookActionHtaccessCreate(array $params): void
+    {
+        $enable = (bool) $this->config->get(Conf::CFG_ENABLED);
+        $guest  = ($this->config->get(Conf::CFG_GUESTMODE) == 1);
+        $mobile = (bool) $this->config->get(Conf::CFG_DIFFMOBILE);
+        CacheHelper::htAccessUpdate($enable, $guest, $mobile);
+    }
+
+    /**
+     * Flush Redis object cache when PS clears its compile/Symfony cache so
+     * stale SQL query results don't survive a cache-clear operation.
+     */
+    /**
+     * Flush Redis + Cloudflare when PS clears cache.
+     * LiteSpeed purge is handled by __call → purgeByCatchAllMethod which
+     * registers ob_start and sends X-LiteSpeed-Purge via the output buffer
+     * callback — the same pattern as the original litespeedcache module.
+     */
+    private function flushExternalCaches(): void
+    {
+        // Flush Redis object cache if active
+        if (
+            defined('_PS_CACHE_ENABLED_') && _PS_CACHE_ENABLED_
+            && defined('_PS_CACHING_SYSTEM_') && _PS_CACHING_SYSTEM_ === 'CacheRedis'
+        ) {
+            $instance = \Cache::getInstance();
+            if ($instance instanceof \LiteSpeed\Cache\Cache\CacheRedis) {
+                $instance->flush();
+            }
+        }
+
+        // Purge Cloudflare if CDN purge is enabled
+        if ((bool) $this->config->get(Conf::CFG_FLUSH_ALL)) {
+            $cdnCfg = CdnConfig::getAll();
+            if (
+                (bool) $cdnCfg[CdnConfig::CF_PURGE]
+                && (bool) $cdnCfg[CdnConfig::CF_ENABLE]
+                && !empty($cdnCfg[CdnConfig::CF_ZONE_ID])
+            ) {
+                try {
+                    $cf = new Cloudflare($cdnCfg[CdnConfig::CF_KEY], $cdnCfg[CdnConfig::CF_EMAIL]);
+                    $cf->purgeAll($cdnCfg[CdnConfig::CF_ZONE_ID]);
+                } catch (\Exception $e) {}
+            }
+        }
+    }
+
+
+    /** Appends a cache generation comment to the page footer (debug mode only). */
+    public function hookDisplayFooterAfter(array $params): string
+    {
+        if (self::isCacheable()) {
+            \Configuration::updateGlobalValue('LITESPEED_STAT_CACHED_RESP',
+                (int) \Configuration::getGlobalValue('LITESPEED_STAT_CACHED_RESP') + 1
+            );
+        }
+
+        if (!self::isCacheable() || !_LITESPEED_DEBUG_) {
+            return '';
+        }
+        $comment = isset($_SERVER['HTTP_USER_AGENT'])
+            ? '<!-- LiteSpeed Cache created with user_agent: ' . $_SERVER['HTTP_USER_AGENT'] . ' -->' . PHP_EOL
+            : '<!-- LiteSpeed Cache snapshot generated at ' . gmdate('Y/m/d H:i:s') . ' GMT -->';
+
+        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_FOOTER_COMMENT) {
+            LSLog::log('Add html comments in footer ' . $comment, LSLog::LEVEL_FOOTER_COMMENT);
+        }
+        return $comment;
+    }
+
+    /** Called by Media override: filters private JS variables for ESI replacement. */
+    public static function filterJsDef(array &$jsDef): void
+    {
+        if (!CacheState::canInjectEsi()) {
+            return;
+        }
+
+        $conf             = Conf::getInstance();
+        $diffCustomerGroup = $conf->getDiffCustomerGroup();
+
+        if (self::isCacheable() && isset($jsDef['prestashop'])) {
+            unset($jsDef['prestashop']['cart']);
+            if ($diffCustomerGroup === 0) {
+                unset($jsDef['prestashop']['customer']);
+            }
+        }
+
+        $injected = LscIntegration::filterJSDef($jsDef);
+        if (!empty($injected)) {
+            $lsc = self::myInstance();
+            foreach ($injected as $id => $item) {
+                if (!isset($lsc->esiInjection['marker'][$id])) {
+                    $lsc->esiInjection['marker'][$id] = $item;
+                }
+            }
+        }
+    }
+
+    /** Marks the start of a Smarty-driven ESI block. */
+    public function hookLitespeedEsiBegin(array $params): string
+    {
+        if (!CacheState::canInjectEsi()) {
+            return '';
+        }
+
+        $err    = 0;
+        $errFld = '';
+        $m      = $params['m']     ?? null;
+        $f      = $params['field'] ?? null;
+
+        if ($m === null) { $err |= 1; $errFld .= 'm '; }
+        if ($f === null) { $err |= 1; $errFld .= 'field '; }
+        if (!empty($this->esiInjection['tracker'])) { $err |= 2; }
+
+        $esiParam = ['pt' => EsiItem::ESI_SMARTYFIELD, 'm' => $m, 'f' => $f];
+        if ($f === 'widget' && isset($params['hook'])) {
+            $esiParam['h'] = $params['hook'];
+        } elseif ($f === 'widget_block') {
+            if (isset($params['tpl'])) {
+                $esiParam['t'] = $params['tpl'];
+            } else {
+                $err |= 1;
+                $errFld .= 'tpl ';
+            }
+        }
+
+        $conf = $this->config->canInjectEsi($m, $esiParam);
+        if ($conf === false) { $err |= 4; }
+
+        array_push($this->esiInjection['tracker'], $err);
+
+        if ($err) {
+            if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_CUST_SMARTY) {
+                $msg = '';
+                if ($err & 1) { $msg .= 'Missing param (' . $errFld . '). '; }
+                if ($err & 2) { $msg .= 'Nested hookLitespeedEsiBegin ignored. '; }
+                if ($err & 4) { $msg .= 'Cannot inject ESI for ' . $m; }
+                LSLog::log(__FUNCTION__ . ' ' . $msg, LSLog::LEVEL_CUST_SMARTY);
+            }
+            return '';
+        }
+
+        return $this->registerEsiMarker($esiParam, $conf);
+    }
+
+    /** Marks the end of a Smarty-driven ESI block. */
+    public function hookLitespeedEsiEnd(array $params): string
+    {
+        if (!CacheState::canInjectEsi()) {
+            return '';
+        }
+        $res = array_pop($this->esiInjection['tracker']);
+        if ($res === 0) {
+            return self::ESI_MARKER_END;
+        }
+        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_CUST_SMARTY) {
+            $err = ($res === null)
+                ? ' Mismatched hookLitespeedEsiEnd detected'
+                : ' Ignored hookLitespeedEsiEnd due to error in hookLitespeedEsiBegin';
+            LSLog::log(__FUNCTION__ . $err, LSLog::LEVEL_CUST_SMARTY);
+        }
+        return '';
+    }
+
+    // ---- ESI injection (called from Hook override) --------------------------------
+
+    /**
+     * Called by override/classes/Hook.php::coreRenderWidget().
+     * Returns the ESI start marker or false when injection is not applicable.
+     *
+     * @return string|false
+     */
+    public static function injectRenderWidget($module, string $hook_name, $params = false)
+    {
+        if (!CacheState::canInjectEsi()) {
+            return false;
+        }
+        $lsc = self::myInstance();
+        $m   = $module->name;
+
+        $esiParam = ['pt' => EsiItem::ESI_RENDERWIDGET, 'm' => $m, 'h' => $hook_name];
+        $conf     = $lsc->config->canInjectEsi($m, $esiParam);
+        if ($conf === false) {
+            return false;
+        }
+
+        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
+            LSLog::log(__FUNCTION__ . " $m : $hook_name", LSLog::LEVEL_ESI_INCLUDE);
+        }
+
+        $mp = self::getModuleParams($params, $conf->getTemplateArgs());
+        if (!empty($mp)) {
+            $esiParam['mp'] = json_encode($mp, JSON_UNESCAPED_UNICODE);
+        }
+
+        return $lsc->registerEsiMarker($esiParam, $conf);
+    }
+
+    /**
+     * Called by override/classes/Hook.php::coreCallHook().
+     * Returns the ESI start marker or false when injection is not applicable.
+     *
+     * @return string|false
+     */
+    public static function injectCallHook($module, string $method, $params = false)
+    {
+        if (!CacheState::canInjectEsi()) {
+            return false;
+        }
+        $lsc = self::myInstance();
+        $m   = $module->name;
+
+        $esiParam = ['pt' => EsiItem::ESI_CALLHOOK, 'm' => $m, 'mt' => $method];
+        $conf     = $lsc->config->canInjectEsi($m, $esiParam);
+        if ($conf === false) {
+            return false;
+        }
+
+        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_INCLUDE) {
+            LSLog::log(__FUNCTION__ . " $m : $method", LSLog::LEVEL_ESI_INCLUDE);
+        }
+
+        $mp = self::getModuleParams($params, $conf->getTemplateArgs());
+        if (!empty($mp)) {
+            $esiParam['mp'] = json_encode($mp, JSON_UNESCAPED_UNICODE);
+        }
+
+        return $lsc->registerEsiMarker($esiParam, $conf);
+    }
+
+    /** Allows third-party code to force the current response non-cacheable. */
+    public static function forceNotCacheable(string $reason): void
+    {
+        self::myInstance()->setNotCacheable($reason);
+    }
+
+    // ---- ESI module cache control -----------------------------------------------
+
+    public function addCacheControlByEsiModule(EsiItem $item): void
+    {
+        if (!self::isActive()) {
+            $this->cache->purgeByTags('*', false, 'request esi while module is not active');
+            return;
+        }
+
+        $ttl = $item->getTTL();
+        if ($item->onlyCacheEmtpy() && $item->getContent() !== '') {
+            $ttl = 0;
+        }
+
+        if ($ttl === 0 || $ttl === '0') {
+            CacheState::set(CacheState::NOT_CACHEABLE);
+            CacheState::appendNoCacheReason('Set by ESIModule ' . $item->getConf()->getModuleName());
+        } else {
+            $this->cache->addCacheTags($item->getTags());
+            CacheState::set(CacheState::CACHEABLE);
+            if ($item->isPrivate()) {
+                CacheState::set(CacheState::PRIV);
+            }
+            if ($ttl > 0) {
+                $this->cache->setTTL($ttl);
+            }
+        }
+    }
+
+    // ---- Vary cookie ------------------------------------------------------------
+
+    /** Checks vary cookie once per request; returns true if the vary state changed. */
+    public static function setVaryCookie(): bool
+    {
+        if (!CacheState::has(CacheState::VARY_CHECKED)) {
+            if (VaryCookie::setVary()) {
+                CacheState::set(CacheState::VARY_CHANGED);
+            }
+            CacheState::set(CacheState::VARY_CHECKED);
+        }
+        return CacheState::has(CacheState::VARY_CHANGED);
+    }
+
+    // ---- Output filter ----------------------------------------------------------
+
+    /** ob_start() callback — processes the full-page buffer before it is sent. */
+    public static function callbackOutputFilter(string $buffer): string
+    {
+        $lsc = self::myInstance();
+
+        if (CacheState::isFrontController()) {
+            self::setVaryCookie();
+        }
+
+        $code = http_response_code();
+        if ($code === 404) {
+            CacheState::set(CacheState::ERROR_CODE);
+            if (CacheHelper::isStaticResource($_SERVER['REQUEST_URI'])) {
+                $buffer = '<!-- 404 not found -->';
+                CacheState::clear(CacheState::CAN_INJECT_ESI);
+            }
+        } elseif ($code !== 200) {
+            CacheState::set(CacheState::ERROR_CODE);
+            $lsc->setNotCacheable('Response code is ' . $code);
+        }
+
+        if (CacheState::canInjectEsi()
+            && (count($lsc->esiInjection['marker']) || self::isCacheable())) {
+            $buffer = $lsc->replaceEsiMarker($buffer);
+        }
+
+        $lsc->cache->setCacheControlHeader();
+
+        return $buffer;
+    }
+
+    // ---- Module lifecycle -------------------------------------------------------
+
+    public function getContent(): void
+    {
+        Tools::redirectAdmin($this->context->link->getAdminLink('AdminLiteSpeedCacheConfig'));
+    }
+
+    public function install(): bool
+    {
+        (new TabManager($this))->install();
+
+        if (Shop::isFeatureActive()) {
+            Shop::setContext(Shop::CONTEXT_ALL);
+        }
+
+        if (!parent::install()) {
+            return false;
+        }
+
+        Configuration::updateGlobalValue(
+            Conf::ENTRY_ALL,
+            json_encode($this->config->getDefaultConfData(Conf::ENTRY_ALL))
+        );
+        Configuration::updateValue(
+            Conf::ENTRY_SHOP,
+            json_encode($this->config->getDefaultConfData(Conf::ENTRY_SHOP))
+        );
+        Configuration::updateValue(
+            Conf::ENTRY_MODULE,
+            json_encode($this->config->getDefaultConfData(Conf::ENTRY_MODULE))
+        );
+        Configuration::updateGlobalValue(
+            CdnConfig::ENTRY,
+            json_encode(CdnConfig::getDefaults())
+        );
+        Configuration::updateGlobalValue(
+            ObjConfig::ENTRY,
+            json_encode(ObjConfig::getDefaults())
+        );
+        Configuration::updateGlobalValue(
+            ExclusionsConfig::ENTRY,
+            json_encode(ExclusionsConfig::getDefaults())
+        );
+        CacheHelper::htAccessBackup('b4lsc');
+        $defaults = $this->config->getDefaultConfData(Conf::ENTRY_ALL);
+        CacheHelper::htAccessUpdate(
+            (bool) $defaults[Conf::CFG_ENABLED],
+            ($defaults[Conf::CFG_GUESTMODE] == 1),
+            (bool) $defaults[Conf::CFG_DIFFMOBILE]
+        );
+
+        \PrestaShopLogger::addLog('LiteSpeed Cache module installed', 1, null, 'LiteSpeedCache', 0, true);
+
+        return $this->installHooks();
+    }
+
+    public function uninstall(): bool
+    {
+        \PrestaShopLogger::addLog('LiteSpeed Cache module uninstalled', 2, null, 'LiteSpeedCache', 0, true);
+        (new TabManager($this))->uninstall();
+        CacheHelper::htAccessUpdate(0, 0, 0);
+        $this->cache->purgeByTags('*', false, 'from uninstall');
+        ObjectCacheActivator::disableIfActive();
+        Configuration::deleteByName(Conf::ENTRY_ALL);
+        Configuration::deleteByName(Conf::ENTRY_SHOP);
+        Configuration::deleteByName(Conf::ENTRY_MODULE);
+        Configuration::deleteByName(CdnConfig::ENTRY);
+        Configuration::deleteByName(ObjConfig::ENTRY);
+        Configuration::deleteByName(ExclusionsConfig::ENTRY);
+
+        return parent::uninstall();
+    }
+
+    // ---- Private helpers --------------------------------------------------------
+
+    private static function myInstance(): self
+    {
+        return Module::getInstanceByName(self::MODULE_NAME);
+    }
+
+    /**
+     * Determines cacheability of the current route and starts the output buffer
+     * if applicable.
+     */
+    private function checkDispatcher(int $controllerType, string $controllerClass): string
+    {
+        if (!self::isActiveForUser()) {
+            return 'not active';
+        }
+
+        if (!defined('_LITESPEED_CALLBACK_')) {
+            define('_LITESPEED_CALLBACK_', 1);
+            ob_start('LiteSpeedCache::callbackOutputFilter');
+        }
+
+        if ($controllerType === DispatcherCore::FC_FRONT) {
+            CacheState::set(CacheState::FRONT_CTRL);
+        }
+
+        if ($controllerClass === 'litespeedcacheesiModuleFrontController') {
+            CacheState::set(CacheState::ESI_REQ);
+            return 'esi request';
+        }
+
+        if (($reason = $this->cache->isCacheableRoute($controllerType, $controllerClass)) !== '') {
+            $this->setNotCacheable($reason);
+            return $reason;
+        }
+
+        if (isset($_SERVER['LSCACHE_VARY_VALUE'])
+            && in_array($_SERVER['LSCACHE_VARY_VALUE'], ['guest', 'guestm'], true)) {
+            CacheState::set(CacheState::CACHEABLE | CacheState::GUEST);
+            return 'cacheable guest';
+        }
+
+        CacheState::set(CacheState::CACHEABLE | CacheState::CAN_INJECT_ESI);
+        return 'cacheable & allow esiInject';
+    }
+
+    private function setNotCacheable(string $reason = ''): void
+    {
+        if (!self::isActive()) {
+            return;
+        }
+        CacheState::markNotCacheable($reason);
+        if ($reason && _LITESPEED_DEBUG_ >= LSLog::LEVEL_NOCACHE_REASON) {
+            LSLog::log(__FUNCTION__ . ' - ' . $reason, LSLog::LEVEL_NOCACHE_REASON);
+        }
+    }
+
+    private function registerEsiMarker(array $params, $conf): string
+    {
+        $item = new EsiItem($params, $conf);
+        $id   = $item->getId();
+        if (!isset($this->esiInjection['marker'][$id])) {
+            $this->esiInjection['marker'][$id] = $item;
+        }
+        return '_LSCESI-' . $id . '-START_';
+    }
+
+    private function replaceEsiMarker(string $buf): string
+    {
+        if (!empty($this->esiInjection['marker'])) {
+            $buf = preg_replace_callback(
+                [
+                    '/_LSC(ESI)-(.+)-START_(.*)_LSCESIEND_/Usm',
+                    '/(\'|\")_LSCESIJS-(.+)-START__LSCESIEND_(\'|\")/Usm',
+                ],
+                function (array $m): string {
+                    $id  = $m[2];
+                    $lsc = self::myInstance();
+                    if (!isset($lsc->esiInjection['marker'][$id])) {
+                        $id = stripslashes($id);
+                    }
+                    if (!isset($lsc->esiInjection['marker'][$id])) {
+                        if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED) {
+                            LSLog::log('Lost Injection ' . $id, LSLog::LEVEL_UNEXPECTED);
+                        }
+                        return '';
+                    }
+                    $item       = $lsc->esiInjection['marker'][$id];
+                    $esiInclude = $item->getInclude();
+                    if ($esiInclude === false) {
+                        if ($item->getParam('pt') === EsiItem::ESI_JSDEF) {
+                            LscIntegration::processJsDef($item);
+                        } else {
+                            $item->setContent($m[3]);
+                        }
+                        $esiInclude = $item->getInclude();
+                    }
+                    return $esiInclude;
+                },
+                $buf
+            );
+        }
+
+        // Always inject the static token and env ESI blocks.
+        $staticToken = Tools::getToken(false);
+        $tkItem = new EsiItem(
+            ['pt' => EsiItem::ESI_TOKEN, 'm' => LscToken::NAME, 'd' => 'static'],
+            $this->config->getEsiModuleConf(LscToken::NAME)
+        );
+        $tkItem->setContent($staticToken);
+        $this->esiInjection['marker'][$tkItem->getId()] = $tkItem;
+
+        $envItem = new EsiItem(
+            ['pt' => EsiItem::ESI_ENV, 'm' => LscEnv::NAME],
+            $this->config->getEsiModuleConf(LscEnv::NAME)
+        );
+        $envItem->setContent('');
+        $this->esiInjection['marker'][$envItem->getId()] = $envItem;
+
+        if (self::isCacheable()) {
+            if (strpos($buf, $staticToken) !== false) {
+                $buf = str_replace($staticToken, $tkItem->getInclude(), $buf);
+            }
+            $buf = $envItem->getInclude() . $buf;
+        }
+
+        $bufInline       = '';
+        $allPrivateItems = [];
+        foreach ($this->esiInjection['marker'] as $item) {
+            $inline = $item->getInline();
+            if ($inline !== false) {
+                $bufInline .= $inline;
+                if ($item->isPrivate()) {
+                    $allPrivateItems[] = $item;
+                }
+            }
+        }
+
+        if ($bufInline) {
+            if (!empty($allPrivateItems)) {
+                CacheHelper::syncItemCache($allPrivateItems);
+            }
+            CacheState::set(CacheState::ESI_ON);
+        }
+
+        if ($bufInline && _LITESPEED_DEBUG_ >= LSLog::LEVEL_ESI_OUTPUT) {
+            LSLog::log('ESI inline output ' . $bufInline, LSLog::LEVEL_ESI_OUTPUT);
+        }
+
+        return $bufInline . $buf;
+    }
+
+    private function installHooks(): bool
+    {
+        foreach ($this->config->getReservedHooks() as $hook) {
+            if (!$this->registerHook($hook)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Extracts module parameters from hook $params using a template-args spec.
+     *
+     * @param array|false $params Hook params array or false
+     * @param string|null $tas    Comma-separated template-arg spec (e.g. "smarty.product.id")
+     *
+     * @return array|false
+     */
+    private static function getModuleParams($params, ?string $tas)
+    {
+        if (!$tas || !$params) {
+            return false;
+        }
+        $smarty = $params['smarty'];
+        $mp     = [];
+        foreach (explode(',', $tas) as $mv) {
+            $parts = explode('.', trim($mv));
+            if ($parts[0] === 'smarty') {
+                $val = $smarty->getTemplateVars($parts[1]);
+                $mp[] = (isset($parts[2]) && $val) ? $val->{$parts[2]} : $val;
+            } else {
+                $val  = $params[$parts[0]];
+                $mp[] = (isset($parts[1]) && $val) ? $val[$parts[1]] : $val;
+            }
+        }
+        return $mp;
+    }
+}

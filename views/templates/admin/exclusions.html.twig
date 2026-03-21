@@ -1,0 +1,129 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-12">
+
+    <form method="post" id="litespeedcache-exclusions-form">
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h3 class="card-header-title">
+            <i class="material-icons">block</i>
+            Exclusion settings
+          </h3>
+          <span class="card-header-title font-weight-normal">
+            <a href="https://docs.litespeedtech.com/lscache/lscps/settings/#excludes" target="_blank" rel="noopener">
+              Read more
+            </a>
+          </span>
+        </div>
+        <div class="card-body">
+
+          {# nocache_urls #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="nocache_urls">
+              Do not cache URIs
+            </label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="nocache_urls" name="nocache_urls"
+                rows="6">{{ nocache_urls }}</textarea>
+              <small class="form-text text-muted">
+                One per line. Start with <code>/</code> for exact/prefix match, or use a regex without slashes for pattern match.
+                Wildcards: <code>/path/*</code> matches everything under that prefix.
+              </small>
+            </div>
+          </div>
+
+          {# nocache_vars #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="nocache_vars">
+              Do not cache query strings
+            </label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="nocache_vars" name="nocache_vars"
+                rows="4">{{ nocache_vars }}</textarea>
+              <small class="form-text text-muted">
+                Query parameter names (one per line). Pages containing any of these parameters will not be cached.
+              </small>
+            </div>
+          </div>
+
+          {# exc_nocache_cats #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="exc_nocache_cats">
+              Do not cache categories
+            </label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="exc_nocache_cats" name="exc_nocache_cats"
+                rows="4">{{ values.exc_nocache_cats }}</textarea>
+              <small class="form-text text-muted">
+                PrestaShop category IDs (one per line). Category pages and product pages within these categories will not be cached.
+              </small>
+            </div>
+          </div>
+
+          {# exc_nocache_cookies #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="exc_nocache_cookies">
+              Do not cache cookies
+            </label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="exc_nocache_cookies" name="exc_nocache_cookies"
+                rows="4">{{ values.exc_nocache_cookies }}</textarea>
+              <small class="form-text text-muted">
+                Cookie names (one per line). Requests that have any of these cookies will not be cached.
+              </small>
+            </div>
+          </div>
+
+          {# exc_nocache_ua #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="exc_nocache_ua">
+              Do not cache user agents
+            </label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="exc_nocache_ua" name="exc_nocache_ua"
+                rows="4">{{ values.exc_nocache_ua }}</textarea>
+              <small class="form-text text-muted">
+                User agent strings (one per line, case-insensitive substring match). Requests from matching user agents will not be cached.
+              </small>
+            </div>
+          </div>
+
+          {# exc_nocache_roles #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">
+              Do not cache customer groups
+            </label>
+            <div class="col-sm-9">
+              {% for group in groups %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox"
+                  name="exc_nocache_roles[]"
+                  id="excl_role_{{ group.id_group }}"
+                  value="{{ group.id_group }}"
+                  {% if group.id_group in noRoles %}checked{% endif %}>
+                <label class="form-check-label" for="excl_role_{{ group.id_group }}">
+                  {{ group.name }} <small class="text-muted">(ID: {{ group.id_group }})</small>
+                </label>
+              </div>
+              {% endfor %}
+              <small class="form-text text-muted">
+                Logged-in customers in the selected groups will not receive cached pages.
+              </small>
+            </div>
+          </div>
+
+        </div>
+        <div class="card-footer text-right">
+          <button type="submit" name="submitExclusions" class="btn btn-primary">
+            Save
+          </button>
+        </div>
+      </div>
+    </form>
+
+  </div>{# /col #}
+</div>{# /row #}
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+{% endblock %}

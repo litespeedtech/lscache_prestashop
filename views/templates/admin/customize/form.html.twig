@@ -1,0 +1,292 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-12">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0">
+        {% if mode == 'add' %}Add ESI Block
+        {% elseif mode == 'edit' %}Edit ESI Block
+        {% else %}View ESI Block
+        {% endif %}
+      </h2>
+      <a href="{{ backUrl }}" class="btn btn-outline-secondary">Back</a>
+    </div>
+
+    <form method="post" action="{{ formAction }}" id="litespeedcache-esi-form">
+      <div class="card mb-3">
+        <div class="card-header">
+          <h3 class="card-header-title">ESI Block Configuration</h3>
+        </div>
+        <div class="card-body">
+
+          {# id — Module select, disabled unless adding #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="esi_id">
+              Module
+            </label>
+            <div class="col-sm-9">
+              <select class="form-control" id="esi_id" name="id"
+                {% if mode != 'add' %}disabled{% endif %}>
+                <option value="">-- Select a module --</option>
+                {% for option in moduleOptions %}
+                <option value="{{ option.id }}"
+                  {% if values.id == option.id %}selected{% endif %}>
+                  {{ option.name }}
+                </option>
+                {% endfor %}
+              </select>
+              {% if mode != 'add' %}
+              {# Keep the value when select is disabled #}
+              <input type="hidden" name="id" value="{{ values.id|default('') }}">
+              {% endif %}
+              <small class="form-text text-muted">
+                Select a front-end widget module only.
+              </small>
+            </div>
+          </div>
+
+          {# disableESI #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">
+              Disable this ESI Block
+            </label>
+            <div class="col-sm-9">
+              <span class="ps-switch">
+                <input type="radio" name="disableESI" id="disableESI_on" value="1"
+                  {% if values.disableESI %}checked{% endif %}
+                  {% if readonly %}disabled{% endif %}>
+                <label for="disableESI_on">Yes</label>
+                <input type="radio" name="disableESI" id="disableESI_off" value="0"
+                  {% if not values.disableESI %}checked{% endif %}
+                  {% if readonly %}disabled{% endif %}>
+                <label for="disableESI_off">No</label>
+                <a class="slide-button btn"></a>
+              </span>
+            </div>
+          </div>
+
+          {# priv #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">
+              Is Private
+            </label>
+            <div class="col-sm-9">
+              <span class="ps-switch">
+                <input type="radio" name="priv" id="priv_on" value="1"
+                  {% if values.priv %}checked{% endif %}
+                  {% if readonly %}disabled{% endif %}>
+                <label for="priv_on">Yes</label>
+                <input type="radio" name="priv" id="priv_off" value="0"
+                  {% if not values.priv %}checked{% endif %}
+                  {% if readonly %}disabled{% endif %}>
+                <label for="priv_off">No</label>
+                <a class="slide-button btn"></a>
+              </span>
+              <small class="form-text text-muted">
+                Public = one cached copy shared by all visitors.
+                Private = cached individually per logged-in user.
+              </small>
+            </div>
+          </div>
+
+          {# ttl #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="esi_ttl">
+              TTL
+            </label>
+            <div class="col-sm-9">
+              <div class="input-group">
+                <input type="text" class="form-control" id="esi_ttl" name="ttl"
+                  value="{{ values.ttl|default('') }}"
+                  {% if readonly %}readonly{% endif %}>
+                <div class="input-group-append">
+                  <span class="input-group-text">seconds</span>
+                </div>
+              </div>
+              <small class="form-text text-muted">
+                Leave blank to use the module default TTL.
+              </small>
+            </div>
+          </div>
+
+          {# tag #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="esi_tag">
+              Cache Tag
+            </label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" id="esi_tag" name="tag"
+                value="{{ values.tag|default('') }}"
+                {% if readonly %}readonly{% endif %}>
+              <small class="form-text text-muted">
+                One tag per module. Leave blank to use the module name as the tag.
+              </small>
+            </div>
+          </div>
+
+          {# events #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="esi_events">
+              Purge Events
+            </label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="esi_events" name="events"
+                rows="3"
+                {% if readonly %}readonly{% endif %}>{{ values.events|default('') }}</textarea>
+              <small class="form-text text-muted">
+                Comma-delimited list of events that trigger a purge.
+                There is no need to add login or logout events.
+              </small>
+            </div>
+          </div>
+
+          {# ctrl #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="esi_ctrl">
+              Purge Controllers
+            </label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="esi_ctrl" name="ctrl"
+                rows="3"
+                {% if readonly %}readonly{% endif %}>{{ values.ctrl|default('') }}</textarea>
+              <small class="form-text text-muted">
+                Comma-delimited controller class names. Append <code>?param</code> for a conditional purge.
+              </small>
+            </div>
+          </div>
+
+          {# methods #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="esi_methods">
+              Hooked Methods
+            </label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="esi_methods" name="methods"
+                rows="3"
+                {% if readonly %}readonly{% endif %}>{{ values.methods|default('') }}</textarea>
+              <small class="form-text text-muted">
+                Comma-delimited methods. Prefix with <code>!</code> to exclude.
+                Leave blank to disable CallHook injection.
+              </small>
+            </div>
+          </div>
+
+          {# render #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="esi_render">
+              Widget Render Hooks
+            </label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="esi_render" name="render"
+                rows="3"
+                {% if readonly %}readonly{% endif %}>{{ values.render|default('') }}</textarea>
+              <small class="form-text text-muted">
+                Comma-delimited hooks. Use <code>!</code> prefix to exclude, <code>*</code> for all.
+                Leave blank to disable renderWidget injection.
+              </small>
+            </div>
+          </div>
+
+          {# argument #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="esi_argument">
+              Parameters
+            </label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="esi_argument" name="argument"
+                rows="3"
+                {% if readonly %}readonly{% endif %}>{{ values.argument|default('') }}</textarea>
+              <small class="form-text text-muted">
+                Comma-delimited parameters used by Hooked Methods or Widgets.
+                Example: <code>product.id_product, smarty.product.id</code>
+              </small>
+            </div>
+          </div>
+
+          {# asvar #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">
+              As Variable
+            </label>
+            <div class="col-sm-9">
+              <span class="ps-switch">
+                <input type="radio" name="asvar" id="asvar_on" value="1"
+                  {% if values.asvar %}checked{% endif %}
+                  {% if readonly %}disabled{% endif %}>
+                <label for="asvar_on">Yes</label>
+                <input type="radio" name="asvar" id="asvar_off" value="0"
+                  {% if not values.asvar %}checked{% endif %}
+                  {% if readonly %}disabled{% endif %}>
+                <label for="asvar_off">No</label>
+                <a class="slide-button btn"></a>
+              </span>
+              <small class="form-text text-muted">
+                Enable if the rendered content is used as a variable or is small (&lt; 256 bytes).
+              </small>
+            </div>
+          </div>
+
+          {# ie — Ignore If Empty #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">
+              Ignore If Empty
+            </label>
+            <div class="col-sm-9">
+              <span class="ps-switch">
+                <input type="radio" name="ie" id="ie_on" value="1"
+                  {% if values.ie %}checked{% endif %}
+                  {% if readonly %}disabled{% endif %}>
+                <label for="ie_on">Yes</label>
+                <input type="radio" name="ie" id="ie_off" value="0"
+                  {% if not values.ie %}checked{% endif %}
+                  {% if readonly %}disabled{% endif %}>
+                <label for="ie_off">No</label>
+                <a class="slide-button btn"></a>
+              </span>
+              <small class="form-text text-muted">
+                Avoid punching a hole for an ESI block when it is empty.
+              </small>
+            </div>
+          </div>
+
+          {# ce — Only Cache When Empty #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">
+              Only Cache When Empty
+            </label>
+            <div class="col-sm-9">
+              <span class="ps-switch">
+                <input type="radio" name="ce" id="ce_on" value="1"
+                  {% if values.ce %}checked{% endif %}
+                  {% if readonly %}disabled{% endif %}>
+                <label for="ce_on">Yes</label>
+                <input type="radio" name="ce" id="ce_off" value="0"
+                  {% if not values.ce %}checked{% endif %}
+                  {% if readonly %}disabled{% endif %}>
+                <label for="ce_off">No</label>
+                <a class="slide-button btn"></a>
+              </span>
+              <small class="form-text text-muted">
+                Cache only when the block contains no content. Useful for popup notices.
+              </small>
+            </div>
+          </div>
+
+        </div>{# /card-body #}
+
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <a href="{{ backUrl }}" class="btn btn-outline-secondary mr-2">Back</a>
+          {% if not readonly %}
+          <button type="submit" name="submitConfig" class="btn btn-primary">Save</button>
+          {% endif %}
+        </div>
+      </div>{# /card #}
+
+    </form>
+
+  </div>{# /col #}
+</div>{# /row #}
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+{% endblock %}

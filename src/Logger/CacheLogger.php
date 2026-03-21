@@ -1,0 +1,226 @@
+<?php
+/**
+ * LiteSpeed Cache for Prestashop.
+ *
+ * NOTICE OF LICENSE
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * @author   LiteSpeed Technologies
+ * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @license     https://opensource.org/licenses/GPL-3.0
+ */
+
+namespace LiteSpeed\Cache\Logger;
+
+use FileLogger;
+
+/**
+ * CacheLogger — structured debug logger for LiteSpeedCache.
+ *
+ * Provides levelled logging to var/logs/lscache.log.
+ * Designed as a singleton so state (isDebug level) persists for the request lifecycle.
+ */
+class CacheLogger
+{
+    // Log levels — numbers can overlap intentionally; used for threshold comparison only
+    const LEVEL_FORCE = 0;
+    const LEVEL_FOOTER_COMMENT = 3.5;
+    const LEVEL_EXCEPTION = 1;
+    const LEVEL_UNEXPECTED = 2;
+    const LEVEL_NOTICE = 3;
+    const LEVEL_CUST_SMARTY = 3;
+    const LEVEL_UPDCONFIG = 3;
+    const LEVEL_SETHEADER = 4;
+    const LEVEL_ENVCOOKIE_CHANGE = 5;
+    const LEVEL_PURGE_EVENT = 5;
+    const LEVEL_NOCACHE_REASON = 6;
+    const LEVEL_ESI_INCLUDE = 7;
+    const LEVEL_CACHE_ROUTE = 8;
+    const LEVEL_ENVCOOKIE_DETAIL = 9;
+    const LEVEL_WEBSERVICE_DETAIL = 9;
+    const LEVEL_SPECIFIC_PRICE = 9.5;
+    const LEVEL_ESI_OUTPUT = 9.5;
+    const LEVEL_SAVED_DATA = 10;
+    const LEVEL_HOOK_DETAIL = 10;
+    const LEVEL_TEMPORARY = 8.5;
+
+    /** @var FileLogger|null */
+    protected $logger;
+
+    /** @var string */
+    protected $prefix;
+
+    /** @var int|float */
+    private $isDebug = 0;
+
+    /** @var self|null */
+    protected static $instance = null;
+
+    /**
+     * @return static
+     */
+    public static function getInstance(): self
+    {
+        if (!self::$instance) {
+            self::$instance = new static();
+        }
+
+        return self::$instance;
+    }
+
+    protected function __construct()
+    {
+        $signature = [];
+        if (isset($_SERVER['REMOTE_ADDR'])) {
+            $signature[] = $_SERVER['REMOTE_ADDR'];
+        }
+        if (isset($_SERVER['REMOTE_PORT'])) {
+            $signature[] = $_SERVER['REMOTE_PORT'];
+        } elseif (isset($_SERVER['USER'])) {
+            $signature[] = $_SERVER['USER'];
+        }
+        preg_match("/\d{6}/", microtime(), $msec);
+        $signature[] = $msec[0];
+        $this->prefix = '[' . implode(':', $signature) . ']';
+    }
+
+    protected function getLogger(): FileLogger
+    {
+        if ($this->logger === null) {
+            $this->logger = new FileLogger(FileLogger::DEBUG);
+
+            if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
+                $path = '/log';
+            } elseif (version_compare(_PS_VERSION_, '1.7.3', '<=')) {
+                $path = '/app/logs';
+            } else {
+                $path = '/var/logs';
+            }
+            $this->logger->setFilename(_PS_ROOT_DIR_ . $path . '/lscache.log');
+        }
+
+        return $this->logger;
+    }
+
+    /**
+     * @param string     $mesg
+     * @param int|float  $debugLevel
+     */
+    protected function logDebug(string $mesg, $debugLevel): void
+    {
+        if ($this->isDebug >= $debugLevel) {
+            if (!$this->passesDebugFilters($mesg)) {
+                return;
+            }
+            if ($debugLevel == self::LEVEL_EXCEPTION) {
+                ob_start();
+                debug_print_backtrace(0, 30);
+                $trace = ob_get_contents();
+                ob_end_clean();
+                $mesg .= "\n" . $trace;
+            } elseif ($debugLevel == self::LEVEL_UNEXPECTED) {
+                $mesg = '!!!!! UNEXPECTED !!!!! ' . $mesg;
+            } elseif ($debugLevel == self::LEVEL_NOTICE) {
+                $mesg = '!!! NOTICE !!! ' . $mesg;
+            } elseif ($debugLevel == self::LEVEL_TEMPORARY) {
+                $mesg .= ' ###############';
+            }
+            if ($debugLevel != self::LEVEL_TEMPORARY) {
+                $mesg = str_replace("\n", ("\n" . $this->prefix . '  '), $mesg);
+            }
+            $this->getLogger()->logDebug($this->prefix . ' (' . $debugLevel . ') ' . $mesg);
+        }
+    }
+
+    /**
+     * @param int|float $debugLevel
+     */
+    public static function setDebugLevel($debugLevel): void
+    {
+        self::getInstance()->isDebug = $debugLevel;
+    }
+
+    /**
+     * @param string    $mesg
+     * @param int|float $debugLevel
+     */
+    public static function log(string $mesg, $debugLevel = 9): void
+    {
+        self::getInstance()->logDebug($mesg, $debugLevel);
+    }
+
+    private function passesDebugFilters(string $mesg): bool
+    {
+        $config = \LiteSpeed\Cache\Config\CacheConfig::getInstance();
+        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+
+        // URI include filter: if set, only log when URI matches
+        $uriInc = trim($config->get(\LiteSpeed\Cache\Config\CacheConfig::CFG_DEBUG_URI_INC) ?? '');
+        if ($uriInc !== '') {
+            $patterns = preg_split("/\r?\n/", $uriInc, -1, PREG_SPLIT_NO_EMPTY);
+            $matched = false;
+            foreach ($patterns as $p) {
+                $p = trim($p);
+                if ($p === '') continue;
+                if ($this->matchUri($requestUri, $p)) {
+                    $matched = true;
+                    break;
+                }
+            }
+            if (!$matched) {
+                return false;
+            }
+        }
+
+        // URI exclude filter: skip log if URI matches
+        $uriExc = trim($config->get(\LiteSpeed\Cache\Config\CacheConfig::CFG_DEBUG_URI_EXC) ?? '');
+        if ($uriExc !== '') {
+            $patterns = preg_split("/\r?\n/", $uriExc, -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($patterns as $p) {
+                $p = trim($p);
+                if ($p === '') continue;
+                if ($this->matchUri($requestUri, $p)) {
+                    return false;
+                }
+            }
+        }
+
+        // String exclude filter: skip log if message contains any listed string
+        $strExc = trim($config->get(\LiteSpeed\Cache\Config\CacheConfig::CFG_DEBUG_STR_EXC) ?? '');
+        if ($strExc !== '') {
+            $strings = preg_split("/\r?\n/", $strExc, -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($strings as $s) {
+                $s = trim($s);
+                if ($s !== '' && str_contains($mesg, $s)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private function matchUri(string $uri, string $pattern): bool
+    {
+        $exact = str_ends_with($pattern, '$');
+        $start = str_starts_with($pattern, '^');
+
+        if ($exact) $pattern = substr($pattern, 0, -1);
+        if ($start) $pattern = substr($pattern, 1);
+
+        if ($start && $exact) {
+            return $uri === $pattern;
+        }
+        if ($start) {
+            return str_starts_with($uri, $pattern);
+        }
+        if ($exact) {
+            return str_ends_with($uri, $pattern);
+        }
+        return str_contains($uri, $pattern);
+    }
+}

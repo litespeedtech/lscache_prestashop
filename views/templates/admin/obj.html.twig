@@ -1,0 +1,260 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-12">
+
+    {# ================================================================== #}
+    {# SECTION 1 — Object Cache Settings                                  #}
+    {# ================================================================== #}
+    <form method="post" id="litespeedcache-obj-form" autocomplete="off">
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h3 class="card-header-title">
+            <i class="material-icons">storage</i>
+            Object cache settings
+          </h3>
+          <span class="card-header-title font-weight-normal">
+            <a href="https://docs.litespeedtech.com/lscache/lscps/settings/#object-cache" target="_blank" rel="noopener">
+              Read more
+            </a>
+          </span>
+        </div>
+        <div class="card-body">
+
+          {# obj_enable #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">
+              Object cache
+            </label>
+            <div class="col-sm-9">
+              <span class="ps-switch">
+                <input type="radio" name="obj_enable" id="obj_enable_off" value="0"
+                  {% if not values.obj_enable %}checked{% endif %}>
+                <label for="obj_enable_off">OFF</label>
+                <input type="radio" name="obj_enable" id="obj_enable_on" value="1"
+                  {% if values.obj_enable %}checked{% endif %}>
+                <label for="obj_enable_on">ON</label>
+                <a class="slide-button btn"></a>
+              </span>
+              <small class="form-text text-muted">
+                Use the external object cache functionality.
+                <a href="https://docs.litespeedtech.com/lscache/lscps/settings/#object-cache" target="_blank" rel="noopener">Read more</a>
+              </small>
+            </div>
+          </div>
+
+          {# Status #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">Status</label>
+            <div class="col-sm-9">
+              <p class="mb-1">
+                Memcached extension:
+                {% if extensions.memcached %}
+                  <span class="badge badge-success">Enabled</span>
+                {% else %}
+                  <span class="badge badge-danger">Disabled</span>
+                {% endif %}
+              </p>
+              <p class="mb-1">
+                Redis extension:
+                {% if extensions.redis %}
+                  <span class="badge badge-success">Enabled</span>
+                {% else %}
+                  <span class="badge badge-danger">Disabled</span>
+                {% endif %}
+              </p>
+              <p class="mb-1">
+                PrestaShop cache layer:
+                {% if psEnabled and psDriver == 'CacheRedis' %}
+                  <span class="badge badge-success">Active — {{ psDriver }}</span>
+                {% elseif psEnabled %}
+                  <span class="badge badge-warning">Active — {{ psDriver }} (not Redis)</span>
+                {% else %}
+                  <span class="badge badge-secondary">Inactive</span>
+                {% endif %}
+              </p>
+              {% if connStatus is not null %}
+              <p class="mb-0">
+                Connection test:
+                {% if connStatus %}
+                  <span class="badge badge-success">OK</span>
+                {% else %}
+                  <span class="badge badge-danger">Failed</span>
+                  <a href="https://docs.litespeedtech.com/lscache/lscps/settings/#object-cache" target="_blank" rel="noopener" class="ml-1">Read more</a>
+                {% endif %}
+              </p>
+              {% endif %}
+            </div>
+          </div>
+
+          {# obj_method #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">Method</label>
+            <div class="col-sm-9">
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="obj_method" id="obj_method_memcached"
+                  value="memcached" {% if values.obj_method == 'memcached' %}checked{% endif %}>
+                <label class="form-check-label" for="obj_method_memcached">Memcached</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="obj_method" id="obj_method_redis"
+                  value="redis" {% if values.obj_method == 'redis' %}checked{% endif %}>
+                <label class="form-check-label" for="obj_method_redis">Redis</label>
+              </div>
+            </div>
+          </div>
+
+          {# obj_host #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="obj_host">Host</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" id="obj_host" name="obj_host"
+                value="{{ values.obj_host|default('localhost') }}">
+              <small class="form-text text-muted">
+                The hostname or IP address of your Memcached/LSMCD/Redis server.<br>
+                If using a UNIX socket, Host should be the path: <code>/path/to/memcached.sock</code>
+              </small>
+            </div>
+          </div>
+
+          {# obj_port #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="obj_port">Port</label>
+            <div class="col-sm-9">
+              <input type="number" class="form-control" id="obj_port" name="obj_port"
+                value="{{ values.obj_port|default(6379) }}" min="0" max="65535">
+              <small class="form-text text-muted">
+                Default Memcached port is <code>11211</code>. Default Redis port is <code>6379</code>.<br>
+                If using a UNIX socket, Port should be <code>0</code>.
+              </small>
+            </div>
+          </div>
+
+          {# obj_ttl #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="obj_ttl">Default object lifetime</label>
+            <div class="col-sm-9">
+              <div class="input-group" style="max-width:200px;">
+                <input type="number" class="form-control" id="obj_ttl" name="obj_ttl"
+                  value="{{ values.obj_ttl|default(360) }}" min="1">
+                <div class="input-group-append">
+                  <span class="input-group-text">seconds</span>
+                </div>
+              </div>
+              <small class="form-text text-muted">Default TTL for cached objects.</small>
+            </div>
+          </div>
+
+          {# obj_username #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="obj_username">Username</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" id="obj_username" name="obj_username"
+                value="{{ values.obj_username|default('') }}"
+                autocomplete="new-password">
+              <small class="form-text text-muted">Only available when SASL is installed.</small>
+            </div>
+          </div>
+
+          {# obj_password #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="obj_password">Password</label>
+            <div class="col-sm-9">
+              <input type="password" class="form-control" id="obj_password" name="obj_password"
+                value="{{ values.obj_password|default('') }}"
+                autocomplete="new-password">
+              <small class="form-text text-muted">The password used when connecting to the server.</small>
+            </div>
+          </div>
+
+          {# obj_redis_db #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="obj_redis_db">Redis database ID</label>
+            <div class="col-sm-9">
+              <input type="number" class="form-control" id="obj_redis_db" name="obj_redis_db"
+                value="{{ values.obj_redis_db|default(0) }}" min="0"
+                style="max-width:100px;">
+              <small class="form-text text-muted">Database index to use.</small>
+            </div>
+          </div>
+
+          {# obj_global_groups #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="obj_global_groups">Global groups</label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="obj_global_groups" name="obj_global_groups"
+                rows="8">{{ values.obj_global_groups|default('') }}</textarea>
+              <small class="form-text text-muted">
+                Cache groups shared across all shops in a multistore setup. One per line.
+              </small>
+            </div>
+          </div>
+
+          {# obj_nocache_groups #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="obj_nocache_groups">Non-cacheable groups</label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="obj_nocache_groups" name="obj_nocache_groups"
+                rows="5">{{ values.obj_nocache_groups|default('') }}</textarea>
+              <small class="form-text text-muted">Groups that should not be cached. One per line.</small>
+            </div>
+          </div>
+
+          {# obj_persistent #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">Persistent connection</label>
+            <div class="col-sm-9">
+              <span class="ps-switch">
+                <input type="radio" name="obj_persistent" id="obj_persistent_off" value="0"
+                  {% if not values.obj_persistent %}checked{% endif %}>
+                <label for="obj_persistent_off">OFF</label>
+                <input type="radio" name="obj_persistent" id="obj_persistent_on" value="1"
+                  {% if values.obj_persistent %}checked{% endif %}>
+                <label for="obj_persistent_on">ON</label>
+                <a class="slide-button btn"></a>
+              </span>
+              <small class="form-text text-muted">
+                Use keep-alive connections to speed up cache operations.
+              </small>
+            </div>
+          </div>
+
+          {# obj_admin_cache #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">Admin cache</label>
+            <div class="col-sm-9">
+              <span class="ps-switch">
+                <input type="radio" name="obj_admin_cache" id="obj_admin_cache_off" value="0"
+                  {% if not values.obj_admin_cache %}checked{% endif %}>
+                <label for="obj_admin_cache_off">OFF</label>
+                <input type="radio" name="obj_admin_cache" id="obj_admin_cache_on" value="1"
+                  {% if values.obj_admin_cache %}checked{% endif %}>
+                <label for="obj_admin_cache_on">ON</label>
+                <a class="slide-button btn"></a>
+              </span>
+              <small class="form-text text-muted">
+                Improve admin panel speed through object caching. (May serve stale data.)
+              </small>
+            </div>
+          </div>
+
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <form method="post" class="d-inline-block mb-0">
+            <button type="submit" name="testConnection" class="btn btn-outline-secondary">
+              <i class="material-icons" style="font-size:16px;vertical-align:middle;">wifi_tethering</i>
+              Test connection
+            </button>
+          </form>
+          <button type="submit" name="submitObj" class="btn btn-primary">
+            Save
+          </button>
+        </div>
+      </div>
+    </form>
+
+  </div>{# /col #}
+</div>{# /row #}
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+{% endblock %}

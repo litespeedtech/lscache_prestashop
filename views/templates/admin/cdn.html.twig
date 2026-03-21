@@ -1,0 +1,216 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-12">
+
+    {# ================================================================== #}
+    {# SECTION 1 — Cloudflare Settings                                    #}
+    {# ================================================================== #}
+    <form method="post" id="litespeedcache-cdn-form" autocomplete="off">
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h3 class="card-header-title">
+            <i class="material-icons">cloud</i>
+            Cloudflare integration
+          </h3>
+          <span class="card-header-title font-weight-normal">
+            Cloudflare settings
+            <a href="https://docs.litespeedtech.com/lscache/lscwp/cdn/#cloudflare-settings" target="_blank" rel="noopener" class="ml-2">
+              Read more
+            </a>
+          </span>
+        </div>
+        <div class="card-body">
+
+          {# cf_enable #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">
+              Cloudflare API
+            </label>
+            <div class="col-sm-9">
+              <span class="ps-switch">
+                <input type="radio" name="cf_enable" id="cf_enable_off" value="0"
+                  {% if not values.cf_enable %}checked{% endif %}>
+                <label for="cf_enable_off">OFF</label>
+                <input type="radio" name="cf_enable" id="cf_enable_on" value="1"
+                  {% if values.cf_enable %}checked{% endif %}>
+                <label for="cf_enable_on">ON</label>
+                <a class="slide-button btn"></a>
+              </span>
+              <small class="form-text text-muted">
+                Use the Cloudflare API functionality.
+              </small>
+            </div>
+          </div>
+
+          {# cf_key #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="cf_key">
+              Global API Key/Token
+            </label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" id="cf_key" name="cf_key"
+                value="{{ values.cf_key|default('') }}"
+                autocomplete="new-password">
+              <small class="form-text text-muted">
+                Your API key/token is used to access the Cloudflare APIs.
+                <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">Get it from Cloudflare.</a>
+                Recommended: generate the token from the Cloudflare API token <em>WordPress</em> template.
+              </small>
+            </div>
+          </div>
+
+          {# cf_email #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="cf_email">
+              Email address
+            </label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" id="cf_email" name="cf_email"
+                value="{{ values.cf_email|default('') }}">
+              <small class="form-text text-muted">
+                Your Cloudflare account email address. Optional when using an API token.
+              </small>
+            </div>
+          </div>
+
+          {# cf_domain #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="cf_domain">
+              Domain
+            </label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" id="cf_domain" name="cf_domain"
+                value="{{ values.cf_domain|default('') }}"
+                placeholder="example.com">
+              <small class="form-text text-muted">
+                You can type part of the domain. Once saved, it will match against your zone list and be filled in automatically.
+              </small>
+            </div>
+          </div>
+
+          {# cf_purge #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">
+              Purge Cloudflare cache
+            </label>
+            <div class="col-sm-9">
+              <span class="ps-switch">
+                <input type="radio" name="cf_purge" id="cf_purge_off" value="0"
+                  {% if not values.cf_purge %}checked{% endif %}>
+                <label for="cf_purge_off">OFF</label>
+                <input type="radio" name="cf_purge" id="cf_purge_on" value="1"
+                  {% if values.cf_purge %}checked{% endif %}>
+                <label for="cf_purge_on">ON</label>
+                <a class="slide-button btn"></a>
+              </span>
+              <small class="form-text text-muted">
+                Purge the Cloudflare cache when Purge All is triggered.
+              </small>
+            </div>
+          </div>
+
+        </div>
+        <div class="card-footer d-flex justify-content-end">
+          <button type="submit" name="submitCdn" class="btn btn-primary">
+            Save
+          </button>
+        </div>
+      </div>
+    </form>
+
+    {# ================================================================== #}
+    {# SECTION 2 — Cloudflare status & actions                            #}
+    {# ================================================================== #}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-header-title">
+          <i class="material-icons">cloud_queue</i>
+          Cloudflare
+        </h3>
+      </div>
+      <div class="card-body">
+
+        {% if not cfEnabled %}
+          <div class="alert alert-warning">
+            <i class="material-icons">warning</i>
+            <strong>WARNING</strong> —
+            To enable the following functionality, turn on the Cloudflare API in the CDN settings above.
+          </div>
+        {% elseif not cfReady %}
+          <div class="alert alert-warning">
+            <i class="material-icons">warning</i>
+            <strong>WARNING</strong> —
+            Cloudflare zone could not be resolved. Check your credentials and domain, then save again.
+          </div>
+        {% endif %}
+
+        {# Zone info #}
+        <div class="form-group row">
+          <label class="form-control-label col-sm-3">Cloudflare domain</label>
+          <div class="col-sm-9">
+            <p class="form-control-static">{{ cfInfo.domain }}</p>
+          </div>
+        </div>
+        <div class="form-group row">
+          <label class="form-control-label col-sm-3">Cloudflare zone</label>
+          <div class="col-sm-9">
+            <p class="form-control-static">{{ cfInfo.zone }}</p>
+          </div>
+        </div>
+
+        {# Dev mode #}
+        <div class="form-group row">
+          <label class="form-control-label col-sm-3">Development mode</label>
+          <div class="col-sm-9">
+            <form method="post" class="d-inline-block">
+              {% if cfInfo.dev_mode == 'on' %}
+                <button type="submit" name="cf_dev_off"
+                  class="btn btn-sm btn-secondary">
+                  TURN OFF
+                </button>
+              {% else %}
+                <button type="submit" name="cf_dev_on"
+                  class="btn btn-sm btn-danger"
+                  {{ not cfReady ? 'disabled' }}>
+                  TURN ON
+                </button>
+              {% endif %}
+              <button type="submit" name="cf_dev_check"
+                class="btn btn-sm btn-outline-info ml-2"
+                {{ not cfReady ? 'disabled' }}>
+                Check status
+              </button>
+            </form>
+            <small class="form-text text-muted mt-1">
+              Temporarily bypasses the Cloudflare cache, allowing changes on the origin server to be seen in real time.<br>
+              Development mode will be automatically disabled after three hours.
+              <a href="https://developers.cloudflare.com/cache/how-to/enable-development-mode/" target="_blank" rel="noopener">Learn more</a>
+            </small>
+          </div>
+        </div>
+
+        {# Purge all #}
+        <div class="form-group row">
+          <label class="form-control-label col-sm-3">Cloudflare cache</label>
+          <div class="col-sm-9">
+            <form method="post" class="d-inline-block">
+              <button type="submit" name="cf_purge_all" value="1"
+                class="btn btn-sm btn-warning"
+                {{ not cfReady ? 'disabled' }}
+                onclick="return confirm('Purge all Cloudflare cache?');">
+                <i class="material-icons" style="font-size:16px;vertical-align:middle;">delete_sweep</i>
+                Purge all
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>{# /col #}
+</div>{# /row #}
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+{% endblock %}

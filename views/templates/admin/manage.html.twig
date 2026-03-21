@@ -1,0 +1,200 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-12">
+
+    {# ================================================================== #}
+    {# Flush Entire Cache Storage                                          #}
+    {# ================================================================== #}
+    {% if shopLevel != 1 %}
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-header-title">Flush Entire Cache Storage</h3>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-3">
+          This will flush the entire LiteSpeed Cache storage — all websites and all objects. Use only when needed.
+        </p>
+        <a href="{{ purgeAllUrl }}" class="btn btn-danger"
+          onclick="return confirm('This will flush the entire LiteSpeed Cache storage. Are you sure?');">
+          Flush Entire Cache Storage
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ================================================================== #}
+    {# FORM 1 — Purge by Selection                                         #}
+    {# ================================================================== #}
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-header-title">Purge by Selection</h3>
+      </div>
+
+      <form method="post" id="form-purge-selection">
+        <div class="card-body">
+
+          {% if shopLevel != -1 %}
+          <div class="alert alert-info">
+            This will affect all shops.
+          </div>
+          {% endif %}
+
+          <div class="row">
+
+            <div class="col-sm-6">
+              <div class="form-group">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="cbPurge_home" id="cbPurge_home" value="1">
+                  <label class="form-check-label" for="cbPurge_home">Home Page</label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="cbPurge_404" id="cbPurge_404" value="1">
+                  <label class="form-check-label" for="cbPurge_404">All 404 Pages</label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="cbPurge_search" id="cbPurge_search" value="1">
+                  <label class="form-check-label" for="cbPurge_search">All Categories and Products Pages</label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="cbPurge_brand" id="cbPurge_brand" value="1">
+                  <label class="form-check-label" for="cbPurge_brand">All Brands Pages</label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="cbPurge_supplier" id="cbPurge_supplier" value="1">
+                  <label class="form-check-label" for="cbPurge_supplier">All Suppliers Pages</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6">
+              <div class="form-group">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="cbPurge_sitemap" id="cbPurge_sitemap" value="1">
+                  <label class="form-check-label" for="cbPurge_sitemap">Site Map</label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="cbPurge_cms" id="cbPurge_cms" value="1">
+                  <label class="form-check-label" for="cbPurge_cms">All CMS Pages</label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="cbPurge_pc" id="cbPurge_pc" value="1">
+                  <label class="form-check-label" for="cbPurge_pc">All Product Comments</label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="cbPurge_priv" id="cbPurge_priv" value="1">
+                  <label class="form-check-label" for="cbPurge_priv">All Private ESI Blocks</label>
+                </div>
+              </div>
+            </div>
+
+          </div>{# /row #}
+
+          {# Category ID filter #}
+          <div class="form-group row mt-2">
+            <label class="form-control-label col-sm-3" for="rcats">
+              Category ID <span class="text-muted">(optional)</span>
+            </label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" id="rcats" name="rcats"
+                placeholder="e.g. 3">
+              <small class="form-text text-muted">
+                Enter a category ID to purge only that specific category.
+              </small>
+            </div>
+          </div>
+
+        </div>{# /card-body #}
+
+        <div class="card-footer d-flex justify-content-end">
+          <button type="submit" name="submitPurgeSelection" class="btn btn-danger">
+            Purge Selected
+          </button>
+        </div>
+      </form>
+    </div>{# /card Purge by Selection #}
+
+    {# ================================================================== #}
+    {# FORM 2 — Purge by ID                                                #}
+    {# ================================================================== #}
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-header-title">Purge by ID</h3>
+      </div>
+
+      <form method="post" id="form-purge-id">
+        <div class="card-body">
+
+          <p class="text-muted">
+            Cached pages should be automatically purged through hooks. This tool is mainly for
+            testing purposes. No extra validation is performed on the ID value.
+          </p>
+
+          {% if shopLevel != -1 %}
+          <div class="alert alert-info">
+            This will affect all shops.
+          </div>
+          {% endif %}
+
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="purgeby">Select ID Type</label>
+            <div class="col-sm-9">
+              <select class="form-control" id="purgeby" name="purgeby">
+                <option value="prod" {% if purgeSelectionValues.purgeby == 'prod' %}selected{% endif %}>Product</option>
+                <option value="cat"  {% if purgeSelectionValues.purgeby == 'cat'  %}selected{% endif %}>Category</option>
+                <option value="brand"    {% if purgeSelectionValues.purgeby == 'brand'    %}selected{% endif %}>Brand</option>
+                <option value="supplier" {% if purgeSelectionValues.purgeby == 'supplier' %}selected{% endif %}>Supplier</option>
+                <option value="cms" {% if purgeSelectionValues.purgeby == 'cms' %}selected{% endif %}>CMS</option>
+                <option value="pc"  {% if purgeSelectionValues.purgeby == 'pc'  %}selected{% endif %}>Comments for Product ID</option>
+                <option value="shop" {% if purgeSelectionValues.purgeby == 'shop' %}selected{% endif %}>Shop</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="purgeids">Enter the IDs</label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="purgeids" name="purgeids"
+                rows="4">{{ purgeSelectionValues.purgeids|default('') }}</textarea>
+              <small class="form-text text-muted">
+                Multiple IDs: comma-delimited string (e.g. <code>12,34,56</code>).
+              </small>
+            </div>
+          </div>
+
+        </div>{# /card-body #}
+
+        <div class="card-footer d-flex justify-content-end">
+          <button type="submit" name="submitPurgeId" class="btn btn-danger">
+            Purge by ID
+          </button>
+        </div>
+      </form>
+    </div>{# /card Purge by ID #}
+
+  </div>{# /col #}
+</div>{# /row #}
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+{% endblock %}

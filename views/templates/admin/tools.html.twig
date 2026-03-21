@@ -1,0 +1,706 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-12">
+
+    {# ============ PURGE ============ #}
+    {% if activeTab == 'purge' %}
+
+      {# Quick purge cards #}
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-header-title">Purge</h3>
+        </div>
+        <div class="card-body p-3">
+          <div class="row no-gutters">
+            {% set purge_items = [
+              { action: 'home',    icon: 'home',          title: 'Home Page',    desc: 'Purge only the home page.' },
+              { action: 'pages',   icon: 'description',   title: 'All Pages',    desc: 'Purge all cached pages.' },
+              { action: '404',     icon: 'error_outline', title: '404 Errors',   desc: 'Purge all 404 error pages.' },
+              { action: 'lscache', icon: 'bolt',          title: 'All LSCache',  desc: 'Purge all LiteSpeed full-page cache entries.' },
+              { action: 'cssjs',   icon: 'code',          title: 'CSS/JS Cache', desc: 'Purge all minified/combined CSS/JS entries.' },
+              { action: 'object',  icon: 'memory',        title: 'Object Cache', desc: 'Flush the entire object cache (Redis/Memcached).', enabled: objEnabled },
+            ] %}
+            {% for item in purge_items %}
+            <div class="col-lg-3 col-md-4 col-sm-6 p-2">
+              {% set disabled = item.enabled is defined and not item.enabled %}
+              <a href="{{ disabled ? '#' : path('admin_litespeedcache_tools_purge', { purge_action: item.action }) }}" class="text-decoration-none" {% if not disabled %}onclick="return confirm('{{ item.title }}?');"{% endif %}>
+                <div class="d-flex align-items-start p-3 rounded h-100" style="background:#f8f9fa; border:1px solid #dee2e6; min-height:90px; {{ disabled ? 'opacity:0.4; pointer-events:none;' : '' }}">
+                  <i class="material-icons mr-3" style="font-size:40px; color:#adb5bd;">{{ item.icon }}</i>
+                  <div class="flex-grow-1">
+                    <div style="font-weight:600; color:#343a40; font-size:14px;">{{ item.title }}</div>
+                    <div style="color:#6c757d; font-size:12px; line-height:1.4; margin-top:2px;">{{ item.desc }}</div>
+                  </div>
+                </div>
+              </a>
+            </div>
+            {% endfor %}
+
+            <div class="col-lg-3 col-md-4 col-sm-6 p-2">
+              <a href="{{ path('admin_litespeedcache_tools_purge', { purge_action: 'purge_all' }) }}" class="text-decoration-none" onclick="return confirm('Purge All?');">
+                <div class="d-flex align-items-start p-3 rounded h-100" style="background:#fff3e0; border:1px solid #f0ad4e; min-height:90px;">
+                  <i class="material-icons mr-3" style="font-size:40px; color:#f0ad4e;">delete_sweep</i>
+                  <div class="flex-grow-1">
+                    <div style="font-weight:600; color:#e65100; font-size:14px;">Purge All</div>
+                    <div style="color:#6c757d; font-size:12px; line-height:1.4; margin-top:2px;">Purge all cache entries created by this module.</div>
+                  </div>
+                </div>
+              </a>
+            </div>
+            {% if shopLevel != 1 %}
+            <div class="col-lg-3 col-md-4 col-sm-6 p-2">
+              <a href="{{ path('admin_litespeedcache_tools_purge', { purge_action: 'flush_all' }) }}" class="text-decoration-none" onclick="return confirm('This will flush the ENTIRE cache storage including other applications. Are you sure?');">
+                <div class="d-flex align-items-start p-3 rounded h-100" style="background:#fce4ec; border:1px solid #e84e6a; min-height:90px;">
+                  <i class="material-icons mr-3" style="font-size:40px; color:#e84e6a;">warning</i>
+                  <div class="flex-grow-1">
+                    <div style="font-weight:600; color:#c62828; font-size:14px;">Flush Entire Cache</div>
+                    <div style="color:#6c757d; font-size:12px; line-height:1.4; margin-top:2px;">Flush all cache storage including other applications. Only use if things are cached incorrectly.</div>
+                  </div>
+                </div>
+              </a>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      {# Purge by Selection #}
+      <div class="card mb-4">
+        <div class="card-header"><h3 class="card-header-title">Purge by Selection</h3></div>
+        <form method="post" action="{{ path('admin_litespeedcache_tools_purge') }}">
+          <div class="card-body">
+            {% if shopLevel != -1 %}<div class="alert alert-info">This will affect all shops.</div>{% endif %}
+            <div class="row">
+              <div class="col-sm-6">
+                {% for cb in [
+                  {name:'cbPurge_home',     label:'Home Page'},
+                  {name:'cbPurge_404',      label:'All 404 Pages'},
+                  {name:'cbPurge_search',   label:'All Categories and Products Pages'},
+                  {name:'cbPurge_brand',    label:'All Brands Pages'},
+                  {name:'cbPurge_supplier', label:'All Suppliers Pages'}
+                ] %}
+                <div class="form-group"><div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="{{ cb.name }}" id="{{ cb.name }}" value="1">
+                  <label class="form-check-label" for="{{ cb.name }}">{{ cb.label }}</label>
+                </div></div>
+                {% endfor %}
+              </div>
+              <div class="col-sm-6">
+                {% for cb in [
+                  {name:'cbPurge_sitemap', label:'Site Map'},
+                  {name:'cbPurge_cms',     label:'All CMS Pages'},
+                  {name:'cbPurge_pc',      label:'All Product Comments'},
+                  {name:'cbPurge_priv',    label:'All Private ESI Blocks'}
+                ] %}
+                <div class="form-group"><div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="{{ cb.name }}" id="{{ cb.name }}" value="1">
+                  <label class="form-check-label" for="{{ cb.name }}">{{ cb.label }}</label>
+                </div></div>
+                {% endfor %}
+              </div>
+            </div>
+            <div class="form-group row mt-2">
+              <label class="form-control-label col-sm-3" for="rcats">Category ID <span class="text-muted">(optional)</span></label>
+              <div class="col-sm-9"><input type="text" class="form-control" id="rcats" name="rcats" placeholder="e.g. 3"></div>
+            </div>
+          </div>
+          <div class="card-footer d-flex justify-content-end">
+            <button type="submit" name="submitPurgeSelection" class="btn btn-primary">Purge Selected</button>
+          </div>
+        </form>
+      </div>
+
+      {# Purge by ID #}
+      <div class="card mb-4">
+        <div class="card-header"><h3 class="card-header-title">Purge by ID</h3></div>
+        <form method="post" action="{{ path('admin_litespeedcache_tools_purge') }}">
+          <div class="card-body">
+            <p class="text-muted">Cached pages should be automatically purged through hooks. This tool is mainly for testing purposes.</p>
+            <div class="form-group row">
+              <label class="form-control-label col-sm-3" for="purgeby">Select ID Type</label>
+              <div class="col-sm-9">
+                <select class="form-control" id="purgeby" name="purgeby">
+                  {% for opt in [{v:'prod',l:'Product'},{v:'cat',l:'Category'},{v:'brand',l:'Brand'},{v:'supplier',l:'Supplier'},{v:'cms',l:'CMS'},{v:'pc',l:'Comments for Product ID'},{v:'shop',l:'Shop'}] %}
+                    <option value="{{ opt.v }}">{{ opt.l }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="form-group row">
+              <label class="form-control-label col-sm-3" for="purgeids">Enter the IDs</label>
+              <div class="col-sm-9">
+                <textarea class="form-control" id="purgeids" name="purgeids" rows="3"></textarea>
+                <small class="form-text text-muted">Multiple IDs: comma-delimited (e.g. <code>12,34,56</code>).</small>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer d-flex justify-content-end">
+            <button type="submit" name="submitPurgeId" class="btn btn-primary">Purge by ID</button>
+          </div>
+        </form>
+      </div>
+    {% endif %}
+
+    {# ============ IMPORT AND EXPORT ============ #}
+    {% if activeTab == 'import-export' %}
+
+      <div class="row">
+        {# Export #}
+        <div class="col-md-6 mb-4">
+          <div class="card h-100">
+            <div class="card-header"><h3 class="card-header-title">Export Settings</h3></div>
+            <div class="card-body">
+              <p class="text-muted">This will export all current LiteSpeed Cache settings and save them as a file.</p>
+              <a href="{{ path('admin_litespeedcache_tools_import_export', { action: 'export' }) }}" class="btn btn-primary">Export</a>
+              {% if lastExport %}
+              <p class="mt-3 mb-0">
+                <small class="text-muted">Last export: <code>{{ lastExport.file }}</code> {{ lastExport.date }}</small>
+              </p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        {# Import #}
+        <div class="col-md-6 mb-4">
+          <div class="card h-100">
+            <div class="card-header"><h3 class="card-header-title">Import Settings</h3></div>
+            <form method="post" action="{{ path('admin_litespeedcache_tools_import_export') }}" enctype="multipart/form-data">
+              <div class="card-body">
+                <p class="text-muted">This will import settings from a file and overwrite all current LiteSpeed Cache settings.</p>
+                <label class="d-block text-left mb-2" for="{{ importForm.import_file.vars.id }}">Configuration file</label>
+                {{ form_widget(importForm.import_file) }}
+                {{ form_errors(importForm.import_file) }}
+                <div class="mt-3">
+                  {{ form_widget(importForm.submit) }}
+                </div>
+                {% if lastImport %}
+                <p class="mt-3 mb-0">
+                  <small class="text-muted">Last import: <code>{{ lastImport.file }}</code> {{ lastImport.date }}</small>
+                </p>
+                {% endif %}
+                {{ form_rest(importForm) }}
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {# Reset #}
+      <div class="card mb-4">
+        <div class="card-header"><h3 class="card-header-title">Reset All Settings</h3></div>
+        <div class="card-body">
+          <div class="alert alert-warning mb-3">
+            This will reset all settings to their default values.
+          </div>
+          <a href="{{ path('admin_litespeedcache_tools_import_export', { action: 'reset' }) }}" class="btn btn-danger" onclick="return confirm('Are you sure you want to reset ALL settings to defaults?');">Reset Settings</a>
+        </div>
+      </div>
+
+    {% endif %}
+
+    {# ============ SHOW .HTACCESS ============ #}
+    {% if activeTab == 'htaccess' %}
+
+      {# Front .htaccess content #}
+      <div class="card mb-4">
+        <div class="card-header"><h3 class="card-header-title">Actual .htaccess Content</h3></div>
+        <div class="card-body">
+          <p class="text-muted mb-2"><code>{{ htaccessFrontPath }}</code></p>
+          <pre class="bg-dark text-light p-3 rounded" style="max-height:500px; overflow-y:auto; font-size:12px; white-space:pre-wrap;">{{ htaccessFrontContent }}</pre>
+        </div>
+      </div>
+
+    {% endif %}
+
+    {# ============ REPORT ============ #}
+    {% if activeTab == 'report' %}
+      <div class="row" style="align-items:flex-start;">
+        {# ---- Left column: Config + Installed Modules ---- #}
+        <div class="col-lg-6">
+          <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h3 class="card-header-title mb-0">Module Config</h3>
+              <button type="button" class="btn btn-sm btn-outline-secondary js-copy-block" data-target="#block-config">Copy</button>
+            </div>
+            <div class="card-body p-0" id="block-config">
+              <table class="table table-hover mb-0">
+                <tbody>
+                  {% for label, value in report %}
+                  <tr>
+                    <td class="font-weight-bold" style="width:250px;">{{ label }}</td>
+                    <td>{{ value }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h3 class="card-header-title mb-0">Installed Modules</h3>
+              <button type="button" class="btn btn-sm btn-outline-secondary js-copy-block" data-target="#block-modules">Copy</button>
+            </div>
+            <div class="card-body p-0" style="max-height:300px; overflow-y:auto;" id="block-modules">
+              <table class="table table-hover mb-0" style="font-size:13px;">
+                <thead><tr>
+                  <th>Module</th>
+                  <th style="width:80px;">Version</th>
+                  <th style="width:100px;">Status</th>
+                </tr></thead>
+                <tbody>
+                  {% for mod in installedModules %}
+                  <tr>
+                    <td>{{ mod.name }}</td>
+                    <td>{{ mod.version }}</td>
+                    <td>
+                      {% if mod.active %}
+                        <span class="badge badge-success">Active</span>
+                      {% else %}
+                        <span class="badge badge-secondary">Disabled</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h3 class="card-header-title mb-0">Server Info</h3>
+              <button type="button" class="btn btn-sm btn-outline-secondary js-copy-block" data-target="#block-phpinfo">Copy</button>
+            </div>
+            <div class="card-body p-0" style="max-height:300px; overflow-y:auto;" id="block-phpinfo">
+              <table class="table table-hover mb-0" style="font-size:13px;">
+                <tbody>
+                  {% for label, value in phpInfo %}
+                  <tr>
+                    <td class="font-weight-bold" style="width:250px;">{{ label }}</td>
+                    <td>{{ value }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {# ---- Right column: Support form ---- #}
+        <div class="col-lg-6" id="support-column">
+          <div class="card mb-4">
+            <div class="card-header"><h3 class="card-header-title">Support</h3></div>
+            <form method="post">
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-control-label" for="support_name">Name</label>
+                  <input type="text" class="form-control" id="support_name" name="support_name" value="{{ adminData.name }}">
+                </div>
+                <div class="form-group">
+                  <label class="form-control-label" for="support_email">Email</label>
+                  <input type="email" class="form-control" id="support_email" name="support_email" value="{{ adminData.email }}">
+                </div>
+                <div class="form-group">
+                  <label class="form-control-label" for="support_url">URL</label>
+                  <input type="url" class="form-control" id="support_url" name="support_url" value="{{ adminData.url }}">
+                </div>
+                <div class="form-group">
+                  <label class="form-control-label" for="support_comments">Comments</label>
+                  <textarea class="form-control" id="support_comments" name="support_comments" rows="5"></textarea>
+                </div>
+              </div>
+              <div class="card-footer d-flex justify-content-end">
+                <button type="submit" name="submitSupport" class="btn btn-primary">Send</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {# ============ DEBUG SETTINGS ============ #}
+    {% if activeTab == 'debug' %}
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="card-header-title mb-0">Debug settings</h3>
+          <span class="d-flex align-items-center"><small class="text-muted mr-1">Log File:</small><span class="badge badge-secondary">{{ logPath }}</span></span>
+        </div>
+        <form method="post">
+          <div class="card-body">
+            <div class="form-group row">
+              <label class="form-control-label col-sm-3" for="debug_header">Enable Debug Headers</label>
+              <div class="col-sm-9">
+                <div class="custom-control custom-switch">
+                  <input type="hidden" name="debug_header" value="0">
+                  <input type="checkbox" class="custom-control-input" id="debug_header" name="debug_header" value="1" {{ debugHeader ? 'checked' : '' }}>
+                  <label class="custom-control-label" for="debug_header">Show debug information through response headers</label>
+                </div>
+                <small class="form-text text-muted">Turn off for production use.</small>
+              </div>
+            </div>
+            <div class="form-group row">
+              <label class="form-control-label col-sm-3" for="debug_log">Enable Debug Log</label>
+              <div class="col-sm-9">
+                <div class="custom-control custom-switch">
+                  <input type="hidden" name="debug_log" value="0">
+                  <input type="checkbox" class="custom-control-input" id="debug_log" name="debug_log" value="1" {{ debugLog ? 'checked' : '' }}>
+                  <label class="custom-control-label" for="debug_log">Print information to <code>lscache.log</code></label>
+                </div>
+                <small class="form-text text-muted">Turn off for production use.</small>
+              </div>
+            </div>
+            <div class="form-group row">
+              <label class="form-control-label col-sm-3" for="debug_level">Debug level</label>
+              <div class="col-sm-9">
+                <select class="form-control" id="debug_level" name="debug_level">
+                  {% for opt in [
+                    {v: 0,  l: '0 — Off'},
+                    {v: 1,  l: '1 — Exceptions'},
+                    {v: 3,  l: '3 — Notices'},
+                    {v: 5,  l: '5 — Purge events'},
+                    {v: 8,  l: '8 — Cache routes'},
+                    {v: 10, l: '10 — All details'},
+                  ] %}
+                    <option value="{{ opt.v }}" {{ debugLevel == opt.v ? 'selected' : '' }}>{{ opt.l }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="form-group row">
+              <label class="form-control-label col-sm-3" for="debug_ips">Restrict to IPs</label>
+              <div class="col-sm-9">
+                <div class="input-group">
+                  <input type="text" class="form-control" id="debug_ips" name="debug_ips" value="{{ debugIps }}" placeholder="e.g. 192.168.1.100, 10.0.0.1">
+                  <div class="input-group-append">
+                    <button type="button" class="btn btn-outline-secondary" id="btn-get-my-ip">Get my IP</button>
+                  </div>
+                </div>
+                <small class="form-text text-muted">Limit cache and debug logging to these IPs only. Comma-separated. Allows testing on a live site. If empty, cache and logging apply to everyone.</small>
+              </div>
+            </div>
+            <div class="form-group row">
+              <label class="form-control-label col-sm-3" for="debug_uri_inc">Debug URI Includes</label>
+              <div class="col-sm-9">
+                <textarea class="form-control" id="debug_uri_inc" name="debug_uri_inc" rows="3" placeholder="/mypage?param=">{{ debugUriInc }}</textarea>
+                <small class="form-text text-muted">Only log pages matching these URIs. Matched against the <code>REQUEST_URI</code> server variable. e.g. for <code>/mypath/mypage?aa=bb</code>, you can use <code>mypage?aa=</code>. Add <code>^</code> at the beginning to match from the start. Add <code>$</code> at the end for an exact match. One per line. Leave empty to log all pages.</small>
+              </div>
+            </div>
+            <div class="form-group row">
+              <label class="form-control-label col-sm-3" for="debug_uri_exc">Debug URI Excludes</label>
+              <div class="col-sm-9">
+                <textarea class="form-control" id="debug_uri_exc" name="debug_uri_exc" rows="3" placeholder="/admin/">{{ debugUriExc }}</textarea>
+                <small class="form-text text-muted">Prevent any debug logging for pages matching these URIs. Matched against the <code>REQUEST_URI</code> server variable. Add <code>^</code> at the beginning to match from the start. Add <code>$</code> at the end for an exact match. One per line.</small>
+              </div>
+            </div>
+            <div class="form-group row">
+              <label class="form-control-label col-sm-3" for="debug_str_exc">Debug String Excludes</label>
+              <div class="col-sm-9">
+                <textarea class="form-control" id="debug_str_exc" name="debug_str_exc" rows="3">{{ debugStrExc }}</textarea>
+                <small class="form-text text-muted">Prevent writing log entries that contain any of the listed strings. One per line.</small>
+              </div>
+            </div>
+            <div class="form-group row mb-0">
+              <label class="form-control-label col-sm-3" for="cache_bypass">Disable all cache</label>
+              <div class="col-sm-9">
+                <div class="custom-control custom-switch">
+                  <input type="hidden" name="cache_bypass" value="0">
+                  <input type="checkbox" class="custom-control-input" id="cache_bypass" name="cache_bypass" value="1" {{ cacheBypassed ? 'checked' : '' }}>
+                  <label class="custom-control-label" for="cache_bypass">
+                    Bypass cache
+                    {% if cacheBypassed %}<span class="badge badge-danger ml-2">Active</span>{% endif %}
+                  </label>
+                </div>
+                <small class="form-text text-muted">Temporarily disable all cache features without changing your settings.</small>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer d-flex justify-content-end">
+            <button type="submit" name="submitDebug" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-3">
+          <div class="card mb-4">
+            <div class="card-header"><h3 class="card-header-title">Reinstall the module admin tabs</h3></div>
+            <div class="card-body">
+              <p class="text-muted mb-3">Use this after updating the module or if any menu entry is missing.</p>
+              <a href="{{ reinstallTabsUrl }}" class="btn btn-secondary btn-block" onclick="return confirm('This will remove and recreate all module tabs. Continue?');">Reinstall</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {# ============ LOGS ============ #}
+    {% if activeTab == 'logs' %}
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="card-header-title mb-0">Events</h3>
+          <a href="{{ clearEventsUrl }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Clear all module events?');">Clear events</a>
+        </div>
+        <div class="card-body p-0">
+          {% if events is empty %}
+            <p class="text-muted p-3 mb-0">No events recorded yet.</p>
+          {% else %}
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead><tr>
+                  <th style="width:160px;">Date</th><th style="width:80px;">Severity</th><th>Message</th><th style="width:140px;">Employee</th>
+                </tr></thead>
+                <tbody>
+                  {% for event in events %}
+                  <tr>
+                    <td class="text-nowrap"><small>{{ event.date_add }}</small></td>
+                    <td>
+                      {% if event.severity == 1 %}<span class="badge badge-info">Info</span>
+                      {% elseif event.severity == 2 %}<span class="badge badge-warning">Warning</span>
+                      {% elseif event.severity == 3 %}<span class="badge badge-danger">Error</span>
+                      {% elseif event.severity == 4 %}<span class="badge badge-dark">Critical</span>
+                      {% else %}<span class="badge badge-secondary">{{ event.severity }}</span>{% endif %}
+                    </td>
+                    <td>{{ event.message }}</td>
+                    <td>{% if event.firstname %}{{ event.firstname }} {{ event.lastname }}{% else %}<span class="text-muted">System</span>{% endif %}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% if totalPages > 1 %}
+            <div class="d-flex justify-content-between align-items-center p-3">
+              <small class="text-muted">{{ totalEvents }} events — Page {{ page }} of {{ totalPages }}</small>
+              <nav>
+                <ul class="pagination pagination-sm mb-0">
+                  {% if page > 1 %}<li class="page-item"><a class="page-link" href="{{ path('admin_litespeedcache_tools', {tab: 'logs', page: page - 1}) }}">Previous</a></li>{% endif %}
+                  {% for p in max(1, page - 2)..min(totalPages, page + 2) %}
+                    <li class="page-item {{ p == page ? 'active' : '' }}"><a class="page-link" href="{{ path('admin_litespeedcache_tools', {tab: 'logs', page: p}) }}">{{ p }}</a></li>
+                  {% endfor %}
+                  {% if page < totalPages %}<li class="page-item"><a class="page-link" href="{{ path('admin_litespeedcache_tools', {tab: 'logs', page: page + 1}) }}">Next</a></li>{% endif %}
+                </ul>
+              </nav>
+            </div>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="card-header-title mb-0">Access Log</h3>
+          <div>
+            <small class="text-muted mr-3" id="access-log-status">Auto-refresh: every 5s</small>
+            <button type="button" class="btn btn-sm btn-outline-secondary mr-1 js-copy-block" data-target="#access-log-content">Copy</button>
+            <form method="post" action="{{ path('admin_litespeedcache_tools_logs') }}" class="d-inline">
+              <input type="hidden" name="clear_access_log" value="1">
+              <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Clear the access log file?');">Clear</button>
+            </form>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-2">Last 200 lines from <code>var/logs/lscache.log</code></p>
+          <pre class="bg-dark text-light p-3 rounded" id="access-log-content" style="max-height:500px; overflow-y:auto; font-size:12px; white-space:pre-wrap; word-break:break-all;">{{ accessLog }}</pre>
+        </div>
+      </div>
+    {% endif %}
+
+    {# ============ UPDATES ============ #}
+    {% if activeTab == 'updates' %}
+
+      {# Current version + update banner #}
+      <div class="card mb-4">
+        <div class="card-header"><h3 class="card-header-title">Module version</h3></div>
+        <div class="card-body">
+          {% set newer = releases|filter(r => r.status == 'newer')|first %}
+          <p class="mb-0">
+            Current version: <strong>{{ currentVersion }}</strong>
+            {% if newer %}
+              <span class="badge badge-warning ml-2">Update available: {{ newer.tag_name }}</span>
+            {% else %}
+              <span class="badge badge-success ml-2">Up to date</span>
+            {% endif %}
+          </p>
+          {% if newer %}
+          <form method="post" action="{{ updateActionUrl }}" class="mt-3">
+            <input type="hidden" name="release_tag" value="{{ newer.tag_name }}">
+            <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('Update to {{ newer.tag_name }}? A backup of the current version will be created automatically.');">Update Now</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+
+      {# Available releases #}
+      <div class="card mb-4">
+        <div class="card-header"><h3 class="card-header-title">Available Releases</h3></div>
+        <div class="card-body p-0">
+          {% if releases is empty %}
+            <p class="text-muted p-3 mb-0">Could not fetch releases from GitHub. Check the server's internet connectivity.</p>
+          {% else %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead><tr>
+                <th>Version</th>
+                <th>Date</th>
+                <th style="width:120px;">Status</th>
+                <th style="width:150px;">Action</th>
+              </tr></thead>
+              <tbody>
+                {% for release in releases %}
+                <tr>
+                  <td>
+                    <strong>{{ release.tag_name }}</strong>
+                    {% if release.prerelease %}<span class="badge badge-warning ml-1">Pre-release</span>{% endif %}
+                    {% if release.body %}<br><small class="text-muted">{{ release.body|length > 100 ? release.body|slice(0, 100) ~ '...' : release.body }}</small>{% endif %}
+                  </td>
+                  <td><small>{{ release.published_at|slice(0, 10) }}</small></td>
+                  <td>
+                    {% if release.status == 'current' %}
+                      <span class="badge badge-success">Current</span>
+                    {% elseif release.status == 'newer' %}
+                      <span class="badge badge-info">New</span>
+                    {% else %}
+                      <span class="badge badge-secondary">Older</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if release.status == 'current' %}
+                      <span class="text-muted">—</span>
+                    {% elseif release.status == 'newer' %}
+                      <form method="post" action="{{ updateActionUrl }}" class="d-inline">
+                        <input type="hidden" name="release_tag" value="{{ release.tag_name }}">
+                        <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('Update to {{ release.tag_name }}? A backup will be created automatically.');">Update</button>
+                      </form>
+                    {% else %}
+                      <form method="post" action="{{ updateActionUrl }}" class="d-inline">
+                        <input type="hidden" name="release_tag" value="{{ release.tag_name }}">
+                        <button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('Downgrade to {{ release.tag_name }}? This may cause compatibility issues. A backup will be created automatically.');">Downgrade</button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {# Backups / Rollback #}
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="card-header-title mb-0">Backups &amp; Rollback</h3>
+          <form method="post" action="{{ updateActionUrl }}" class="d-inline">
+            <input type="hidden" name="create_backup" value="1">
+            <button type="submit" class="btn btn-sm btn-outline-primary" onclick="return confirm('Create a backup of the current version?');">Create Backup</button>
+          </form>
+        </div>
+        <div class="card-body p-0">
+          {% if backups is empty %}
+            <p class="text-muted p-3 mb-0">No backups available. A backup is created automatically before each update.</p>
+          {% else %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead><tr>
+                <th>Version</th>
+                <th>Date</th>
+                <th>Size</th>
+                <th style="width:200px;">Actions</th>
+              </tr></thead>
+              <tbody>
+                {% for backup in backups %}
+                <tr>
+                  <td><strong>v{{ backup.version }}</strong></td>
+                  <td><small>{{ backup.date }}</small></td>
+                  <td>{{ backup.size }} MB</td>
+                  <td>
+                    <form method="post" action="{{ rollbackActionUrl }}" class="d-inline">
+                      <input type="hidden" name="backup_file" value="{{ backup.file }}">
+                      <button type="submit" class="btn btn-outline-primary btn-sm" onclick="return confirm('Restore version {{ backup.version }} from backup {{ backup.file }}? Current files will be replaced.');">Restore</button>
+                    </form>
+                    <form method="post" action="{{ deleteBackupUrl }}" class="d-inline ml-1">
+                      <input type="hidden" name="delete_backup" value="{{ backup.file }}">
+                      <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this backup?');"><i class="material-icons" style="font-size:16px; vertical-align:middle;">delete</i></button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    {% endif %}
+
+  </div>
+</div>
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Copy buttons
+  document.querySelectorAll('.js-copy-block').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var target = document.querySelector(btn.dataset.target);
+      if (!target) return;
+      var text = target.innerText;
+      navigator.clipboard.writeText(text).then(function () {
+        var orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(function () { btn.textContent = orig; }, 1500);
+      });
+    });
+  });
+
+  // Get my IP
+  var ipBtn = document.getElementById('btn-get-my-ip');
+  if (ipBtn) {
+    ipBtn.addEventListener('click', function () {
+      var input = document.getElementById('debug_ips');
+      fetch('https://api.ipify.org?format=json')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var current = input.value.trim();
+          if (current && current.indexOf(data.ip) === -1) {
+            input.value = current + ', ' + data.ip;
+          } else {
+            input.value = data.ip;
+          }
+        })
+        .catch(function () { alert('Could not detect your IP.'); });
+    });
+  }
+
+  // Sticky support column
+  var col = document.getElementById('support-column');
+  if (col) {
+    var initialTop = col.getBoundingClientRect().top + window.scrollY;
+    col.style.position = 'sticky';
+    col.style.top = initialTop + 'px';
+  }
+
+  // Access log auto-refresh
+  var logEl = document.getElementById('access-log-content');
+  if (logEl) {
+    var statusEl = document.getElementById('access-log-status');
+    setInterval(function () {
+      fetch('{{ accessLogUrl|default("") }}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var wasAtBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 30;
+          logEl.textContent = data.log;
+          if (wasAtBottom) logEl.scrollTop = logEl.scrollHeight;
+          if (statusEl) statusEl.textContent = 'Updated: ' + new Date().toLocaleTimeString();
+        })
+        .catch(function () {
+          if (statusEl) statusEl.textContent = 'Auto-refresh failed';
+        });
+    }, 5000);
+  }
+});
+</script>
+{% endblock %}
