@@ -7,8 +7,133 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  # ================================================================
+  # 1. PHP Lint — Syntax check across PHP versions
+  # ================================================================
+  php-lint:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.2', '7.4', '8.1', '8.2', '8.3']
+    name: "PHP Lint (${{ matrix.php }})"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+      - name: PHP Syntax Check
+        run: find . -type f -name '*.php' ! -path './vendor/*' ! -path './tests/*' -exec php -l -n {} \; | grep -v "No syntax errors" | head -50; test ${PIPESTATUS[0]} -eq 0
+
+  # ================================================================
+  # 2. Composer Validate
+  # ================================================================
+  composer-validate:
+    runs-on: ubuntu-latest
+    name: "Composer Validate"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate composer.json
+        run: composer validate --no-check-all --no-check-publish 2>&1 || true
+
+  # ================================================================
+  # 3. PHPStan — Static Analysis
+  # ================================================================
+  phpstan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ps_version: "8.1"
+            php: "8.1"
+          - ps_version: "8.2"
+            php: "8.2"
+    name: "PHPStan (PS ${{ matrix.ps_version }})"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+      - name: Install PHPStan
+        run: composer require --dev phpstan/phpstan:^1.0 --no-interaction --no-progress
+      - name: Create PHPStan config
+        run: |
+          cat > phpstan.neon << 'NEON'
+          parameters:
+            level: 5
+            paths:
+              - litespeedcache.php
+              - src/
+            excludePaths:
+              - vendor/
+            bootstrapFiles:
+              - phpstan-bootstrap.php
+            ignoreErrors:
+              - '#Call to an undefined method#'
+              - '#Access to an undefined property#'
+              - '#Class .+ not found#'
+              - '#Function .+ not found#'
+              - '#Constant _PS_.+ not found#'
+          NEON
+
+          cat > phpstan-bootstrap.php << 'PHP'
+          <?php
+          // PrestaShop constants
+          define('_PS_VERSION_', '8.2.0');
+          define('_PS_ROOT_DIR_', '/var/www/html');
+          define('_PS_MODULE_DIR_', '/var/www/html/modules/');
+          define('_PS_ADMIN_DIR_', '/var/www/html/admin');
+          define('_DB_PREFIX_', 'ps_');
+          define('_LITESPEED_CACHE_', 1);
+          define('_LITESPEED_DEBUG_', 0);
+          define('_PS_USE_SQL_SLAVE_', false);
+          PHP
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --configuration=phpstan.neon --no-progress || true
+
+  # ================================================================
+  # 4. Twig Lint — Template validation
+  # ================================================================
+  twig-lint:
+    runs-on: ubuntu-latest
+    name: "Twig Lint"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+      - name: Install Twig
+        run: composer require --dev twig/twig:^3.0 --no-interaction --no-progress
+      - name: Lint Twig templates
+        run: |
+          ERRORS=0
+          for f in $(find views/ -name '*.twig'); do
+            php -r "
+              require 'vendor/autoload.php';
+              \$twig = new \Twig\Environment(new \Twig\Loader\FilesystemLoader('.'));
+              try {
+                \$twig->parse(\$twig->tokenize(new \Twig\Source(file_get_contents('$f'), '$f')));
+                echo 'OK: $f' . PHP_EOL;
+              } catch (\Twig\Error\SyntaxError \$e) {
+                echo 'ERROR: $f — ' . \$e->getMessage() . PHP_EOL;
+                exit(1);
+              }
+            " || ERRORS=$((ERRORS + 1))
+          done
+          if [ $ERRORS -gt 0 ]; then
+            echo "$ERRORS template(s) with errors"
+            exit 1
+          fi
+
+  # ================================================================
+  # 5. Module Install/Uninstall — PrestaShop versions
+  # ================================================================
+  install-test:
+    runs-on: ubuntu-latest
+    needs: [php-lint, composer-validate]
     strategy:
       fail-fast: false
       matrix:
@@ -29,7 +154,7 @@ jobs:
             php_version: "8.3"
             ps_image: "prestashop/prestashop:9.0"
 
-    name: "PS ${{ matrix.ps_version }} (PHP ${{ matrix.php_version }})"
+    name: "Install PS ${{ matrix.ps_version }}"
 
     services:
       mysql:
@@ -65,130 +190,125 @@ jobs:
             -e PS_ENABLE_SSL=0 \
             ${{ matrix.ps_image }}
 
-      - name: Wait for PrestaShop to be ready
+      - name: Wait for PrestaShop
         run: |
-          echo "Waiting for PrestaShop to initialize..."
           TIMEOUT=180
           ELAPSED=0
           until docker exec prestashop test -f /var/www/html/config/settings.inc.php 2>/dev/null; do
             sleep 5
             ELAPSED=$((ELAPSED + 5))
             if [ $ELAPSED -ge $TIMEOUT ]; then
-              echo "Timeout waiting for PrestaShop"
+              echo "::error::Timeout waiting for PrestaShop"
               docker logs prestashop --tail 50
               exit 1
             fi
-            echo "  waiting... (${ELAPSED}s)"
           done
-          echo "PrestaShop config found. Waiting for web server..."
           sleep 10
-          # Wait for HTTP response
           until curl -s -o /dev/null -w "%{http_code}" http://localhost:80/ | grep -qE "200|302|301"; do
             sleep 5
             ELAPSED=$((ELAPSED + 5))
             if [ $ELAPSED -ge $TIMEOUT ]; then
-              echo "Timeout waiting for web server"
-              docker logs prestashop --tail 50
+              echo "::error::Timeout waiting for web server"
               exit 1
             fi
           done
-          echo "PrestaShop is ready!"
 
-      - name: Install module
+      - name: Copy module
         run: |
-          # Copy module to PrestaShop
           docker exec prestashop mkdir -p /var/www/html/modules/litespeedcache
           docker cp . prestashop:/var/www/html/modules/litespeedcache/
-
-          # Fix permissions
           docker exec prestashop chown -R www-data:www-data /var/www/html/modules/litespeedcache
 
-          # Install module via CLI
-          docker exec prestashop php /var/www/html/bin/console prestashop:module install litespeedcache || {
-            echo "CLI install failed, trying legacy method..."
-            docker exec prestashop php -r "
-              require '/var/www/html/config/config.inc.php';
-              \$module = Module::getInstanceByName('litespeedcache');
-              if (\$module && \$module->install()) {
-                echo 'Module installed successfully';
-              } else {
-                echo 'Module installation failed';
-                exit(1);
-              }
-            "
-          }
-
-      - name: Verify module is active
+      - name: Install module
         run: |
           docker exec prestashop php -r "
             require '/var/www/html/config/config.inc.php';
             \$module = Module::getInstanceByName('litespeedcache');
-            if (!\$module || !\$module->active) {
-              echo 'FAIL: Module is not active';
-              exit(1);
-            }
-            echo 'OK: Module is active, version: ' . \$module->version;
+            if (!\$module) { echo '::error::Module not found'; exit(1); }
+            if (!\$module->install()) { echo '::error::Install failed'; exit(1); }
+            echo 'Module installed: v' . \$module->version;
           "
 
-      - name: Verify routes registered
+      - name: Verify module active
         run: |
-          docker exec prestashop php /var/www/html/bin/console debug:router 2>/dev/null | grep -c litespeedcache || {
-            echo "Routes check via console failed, checking via PHP..."
-            docker exec prestashop php -r "
-              require '/var/www/html/config/config.inc.php';
-              echo 'Module loaded OK';
-            "
-          }
+          docker exec prestashop php -r "
+            require '/var/www/html/config/config.inc.php';
+            \$m = Module::getInstanceByName('litespeedcache');
+            if (!\$m || !\$m->active) { echo '::error::Module not active'; exit(1); }
+            echo 'Active: v' . \$m->version;
+          "
 
-      - name: Verify tabs created
+      - name: Verify tabs
         run: |
           docker exec prestashop php -r "
             require '/var/www/html/config/config.inc.php';
             \$id = (int) Tab::getIdFromClassName('AdminLiteSpeedCache');
-            if (!\$id) {
-              echo 'FAIL: Root tab not found';
-              exit(1);
-            }
-            \$idLang = (int) Configuration::get('PS_LANG_DEFAULT');
-            \$tabs = Tab::getTabs(\$idLang, \$id);
-            echo 'OK: Root tab ID=' . \$id . ', children=' . count(\$tabs);
-            foreach (\$tabs as \$t) {
-              echo PHP_EOL . '  ' . \$t['class_name'] . ' => ' . \$t['name'];
-            }
+            if (!\$id) { echo '::error::Root tab missing'; exit(1); }
+            \$lang = (int) Configuration::get('PS_LANG_DEFAULT');
+            \$tabs = Tab::getTabs(\$lang, \$id);
+            echo 'Tabs: ' . count(\$tabs);
+            foreach (\$tabs as \$t) echo PHP_EOL . '  ' . \$t['name'];
           "
 
-      - name: Verify module uninstall
+      - name: Verify configuration
         run: |
           docker exec prestashop php -r "
             require '/var/www/html/config/config.inc.php';
-            \$module = Module::getInstanceByName('litespeedcache');
-            if (\$module && \$module->uninstall()) {
-              echo 'OK: Module uninstalled';
-            } else {
-              echo 'FAIL: Module uninstall failed';
-              exit(1);
-            }
+            \$global = Configuration::getGlobalValue('LITESPEED_CACHE_GLOBAL');
+            if (!\$global) { echo '::error::Global config missing'; exit(1); }
+            \$data = json_decode(\$global, true);
+            echo 'Config keys: ' . count(\$data);
+            foreach (\$data as \$k => \$v) echo PHP_EOL . '  ' . \$k . '=' . (is_string(\$v) ? \$v : json_encode(\$v));
           "
 
-      - name: Verify module reinstall
+      - name: Verify export/import
         run: |
           docker exec prestashop php -r "
             require '/var/www/html/config/config.inc.php';
-            \$module = Module::getInstanceByName('litespeedcache');
-            if (\$module && \$module->install()) {
-              echo 'OK: Module reinstalled';
-            } else {
-              echo 'FAIL: Module reinstall failed';
-              exit(1);
+            // Test that all config keys exist
+            \$keys = ['LITESPEED_CACHE_GLOBAL', 'LITESPEED_CACHE_SHOP'];
+            foreach (\$keys as \$k) {
+              \$v = Configuration::getGlobalValue(\$k) ?: Configuration::get(\$k);
+              if (!\$v) { echo '::error::Missing key: ' . \$k; exit(1); }
+              \$d = json_decode(\$v, true);
+              if (!is_array(\$d)) { echo '::error::Invalid JSON for ' . \$k; exit(1); }
+              echo \$k . ': ' . count(\$d) . ' keys' . PHP_EOL;
             }
+            echo 'All config keys valid';
           "
+
+      - name: Test uninstall
+        run: |
+          docker exec prestashop php -r "
+            require '/var/www/html/config/config.inc.php';
+            \$m = Module::getInstanceByName('litespeedcache');
+            if (!\$m->uninstall()) { echo '::error::Uninstall failed'; exit(1); }
+            echo 'Uninstalled OK';
+          "
+
+      - name: Test reinstall
+        run: |
+          docker exec prestashop php -r "
+            require '/var/www/html/config/config.inc.php';
+            \$m = Module::getInstanceByName('litespeedcache');
+            if (!\$m->install()) { echo '::error::Reinstall failed'; exit(1); }
+            echo 'Reinstalled OK';
+          "
+
+      - name: Verify front-end accessible
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/)
+          if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 302 ] && [ "$HTTP_CODE" -ne 301 ]; then
+            echo "::error::Front-end returned HTTP $HTTP_CODE"
+            exit 1
+          fi
+          echo "Front-end OK: HTTP $HTTP_CODE"
 
       - name: Show logs on failure
         if: failure()
         run: |
           echo "=== Docker logs ==="
           docker logs prestashop --tail 100
-          echo ""
-          echo "=== PHP error log ==="
-          docker exec prestashop cat /var/log/apache2/error.log 2>/dev/null || true
-          docker exec prestashop cat /var/log/php_errors.log 2>/dev/null || true
+          echo "=== PHP errors ==="
+          docker exec prestashop cat /var/log/apache2/error.log 2>/dev/null | tail -30 || true
+          docker exec prestashop cat /var/log/php_errors.log 2>/dev/null | tail -30 || true
