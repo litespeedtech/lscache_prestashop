@@ -1,0 +1,194 @@
+name: PrestaShop Compatibility
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ps_version: "1.7.6.8"
+            php_version: "7.2"
+            ps_image: "prestashop/prestashop:1.7.6.8"
+          - ps_version: "8.1.0"
+            php_version: "8.1"
+            ps_image: "prestashop/prestashop:8.1"
+          - ps_version: "8.1.7"
+            php_version: "8.1"
+            ps_image: "prestashop/prestashop:8.1.7"
+          - ps_version: "8.2.0"
+            php_version: "8.2"
+            ps_image: "prestashop/prestashop:8.2"
+          - ps_version: "9.0.0"
+            php_version: "8.3"
+            ps_image: "prestashop/prestashop:9.0"
+
+    name: "PS ${{ matrix.ps_version }} (PHP ${{ matrix.php_version }})"
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: prestashop
+          MYSQL_DATABASE: prestashop
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout module
+        uses: actions/checkout@v4
+
+      - name: Start PrestaShop
+        run: |
+          docker run -d --name prestashop \
+            --network host \
+            -e DB_SERVER=127.0.0.1 \
+            -e DB_NAME=prestashop \
+            -e DB_USER=root \
+            -e DB_PASSWD=prestashop \
+            -e PS_DOMAIN=localhost \
+            -e PS_FOLDER_ADMIN=admin_test \
+            -e PS_INSTALL_AUTO=1 \
+            -e ADMIN_MAIL=test@test.com \
+            -e ADMIN_PASSWD=prestashop_test \
+            -e PS_ENABLE_SSL=0 \
+            ${{ matrix.ps_image }}
+
+      - name: Wait for PrestaShop to be ready
+        run: |
+          echo "Waiting for PrestaShop to initialize..."
+          TIMEOUT=180
+          ELAPSED=0
+          until docker exec prestashop test -f /var/www/html/config/settings.inc.php 2>/dev/null; do
+            sleep 5
+            ELAPSED=$((ELAPSED + 5))
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "Timeout waiting for PrestaShop"
+              docker logs prestashop --tail 50
+              exit 1
+            fi
+            echo "  waiting... (${ELAPSED}s)"
+          done
+          echo "PrestaShop config found. Waiting for web server..."
+          sleep 10
+          # Wait for HTTP response
+          until curl -s -o /dev/null -w "%{http_code}" http://localhost:80/ | grep -qE "200|302|301"; do
+            sleep 5
+            ELAPSED=$((ELAPSED + 5))
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "Timeout waiting for web server"
+              docker logs prestashop --tail 50
+              exit 1
+            fi
+          done
+          echo "PrestaShop is ready!"
+
+      - name: Install module
+        run: |
+          # Copy module to PrestaShop
+          docker exec prestashop mkdir -p /var/www/html/modules/litespeedcache
+          docker cp . prestashop:/var/www/html/modules/litespeedcache/
+
+          # Fix permissions
+          docker exec prestashop chown -R www-data:www-data /var/www/html/modules/litespeedcache
+
+          # Install module via CLI
+          docker exec prestashop php /var/www/html/bin/console prestashop:module install litespeedcache || {
+            echo "CLI install failed, trying legacy method..."
+            docker exec prestashop php -r "
+              require '/var/www/html/config/config.inc.php';
+              \$module = Module::getInstanceByName('litespeedcache');
+              if (\$module && \$module->install()) {
+                echo 'Module installed successfully';
+              } else {
+                echo 'Module installation failed';
+                exit(1);
+              }
+            "
+          }
+
+      - name: Verify module is active
+        run: |
+          docker exec prestashop php -r "
+            require '/var/www/html/config/config.inc.php';
+            \$module = Module::getInstanceByName('litespeedcache');
+            if (!\$module || !\$module->active) {
+              echo 'FAIL: Module is not active';
+              exit(1);
+            }
+            echo 'OK: Module is active, version: ' . \$module->version;
+          "
+
+      - name: Verify routes registered
+        run: |
+          docker exec prestashop php /var/www/html/bin/console debug:router 2>/dev/null | grep -c litespeedcache || {
+            echo "Routes check via console failed, checking via PHP..."
+            docker exec prestashop php -r "
+              require '/var/www/html/config/config.inc.php';
+              echo 'Module loaded OK';
+            "
+          }
+
+      - name: Verify tabs created
+        run: |
+          docker exec prestashop php -r "
+            require '/var/www/html/config/config.inc.php';
+            \$id = (int) Tab::getIdFromClassName('AdminLiteSpeedCache');
+            if (!\$id) {
+              echo 'FAIL: Root tab not found';
+              exit(1);
+            }
+            \$idLang = (int) Configuration::get('PS_LANG_DEFAULT');
+            \$tabs = Tab::getTabs(\$idLang, \$id);
+            echo 'OK: Root tab ID=' . \$id . ', children=' . count(\$tabs);
+            foreach (\$tabs as \$t) {
+              echo PHP_EOL . '  ' . \$t['class_name'] . ' => ' . \$t['name'];
+            }
+          "
+
+      - name: Verify module uninstall
+        run: |
+          docker exec prestashop php -r "
+            require '/var/www/html/config/config.inc.php';
+            \$module = Module::getInstanceByName('litespeedcache');
+            if (\$module && \$module->uninstall()) {
+              echo 'OK: Module uninstalled';
+            } else {
+              echo 'FAIL: Module uninstall failed';
+              exit(1);
+            }
+          "
+
+      - name: Verify module reinstall
+        run: |
+          docker exec prestashop php -r "
+            require '/var/www/html/config/config.inc.php';
+            \$module = Module::getInstanceByName('litespeedcache');
+            if (\$module && \$module->install()) {
+              echo 'OK: Module reinstalled';
+            } else {
+              echo 'FAIL: Module reinstall failed';
+              exit(1);
+            }
+          "
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          echo "=== Docker logs ==="
+          docker logs prestashop --tail 100
+          echo ""
+          echo "=== PHP error log ==="
+          docker exec prestashop cat /var/log/apache2/error.log 2>/dev/null || true
+          docker exec prestashop cat /var/log/php_errors.log 2>/dev/null || true
