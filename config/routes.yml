@@ -6,9 +6,17 @@ admin_litespeedcache_manage:
         _legacy_controller: AdminLiteSpeedCacheManage
         _legacy_link: AdminLiteSpeedCacheManage
 
+admin_litespeedcache_presets:
+    path: /litespeedcache/presets
+    methods: [GET, POST]
+    defaults:
+        _controller: 'LiteSpeed\Cache\Controller\Admin\PresetsController::indexAction'
+        _legacy_controller: AdminLiteSpeedCachePresets
+        _legacy_link: AdminLiteSpeedCachePresets
+
 admin_litespeedcache_config:
     path: /litespeedcache/config
-    methods: [GET, POST]
+    methods: [GET]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\ConfigController::indexAction'
         _legacy_controller: AdminLiteSpeedCacheConfig
@@ -23,7 +31,7 @@ admin_litespeedcache_cdn:
         _legacy_link: AdminLiteSpeedCacheCdn
 
 admin_litespeedcache_objectcache:
-    path: /litespeedcache/objectcache
+    path: /litespeedcache/cache/object
     methods: [GET, POST]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\ObjController::indexAction'
@@ -31,7 +39,7 @@ admin_litespeedcache_objectcache:
         _legacy_link: AdminLiteSpeedCacheObjectCache
 
 admin_litespeedcache_exclusions:
-    path: /litespeedcache/exclusions
+    path: /litespeedcache/cache/exclusions
     methods: [GET, POST]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\ExclusionsController::indexAction'
@@ -49,11 +57,18 @@ admin_litespeedcache_stats:
 
 admin_litespeedcache_warmup:
     path: /litespeedcache/warmup
-    methods: [GET]
+    methods: [GET, POST]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\WarmupController::indexAction'
         _legacy_controller: AdminLiteSpeedCacheWarmup
         _legacy_link: AdminLiteSpeedCacheWarmup
+
+admin_litespeedcache_warmup_save_state:
+    path: /litespeedcache/warmup/save-state
+    methods: [POST]
+    defaults:
+        _controller: 'LiteSpeed\Cache\Controller\Admin\WarmupController::saveStateAction'
+        _legacy_controller: AdminLiteSpeedCacheWarmup
 
 admin_litespeedcache_warmup_urls:
     path: /litespeedcache/warmup/urls
@@ -71,9 +86,9 @@ admin_litespeedcache_warmup_crawl:
 
 admin_litespeedcache_tools:
     path: /litespeedcache/tools
-    methods: [GET, POST]
+    methods: [GET]
     defaults:
-        _controller: 'LiteSpeed\Cache\Controller\Admin\ToolsController::indexAction'
+        _controller: 'LiteSpeed\Cache\Controller\Admin\ToolsController::redirectAction'
         _legacy_controller: AdminLiteSpeedCacheTools
         _legacy_link: AdminLiteSpeedCacheTools
 
@@ -82,7 +97,7 @@ admin_litespeedcache_tools_purge:
     methods: [GET, POST]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\ToolsController::indexAction'
-        _legacy_controller: AdminLiteSpeedCacheTools
+        _legacy_controller: AdminLiteSpeedCacheToolsPurge
         tab: purge
 
 admin_litespeedcache_tools_import_export:
@@ -90,7 +105,7 @@ admin_litespeedcache_tools_import_export:
     methods: [GET, POST]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\ToolsController::indexAction'
-        _legacy_controller: AdminLiteSpeedCacheTools
+        _legacy_controller: AdminLiteSpeedCacheToolsImportExport
         tab: import-export
 
 admin_litespeedcache_tools_htaccess:
@@ -98,7 +113,7 @@ admin_litespeedcache_tools_htaccess:
     methods: [GET]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\ToolsController::indexAction'
-        _legacy_controller: AdminLiteSpeedCacheTools
+        _legacy_controller: AdminLiteSpeedCacheToolsHtaccess
         tab: htaccess
 
 admin_litespeedcache_tools_report:
@@ -106,7 +121,7 @@ admin_litespeedcache_tools_report:
     methods: [GET, POST]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\ToolsController::indexAction'
-        _legacy_controller: AdminLiteSpeedCacheTools
+        _legacy_controller: AdminLiteSpeedCacheToolsReport
         tab: report
 
 admin_litespeedcache_tools_debug:
@@ -114,7 +129,7 @@ admin_litespeedcache_tools_debug:
     methods: [GET, POST]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\ToolsController::indexAction'
-        _legacy_controller: AdminLiteSpeedCacheTools
+        _legacy_controller: AdminLiteSpeedCacheToolsDebug
         tab: debug
 
 admin_litespeedcache_tools_logs:
@@ -122,7 +137,7 @@ admin_litespeedcache_tools_logs:
     methods: [GET, POST]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\ToolsController::indexAction'
-        _legacy_controller: AdminLiteSpeedCacheTools
+        _legacy_controller: AdminLiteSpeedCacheToolsLogs
         tab: logs
 
 admin_litespeedcache_tools_access_log:
@@ -130,14 +145,14 @@ admin_litespeedcache_tools_access_log:
     methods: [GET]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\ToolsController::accessLogAction'
-        _legacy_controller: AdminLiteSpeedCacheTools
+        _legacy_controller: AdminLiteSpeedCacheToolsLogs
 
 admin_litespeedcache_tools_updates:
     path: /litespeedcache/tools/updates
     methods: [GET]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\ToolsController::indexAction'
-        _legacy_controller: AdminLiteSpeedCacheTools
+        _legacy_controller: AdminLiteSpeedCacheToolsUpdates
         tab: updates
 
 admin_litespeedcache_tools_update_apply:
@@ -145,21 +160,21 @@ admin_litespeedcache_tools_update_apply:
     methods: [POST]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\ToolsController::updateAction'
-        _legacy_controller: AdminLiteSpeedCacheTools
+        _legacy_controller: AdminLiteSpeedCacheToolsUpdates
 
 admin_litespeedcache_tools_update_rollback:
     path: /litespeedcache/tools/updates/rollback
     methods: [POST]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\ToolsController::updateAction'
-        _legacy_controller: AdminLiteSpeedCacheTools
+        _legacy_controller: AdminLiteSpeedCacheToolsUpdates
 
 admin_litespeedcache_tools_update_delete_backup:
     path: /litespeedcache/tools/updates/delete-backup
     methods: [POST]
     defaults:
         _controller: 'LiteSpeed\Cache\Controller\Admin\ToolsController::updateAction'
-        _legacy_controller: AdminLiteSpeedCacheTools
+        _legacy_controller: AdminLiteSpeedCacheToolsUpdates
 
 admin_litespeedcache_database:
     path: /litespeedcache/database
@@ -169,38 +184,67 @@ admin_litespeedcache_database:
         _legacy_controller: AdminLiteSpeedCacheDatabase
         _legacy_link: AdminLiteSpeedCacheDatabase
 
-admin_litespeedcache_customize:
-    path: /litespeedcache/customize
+admin_litespeedcache_cache:
+    path: /litespeedcache/cache
     methods: [GET]
     defaults:
-        _controller: 'LiteSpeed\Cache\Controller\Admin\CustomizeController::indexAction'
-        _legacy_controller: AdminLiteSpeedCacheCustomize
+        _controller: 'LiteSpeed\Cache\Controller\Admin\CacheController::redirectAction'
+        _legacy_controller: AdminLiteSpeedCacheCache
+        _legacy_link: AdminLiteSpeedCacheCache
+
+admin_litespeedcache_cache_settings:
+    path: /litespeedcache/cache/settings
+    methods: [GET, POST]
+    defaults:
+        _controller: 'LiteSpeed\Cache\Controller\Admin\CacheController::indexAction'
+        _legacy_controller: AdminLiteSpeedCacheCacheSettings
+
+admin_litespeedcache_ttl:
+    path: /litespeedcache/cache/ttl
+    methods: [GET, POST]
+    defaults:
+        _controller: 'LiteSpeed\Cache\Controller\Admin\TtlController::indexAction'
+        _legacy_controller: AdminLiteSpeedCacheTtl
+
+admin_litespeedcache_advanced:
+    path: /litespeedcache/cache/advanced
+    methods: [GET, POST]
+    defaults:
+        _controller: 'LiteSpeed\Cache\Controller\Admin\AdvancedController::indexAction'
+        _legacy_controller: AdminLiteSpeedCacheAdvanced
+
+admin_litespeedcache_esi:
+    path: /litespeedcache/cache/esi
+    methods: [GET]
+    defaults:
+        _controller: 'LiteSpeed\Cache\Controller\Admin\EsiController::indexAction'
+        _legacy_controller: AdminLiteSpeedCacheEsi
         _legacy_link: AdminLiteSpeedCacheCustomize
 
-admin_litespeedcache_customize_add:
-    path: /litespeedcache/customize/add
+admin_litespeedcache_esi_add:
+    path: /litespeedcache/cache/esi/add
     methods: [GET, POST]
     defaults:
-        _controller: 'LiteSpeed\Cache\Controller\Admin\CustomizeController::addAction'
-        _legacy_controller: AdminLiteSpeedCacheCustomize
+        _controller: 'LiteSpeed\Cache\Controller\Admin\EsiController::addAction'
+        _legacy_controller: AdminLiteSpeedCacheEsi
 
-admin_litespeedcache_customize_edit:
-    path: /litespeedcache/customize/edit/{id}
+admin_litespeedcache_esi_edit:
+    path: /litespeedcache/cache/esi/edit/{id}
     methods: [GET, POST]
     defaults:
-        _controller: 'LiteSpeed\Cache\Controller\Admin\CustomizeController::editAction'
-        _legacy_controller: AdminLiteSpeedCacheCustomize
+        _controller: 'LiteSpeed\Cache\Controller\Admin\EsiController::editAction'
+        _legacy_controller: AdminLiteSpeedCacheEsi
 
-admin_litespeedcache_customize_view:
-    path: /litespeedcache/customize/view/{id}
+admin_litespeedcache_esi_view:
+    path: /litespeedcache/cache/esi/view/{id}
     methods: [GET]
     defaults:
-        _controller: 'LiteSpeed\Cache\Controller\Admin\CustomizeController::viewAction'
-        _legacy_controller: AdminLiteSpeedCacheCustomize
+        _controller: 'LiteSpeed\Cache\Controller\Admin\EsiController::viewAction'
+        _legacy_controller: AdminLiteSpeedCacheEsi
 
-admin_litespeedcache_customize_delete:
-    path: /litespeedcache/customize/delete/{id}
+admin_litespeedcache_esi_delete:
+    path: /litespeedcache/cache/esi/delete/{id}
     methods: [GET]
     defaults:
-        _controller: 'LiteSpeed\Cache\Controller\Admin\CustomizeController::deleteAction'
-        _legacy_controller: AdminLiteSpeedCacheCustomize
+        _controller: 'LiteSpeed\Cache\Controller\Admin\EsiController::deleteAction'
+        _legacy_controller: AdminLiteSpeedCacheEsi

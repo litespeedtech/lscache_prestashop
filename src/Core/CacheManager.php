@@ -271,25 +271,28 @@ class CacheManager
         return $added;
     }
 
+    private static $tagGroupSet = null;
+
     private function addCacheTag(string $tag): bool
     {
-        if (!in_array($tag, $this->cacheTags)) {
-            $this->cacheTags[] = $tag;
-            $t     = preg_replace('/\d+/', '', $tag);
-            $group = [
-                Conf::TAG_PREFIX_CATEGORY,
-                Conf::TAG_PREFIX_PRODUCT,
-                Conf::TAG_PREFIX_CMS,
-                Conf::TAG_PREFIX_MANUFACTURER,
-                Conf::TAG_PREFIX_SUPPLIER,
-                Conf::TAG_PREFIX_PCOMMENTS,
-            ];
-            if (in_array($t, $group) && !in_array($t, $this->cacheTags)) {
-                $this->cacheTags[] = $t;
-            }
-            return true;
+        if (isset($this->cacheTags[$tag])) {
+            return false;
         }
-        return false;
+        $this->cacheTags[$tag] = true;
+
+        $t = preg_replace('/\d+/', '', $tag);
+        if ($t !== $tag && !isset($this->cacheTags[$t])) {
+            if (self::$tagGroupSet === null) {
+                self::$tagGroupSet = array_flip([
+                    Conf::TAG_PREFIX_CATEGORY, Conf::TAG_PREFIX_PRODUCT, Conf::TAG_PREFIX_CMS,
+                    Conf::TAG_PREFIX_MANUFACTURER, Conf::TAG_PREFIX_SUPPLIER, Conf::TAG_PREFIX_PCOMMENTS,
+                ]);
+            }
+            if (isset(self::$tagGroupSet[$t])) {
+                $this->cacheTags[$t] = true;
+            }
+        }
+        return true;
     }
 
     public function addPurgeTags($tag, bool $isPrivate): int
@@ -837,7 +840,7 @@ class CacheManager
                 $tags[] = 'public:' . $prefix . '_PRIV';
             }
 
-            foreach ($this->cacheTags as $tag) {
+            foreach (array_keys($this->cacheTags) as $tag) {
                 $tags[] = $prefix . '_' . $tag;
             }
 

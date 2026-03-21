@@ -4,51 +4,154 @@
 <div class="row justify-content-center">
   <div class="col-xl-12">
 
+    {# ============ LAST CRAWL STATUS ============ #}
+    {% if lastState.date is defined %}
+    <div class="card mb-4">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-header-title mb-0">Last Crawl</h3>
+        <small class="text-muted">{{ lastState.date }}</small>
+      </div>
+      <div class="card-body">
+        <div class="row text-center mb-3">
+          <div class="col-md-3">
+            <div class="p-3 rounded" style="background:#f8f9fa; border:1px solid #e9ecef;">
+              <div style="font-size:22px; font-weight:700; color:#343a40;">{{ lastState.total|default(0) }}</div>
+              <small class="text-muted">Total URLs</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 rounded" style="background:#f8f9fa; border:1px solid #e9ecef;">
+              <div style="font-size:22px; font-weight:700; color:#70b580;">{{ lastState.success|default(0) }}</div>
+              <small class="text-muted">Success</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 rounded" style="background:#f8f9fa; border:1px solid #e9ecef;">
+              <div style="font-size:22px; font-weight:700; color:#e84e6a;">{{ lastState.fail|default(0) }}</div>
+              <small class="text-muted">Failed</small>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="p-3 rounded" style="background:#f8f9fa; border:1px solid #e9ecef;">
+              <div style="font-size:22px; font-weight:700; color:#343a40;">{{ lastState.duration|default(0) }}s</div>
+              <small class="text-muted">Duration</small>
+            </div>
+          </div>
+        </div>
+
+        {% if lastState.urls is defined and lastState.urls|length > 0 %}
+        <div class="table-responsive" style="max-height:300px; overflow-y:auto;">
+          <table class="table table-hover mb-0" style="font-size:13px;">
+            <thead><tr>
+              <th>#</th>
+              <th>URL</th>
+              <th style="width:120px;">Status</th>
+              <th style="width:80px;">Action</th>
+            </tr></thead>
+            <tbody>
+              {% for item in lastState.urls %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td><small><a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.url|length > 80 ? item.url|slice(0, 80) ~ '...' : item.url }}</a></small></td>
+                <td>
+                  {% if item.blacklisted is defined and item.blacklisted %}
+                    <span class="badge badge-danger">Blacklisted</span>
+                  {% elseif item.cached is defined and item.cached %}
+                    <span class="badge badge-success">Cached</span>
+                  {% elseif item.success is defined and item.success %}
+                    <span class="badge badge-info">Crawled</span>
+                  {% elseif item.httpCode is defined and item.httpCode > 0 %}
+                    <span class="badge badge-warning">Failed {{ item.httpCode }}</span>
+                  {% else %}
+                    <span class="badge badge-secondary">Pending</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if not (item.blacklisted is defined and item.blacklisted) %}
+                  <form method="post" class="d-inline">
+                    <input type="hidden" name="blacklist_add" value="1">
+                    <input type="hidden" name="blacklist_url" value="{{ item.url }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Add to blacklist" style="padding:2px 6px;">
+                      <i class="material-icons" style="font-size:14px;">block</i>
+                    </button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+
+        <div class="mt-3 d-flex justify-content-between align-items-center">
+          <div>
+            <span class="badge badge-secondary mr-1">Pending</span>
+            <span class="badge badge-success mr-1">Cached</span>
+            <span class="badge badge-info mr-1">Crawled</span>
+            <span class="badge badge-danger mr-1">Blacklisted</span>
+            <span class="badge badge-warning">Failed</span>
+          </div>
+          <form method="post" class="d-inline">
+            <input type="hidden" name="reset_state" value="1">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">Reset Position</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ============ CRAWLER ============ #}
     <div class="card mb-4">
       <div class="card-header">
-        <h3 class="card-header-title">Warm up Cache</h3>
+        <h3 class="card-header-title">Crawler</h3>
       </div>
-
       <div class="card-body">
-        <p class="text-muted mb-3">
-          Crawl all pages to warm up cache across all layers: LiteSpeed full-page cache,
-          Redis object cache (product prices) and CDN.
-        </p>
-
-        <div class="form-group row">
-          <label class="form-control-label col-sm-3" for="sitemap_url">
-            Sitemap XML URL <span class="text-danger">*</span>
-          </label>
-          <div class="col-sm-9">
-            <input type="url" class="form-control" id="sitemap_url"
-              placeholder="https://example.com/sitemap.xml" required>
+        <form method="post">
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="sitemap_url">
+              Sitemap XML URL <span class="text-danger">*</span>
+            </label>
+            <div class="col-sm-9">
+              <input type="url" class="form-control" id="sitemap_url" name="sitemap_url"
+                value="{{ sitemapUrl }}"
+                placeholder="https://example.com/sitemap.xml" required>
+            </div>
           </div>
-        </div>
 
-        <div class="form-group row">
-          <label class="form-control-label col-sm-3" for="shop_url">
-            Shop URL <span class="text-muted">(optional)</span>
-          </label>
-          <div class="col-sm-9">
-            <input type="url" class="form-control" id="shop_url"
-              placeholder="https://example.com">
-            <small class="form-text text-muted">
-              Base URL for product pages. If empty, auto-detected from configuration.
-            </small>
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="shop_url">
+              Shop URL <span class="text-muted">(optional)</span>
+            </label>
+            <div class="col-sm-9">
+              <input type="url" class="form-control" id="shop_url" name="shop_url"
+                value="{{ shopUrl }}"
+                placeholder="https://example.com">
+              <small class="form-text text-muted">Auto-detected if empty.</small>
+            </div>
           </div>
-        </div>
 
-        <div class="form-group row">
-          <label class="form-control-label col-sm-3" for="useragent">
-            Extra User Agent <span class="text-muted">(optional)</span>
-          </label>
-          <div class="col-sm-9">
-            <input type="text" class="form-control" id="useragent"
-              placeholder="e.g. mobile">
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="useragent">
+              Extra User Agent <span class="text-muted">(optional)</span>
+            </label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" id="useragent" name="useragent"
+                value="{{ userAgent }}"
+                placeholder="e.g. mobile">
+            </div>
           </div>
-        </div>
 
-        <div class="d-flex align-items-center justify-content-end mt-3">
+          <div class="form-group row mb-0">
+            <div class="col-sm-9 offset-sm-3">
+              <button type="submit" name="save_settings" value="1" class="btn btn-sm btn-secondary">Save Settings</button>
+            </div>
+          </div>
+        </form>
+
+        <hr>
+
+        <div class="d-flex align-items-center justify-content-end">
           <div id="progress-wrapper" class="flex-grow-1 mr-3" style="display:none;">
             <div class="d-flex justify-content-between mb-1">
               <small id="warmup-status" class="text-muted">Initializing...</small>
@@ -56,29 +159,90 @@
             </div>
             <div class="progress">
               <div id="warmup-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-                   role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                0%
-              </div>
+                   role="progressbar" style="width: 0%">0%</div>
             </div>
           </div>
           <div class="d-flex align-items-center" style="white-space:nowrap;">
-            <button type="button" id="btn-stop" class="btn btn-danger mr-2" style="display:none;">
-              Stop
-            </button>
-            <button type="button" id="btn-warmup" class="btn btn-primary">
-              Warm up
-            </button>
+            <button type="button" id="btn-stop" class="btn btn-danger mr-2" style="display:none;">Stop</button>
+            <button type="button" id="btn-warmup" class="btn btn-primary">Run Crawler</button>
           </div>
         </div>
 
-        {# Log output #}
         <pre id="warmup-log" class="bg-dark text-light p-3 rounded mt-3"
-             style="display:none; max-height:500px; overflow-y:auto; font-size:13px;"></pre>
+             style="display:none; max-height:400px; overflow-y:auto; font-size:12px;"></pre>
+      </div>
+    </div>
+
+    {# ============ BLACKLIST ============ #}
+    <div class="card mb-4">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-header-title mb-0">Blacklist <span class="badge badge-secondary ml-2">{{ blacklist|length }}</span></h3>
+        {% if blacklist|length > 0 %}
+        <form method="post" class="d-inline">
+          <input type="hidden" name="blacklist_clear" value="1">
+          <button type="submit" class="btn btn-sm btn-outline-danger">Clear All</button>
+        </form>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <form method="post" class="mb-3">
+          <div class="input-group" style="max-width:600px;">
+            <input type="url" class="form-control" name="blacklist_url" placeholder="https://example.com/page-to-skip">
+            <div class="input-group-append">
+              <button type="submit" name="blacklist_add" value="1" class="btn btn-outline-secondary">Add URL</button>
+            </div>
+          </div>
+          <small class="form-text text-muted">URLs in the blacklist will be skipped during crawling.</small>
+        </form>
+
+        {% if blacklist|length > 0 %}
+        <div class="table-responsive" style="max-height:200px; overflow-y:auto;">
+          <table class="table table-hover mb-0" style="font-size:13px;">
+            <tbody>
+              {% for url in blacklist %}
+              <tr>
+                <td><small>{{ url }}</small></td>
+                <td style="width:80px;" class="text-right">
+                  <form method="post" class="d-inline">
+                    <button type="submit" name="blacklist_remove" value="{{ url }}" class="btn btn-sm btn-outline-secondary" style="padding:2px 6px;">
+                      <i class="material-icons" style="font-size:14px;">close</i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <p class="text-muted mb-0">No URLs blacklisted.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {# ============ CLI / CRON ============ #}
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-header-title">Cron / CLI</h3>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-2">Schedule automatic cache warmup using a cron job:</p>
+        <div class="input-group mb-3" style="max-width:700px;">
+          <input type="text" class="form-control bg-dark text-light" style="font-family:monospace; font-size:13px;"
+            value="{{ cliCommand }} {{ sitemapUrl ? sitemapUrl : 'https://yoursite.com/sitemap.xml' }}" readonly id="cron-command">
+          <div class="input-group-append">
+            <button type="button" class="btn btn-outline-secondary js-copy-text" data-text="{{ cliCommand }} {{ sitemapUrl ? sitemapUrl : 'https://yoursite.com/sitemap.xml' }}">Copy</button>
+          </div>
+        </div>
+        <small class="form-text text-muted">
+          Add this command to your server's crontab. Example: <code>0 3 * * * {{ cliCommand }} https://yoursite.com/sitemap.xml</code> (runs daily at 3 AM).
+        </small>
       </div>
     </div>
 
   </div>
 </div>
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
 {% endblock %}
 
 {% block javascripts %}
@@ -87,9 +251,13 @@
   (function() {
     var urlsEndpoint  = '{{ urlsAction }}';
     var crawlEndpoint = '{{ crawlAction }}';
+    var saveEndpoint  = '{{ saveStateAction }}';
     var redisEnabled  = {{ redisEnabled ? 'true' : 'false' }};
     var cdnEnabled    = {{ cdnEnabled ? 'true' : 'false' }};
+    var blacklist     = {{ blacklist|json_encode|raw }};
     var abortCtrl     = null;
+    var crawledUrls   = [];
+    var startTime     = 0;
 
     var els = {
       bar:     document.getElementById('warmup-bar'),
@@ -115,7 +283,6 @@
     function updateBar(current, total) {
       var pct = total > 0 ? Math.round((current / total) * 100) : 0;
       els.bar.style.width = pct + '%';
-      els.bar.setAttribute('aria-valuenow', pct);
       els.bar.textContent = pct + '%';
       els.count.textContent = current + ' / ' + total;
     }
@@ -135,6 +302,10 @@
       if (!running) abortCtrl = null;
     }
 
+    function isBlacklisted(url) {
+      return blacklist.indexOf(url) !== -1;
+    }
+
     function formatCacheInfo(data) {
       var parts = [];
       if (data.lscache) parts.push('LiteSpeed: ' + data.lscache);
@@ -143,48 +314,62 @@
     }
 
     async function crawlPhase(label, urls, cookie, userAgent) {
-      var total = urls.length;
+      // Track blacklisted URLs
+      var filtered = [];
+      for (var j = 0; j < urls.length; j++) {
+        if (isBlacklisted(urls[j])) {
+          crawledUrls.push({ url: urls[j], httpCode: 0, lscache: '', cfCache: '', success: false, blacklisted: true });
+        } else {
+          filtered.push(urls[j]);
+        }
+      }
+      var skipped = urls.length - filtered.length;
+      var total = filtered.length;
+
+      if (skipped > 0) logLine('  Skipped ' + skipped + ' blacklisted URLs.');
       if (total === 0) {
-        logLine('  No URLs to process. Skipping.');
+        logLine('  No URLs to process.');
         return { stopped: false, success: 0, fail: 0 };
       }
 
       els.status.textContent = label + '...';
       resetBar();
 
-      var successCount = 0;
-      var failCount = 0;
+      var successCount = 0, failCount = 0;
       var signal = abortCtrl ? abortCtrl.signal : null;
 
       for (var i = 0; i < total; i++) {
         if (signal && signal.aborted) {
-          els.status.textContent = label + ' — Stopped';
           return { stopped: true, success: successCount, fail: failCount };
         }
 
         try {
           var body = new FormData();
-          body.append('url', urls[i]);
+          body.append('url', filtered[i]);
           body.append('useragent', userAgent);
           body.append('cookie', cookie || '');
 
           var resp = await fetch(crawlEndpoint, { method: 'POST', body: body, signal: signal });
           var data = await resp.json();
 
-          var ok = data.success;
-          if (ok) { successCount++; } else { failCount++; }
+          if (data.success) { successCount++; } else { failCount++; }
 
-          var statusLabel = ok ? 'success' : 'failed';
-          var cacheInfo = formatCacheInfo(data);
-          logLine('  ' + (i + 1) + '/' + total + '  ' + urls[i] + '  ' + statusLabel + ' ' + data.httpCode + cacheInfo);
+          crawledUrls.push({
+            url: filtered[i],
+            httpCode: data.httpCode || 0,
+            lscache: data.lscache || '',
+            cfCache: data.cfCache || '',
+            success: data.success,
+            cached: data.cached || false
+          });
+
+          var statusLabel = data.cached ? 'CACHED' : (data.success ? 'CRAWLED' : 'FAIL');
+          logLine('  ' + (i+1) + '/' + total + '  ' + statusLabel + ' ' + data.httpCode + '  ' + filtered[i] + formatCacheInfo(data));
           updateBar(i + 1, total);
         } catch (e) {
-          if (e.name === 'AbortError') {
-            els.status.textContent = label + ' — Stopped';
-            return { stopped: true, success: successCount, fail: failCount };
-          }
+          if (e.name === 'AbortError') return { stopped: true, success: successCount, fail: failCount };
           failCount++;
-          logLine('  ' + (i + 1) + '/' + total + '  ' + urls[i] + '  error');
+          logLine('  ' + (i+1) + '/' + total + '  ERROR  ' + filtered[i]);
           updateBar(i + 1, total);
         }
       }
@@ -193,28 +378,39 @@
       return { stopped: false, success: successCount, fail: failCount };
     }
 
+    async function saveState(success, fail, total, stopped) {
+      var duration = Math.round((Date.now() - startTime) / 1000);
+      try {
+        var body = new FormData();
+        body.append('total', total);
+        body.append('success', success);
+        body.append('fail', fail);
+        body.append('stopped', stopped ? '1' : '0');
+        body.append('duration', duration);
+        body.append('urls', JSON.stringify(crawledUrls.slice(-200)));
+        await fetch(saveEndpoint, { method: 'POST', body: body });
+      } catch(e) {}
+    }
+
     els.stop.addEventListener('click', function() {
       if (abortCtrl) abortCtrl.abort();
     });
 
     els.btn.addEventListener('click', async function() {
       var sitemap = document.getElementById('sitemap_url').value.trim();
-      if (!sitemap) {
-        alert('Please enter a valid Sitemap XML URL.');
-        return;
-      }
+      if (!sitemap) { alert('Please enter a valid Sitemap XML URL.'); return; }
 
       abortCtrl = new AbortController();
       setRunning(true);
       els.log.textContent = '';
+      crawledUrls = [];
+      startTime = Date.now();
 
-      var userAgentExtra = document.getElementById('useragent').value.trim();
-      var ua = userAgentExtra ? 'lscache_runner;' + userAgentExtra : 'lscache_runner';
-      var totalSuccess = 0;
-      var totalFail = 0;
+      var ua = document.getElementById('useragent').value.trim();
+      ua = ua ? 'lscache_runner;' + ua : 'lscache_runner';
+      var totalSuccess = 0, totalFail = 0, totalUrls = 0;
 
       try {
-        // Fetch all URLs
         els.status.textContent = 'Loading URLs from sitemap...';
         var body = new FormData();
         body.append('sitemap_url', sitemap);
@@ -225,12 +421,9 @@
 
         if (!data.success) {
           logLine('Error: ' + (data.error || 'Failed to load URLs.'));
-          els.bar.classList.remove('bg-success');
-          els.bar.classList.add('bg-danger');
+          els.bar.className = 'progress-bar bg-danger';
           els.bar.style.width = '100%';
           els.bar.textContent = 'Error';
-          els.bar.classList.remove('progress-bar-animated');
-          els.status.textContent = data.error || 'Error';
           setRunning(false);
           return;
         }
@@ -238,85 +431,85 @@
         var sitemapUrls = data.sitemapUrls || [];
         var productUrls = data.productUrls || [];
         var cookie = data.cookie || '';
+        totalUrls = sitemapUrls.length + productUrls.length;
 
         logLine('Loaded ' + sitemapUrls.length + ' sitemap URLs, ' + productUrls.length + ' product URLs.\n');
 
-        // Phase 1: LiteSpeed Cache
+        // Phase 1
         logHeader('LITESPEED CACHE — Full page cache (' + sitemapUrls.length + ' URLs)');
         var r1 = await crawlPhase('LiteSpeed Cache', sitemapUrls, '', ua);
         totalSuccess += r1.success; totalFail += r1.fail;
-        if (r1.stopped) { finish(totalSuccess, totalFail, true); return; }
+        if (r1.stopped) { finish(totalSuccess, totalFail, totalUrls, true); return; }
 
         if (cookie) {
           logHeader('LITESPEED CACHE — With vary cookie (' + sitemapUrls.length + ' URLs)');
           var r1b = await crawlPhase('LiteSpeed Cache (cookie)', sitemapUrls, cookie, ua);
           totalSuccess += r1b.success; totalFail += r1b.fail;
-          if (r1b.stopped) { finish(totalSuccess, totalFail, true); return; }
+          if (r1b.stopped) { finish(totalSuccess, totalFail, totalUrls, true); return; }
         }
 
-        // Phase 2: Redis — Product prices
+        // Phase 2
         if (redisEnabled && productUrls.length > 0) {
           logHeader('REDIS — Product prices (' + productUrls.length + ' URLs)');
           var r2 = await crawlPhase('Redis — Product prices', productUrls, '', ua);
           totalSuccess += r2.success; totalFail += r2.fail;
-          if (r2.stopped) { finish(totalSuccess, totalFail, true); return; }
+          if (r2.stopped) { finish(totalSuccess, totalFail, totalUrls, true); return; }
 
           if (cookie) {
-            logHeader('REDIS — Product prices with vary cookie (' + productUrls.length + ' URLs)');
+            logHeader('REDIS — Product prices with vary cookie');
             var r2b = await crawlPhase('Redis — Prices (cookie)', productUrls, cookie, ua);
             totalSuccess += r2b.success; totalFail += r2b.fail;
-            if (r2b.stopped) { finish(totalSuccess, totalFail, true); return; }
+            if (r2b.stopped) { finish(totalSuccess, totalFail, totalUrls, true); return; }
           }
-        } else if (!redisEnabled) {
-          logHeader('REDIS — Skipped (Object cache not enabled)');
-        } else {
-          logHeader('REDIS — Skipped (No active products found)');
         }
 
-        // Phase 3: CDN
         if (cdnEnabled) {
-          logHeader('CDN — Cloudflare cache (' + sitemapUrls.length + ' URLs)');
-          logLine('  URLs already requested through CDN in previous phases.');
-          logLine('  Check CF-Cache-Status headers above for CDN cache status.\n');
-        } else {
-          logHeader('CDN — Skipped (Cloudflare not enabled)');
+          logHeader('CDN — Cloudflare');
+          logLine('  URLs already requested through CDN in previous phases.\n');
         }
 
-        finish(totalSuccess, totalFail, false);
+        finish(totalSuccess, totalFail, totalUrls, false);
 
       } catch (e) {
         if (e.name !== 'AbortError') {
           logLine('\nNetwork error: ' + e.message);
-          els.bar.classList.remove('bg-success', 'progress-bar-animated');
-          els.bar.classList.add('bg-danger');
-          els.status.textContent = 'Error';
+          els.bar.className = 'progress-bar bg-danger';
         } else {
-          finish(totalSuccess, totalFail, true);
+          finish(totalSuccess, totalFail, totalUrls, true);
         }
         setRunning(false);
       }
     });
 
-    function finish(success, fail, stopped) {
+    function finish(success, fail, total, stopped) {
       els.bar.classList.remove('progress-bar-animated');
       if (stopped) {
-        els.bar.classList.remove('bg-success');
-        els.bar.classList.add('bg-secondary');
+        els.bar.className = 'progress-bar bg-secondary';
         els.status.textContent = 'Stopped. Success: ' + success + ', Failed: ' + fail;
-        logLine('\n--- Warm up stopped by user ---');
+        logLine('\n--- Stopped by user ---');
       } else if (fail === 0) {
-        els.status.textContent = 'Completed! ' + success + ' URLs warmed up successfully.';
-        logLine('\n--- Warm up completed successfully ---');
+        els.status.textContent = 'Completed! ' + success + ' URLs warmed up.';
+        logLine('\n--- Completed successfully ---');
       } else {
-        els.bar.classList.remove('bg-success');
-        els.bar.classList.add('bg-warning');
+        els.bar.className = 'progress-bar bg-warning';
         els.status.textContent = 'Completed. Success: ' + success + ', Failed: ' + fail;
-        logLine('\n--- Warm up completed with ' + fail + ' errors ---');
+        logLine('\n--- Completed with ' + fail + ' errors ---');
       }
       setRunning(false);
+      saveState(success, fail, total, stopped);
     }
+
+    // Copy buttons
+    document.querySelectorAll('.js-copy-text').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        navigator.clipboard.writeText(btn.dataset.text).then(function () {
+          var orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(function () { btn.textContent = orig; }, 1500);
+        });
+      });
+    });
 
   })();
   </script>
-{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
 {% endblock %}

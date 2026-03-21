@@ -1,0 +1,67 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-12">
+
+    <form method="post" autocomplete="off">
+
+      <div class="card mb-3">
+        <div class="card-header">
+          <h3 class="card-header-title">TTL Settings</h3>
+        </div>
+        <div class="card-body">
+
+          {% for ttl in ttlFields %}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="{{ ttl.name }}">{{ ttl.label }}</label>
+            <div class="col-sm-9">
+              <div class="d-flex align-items-center">
+                <div class="input-group" style="max-width:250px;">
+                  <input type="number" class="form-control js-ttl-input" id="{{ ttl.name }}" name="{{ ttl.name }}" value="{{ ttl.value }}" min="{{ ttl.min|default(0) }}" {{ ttl.max is defined ? 'max=' ~ ttl.max : '' }}>
+                  <div class="input-group-append">
+                    <span class="input-group-text">seconds</span>
+                  </div>
+                </div>
+                <span class="ml-3 text-muted js-ttl-human" style="font-size:13px;"></span>
+              </div>
+              <small class="form-text text-muted">{{ ttl.help }}{% if ttl.min is defined and ttl.min > 0 %} Min: {{ ttl.min }}s.{% endif %}{% if ttl.max is defined %} Max: {{ ttl.max }}s.{% endif %}</small>
+            </div>
+          </div>
+          {% endfor %}
+
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-footer d-flex justify-content-end">
+          <button type="submit" name="submitTtl" class="btn btn-primary">Save</button>
+        </div>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  function humanDuration(s) {
+    s = parseInt(s, 10);
+    if (isNaN(s) || s <= 0) return 'disabled';
+    if (s < 60) return s + 's';
+    if (s < 3600) return Math.round(s / 60) + ' minutes';
+    if (s < 86400) return +(s / 3600).toFixed(1) + ' hours';
+    if (s < 604800) return +(s / 86400).toFixed(1) + ' days';
+    return +(s / 604800).toFixed(1) + ' weeks';
+  }
+  document.querySelectorAll('.js-ttl-input').forEach(function (input) {
+    var label = input.closest('.d-flex').querySelector('.js-ttl-human');
+    if (!label) return;
+    function update() { label.textContent = '= ' + humanDuration(input.value); }
+    update();
+    input.addEventListener('input', update);
+  });
+});
+</script>
+{% endblock %}

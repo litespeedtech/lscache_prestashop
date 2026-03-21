@@ -49,7 +49,27 @@ services:
         tags:
             - { name: controller.service_arguments }
 
-    LiteSpeed\Cache\Controller\Admin\CustomizeController:
+    LiteSpeed\Cache\Controller\Admin\TtlController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    LiteSpeed\Cache\Controller\Admin\PresetsController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    LiteSpeed\Cache\Controller\Admin\AdvancedController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    LiteSpeed\Cache\Controller\Admin\CacheController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    LiteSpeed\Cache\Controller\Admin\EsiController:
         public: true
         tags:
             - { name: controller.service_arguments }
@@ -60,6 +80,16 @@ services:
             - { name: controller.service_arguments }
 
     LiteSpeed\Cache\Controller\Admin\ToolsController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    LiteSpeed\Cache\Controller\Admin\DatabaseController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
+    LiteSpeed\Cache\Controller\Admin\StatsController:
         public: true
         tags:
             - { name: controller.service_arguments }

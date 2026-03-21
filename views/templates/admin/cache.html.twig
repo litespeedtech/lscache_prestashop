@@ -1,0 +1,184 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-12">
+
+    <form method="post" autocomplete="off">
+
+      {# ================================================================== #}
+      {# Cache Control Settings                                              #}
+      {# ================================================================== #}
+      <div class="card mb-3">
+        <div class="card-header">
+          <h3 class="card-header-title">Cache Control Settings</h3>
+        </div>
+        <div class="card-body">
+
+          {# enable #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">Enable Cache</label>
+            <div class="col-sm-9">
+              <div class="custom-control custom-switch">
+                <input type="hidden" name="enable" value="0">
+                <input type="checkbox" class="custom-control-input" id="enable" name="enable" value="1" {{ values.enable ? 'checked' : '' }}>
+                <label class="custom-control-label" for="enable">Activate LiteSpeed Cache for this site</label>
+              </div>
+              <small class="form-text text-muted">Disabling the cache will purge all cached entries for this site.</small>
+            </div>
+          </div>
+
+          {# guestmode #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="guestmode">Cache Logged-in Users</label>
+            <div class="col-sm-9">
+              <select class="form-control" id="guestmode" name="guestmode" {{ disabled ? 'disabled' : '' }}>
+                <option value="0" {{ values.guestmode == 0 ? 'selected' : '' }}>No — No default guest view</option>
+                <option value="1" {{ values.guestmode == 1 ? 'selected' : '' }}>Yes — Has default guest view</option>
+                <option value="2" {{ values.guestmode == 2 ? 'selected' : '' }}>First page only</option>
+              </select>
+              <small class="form-text text-muted">Privately cache site pages for logged-in users. Speeds up the first page for new visitors.</small>
+            </div>
+          </div>
+
+          {# diff_mobile #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">Separate Mobile Cache</label>
+            <div class="col-sm-9">
+              <div class="custom-control custom-switch">
+                <input type="hidden" name="diff_mobile" value="0">
+                <input type="checkbox" class="custom-control-input" id="diff_mobile" name="diff_mobile" value="1" {{ values.diff_mobile ? 'checked' : '' }}>
+                <label class="custom-control-label" for="diff_mobile">Serve a separate cache copy for mobile visitors</label>
+              </div>
+              <small class="form-text text-muted">Enable if you have a separate mobile theme.</small>
+            </div>
+          </div>
+
+          {# diff_customergroup #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="diff_customergroup">Cache per Customer Group</label>
+            <div class="col-sm-9">
+              <select class="form-control" id="diff_customergroup" name="diff_customergroup">
+                <option value="0" {{ values.diff_customergroup == 0 ? 'selected' : '' }}>No — Everyone shares the same view</option>
+                <option value="1" {{ values.diff_customergroup == 1 ? 'selected' : '' }}>Yes — Each group has its own view</option>
+                <option value="2" {{ values.diff_customergroup == 2 ? 'selected' : '' }}>Two views — One for logged-in, another for logged-out</option>
+                <option value="3" {{ values.diff_customergroup == 3 ? 'selected' : '' }}>One view — Only cache logged-out visitors</option>
+              </select>
+              <small class="form-text text-muted">Enable if different pricing is applied based on customer groups.</small>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {# ================================================================== #}
+      {# Purge Settings                                                      #}
+      {# ================================================================== #}
+      <div class="card mb-3">
+        <div class="card-header">
+          <h3 class="card-header-title">Purge Settings</h3>
+        </div>
+        <div class="card-body">
+
+          {# flush_all #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">Flush All on Cache Clear</label>
+            <div class="col-sm-9">
+              <div class="custom-control custom-switch">
+                <input type="hidden" name="flush_all" value="0">
+                <input type="checkbox" class="custom-control-input" id="flush_all" name="flush_all" value="1" {{ values.flush_all ? 'checked' : '' }}>
+                <label class="custom-control-label" for="flush_all">Flush all pages when PrestaShop cache is cleared</label>
+              </div>
+            </div>
+          </div>
+
+          {# flush_prodcat #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="flush_prodcat">Flush on Order Placed</label>
+            <div class="col-sm-9">
+              <select class="form-control" id="flush_prodcat" name="flush_prodcat" {{ disabled ? 'disabled' : '' }}>
+                <option value="0" {{ values.flush_prodcat == 0 ? 'selected' : '' }}>Flush product on quantity/stock change; categories on stock change</option>
+                <option value="1" {{ values.flush_prodcat == 1 ? 'selected' : '' }}>Flush product and categories only on stock status change</option>
+                <option value="2" {{ values.flush_prodcat == 2 ? 'selected' : '' }}>Flush product on stock change; no categories</option>
+                <option value="3" {{ values.flush_prodcat == 3 ? 'selected' : '' }}>Always flush product and categories on quantity/stock change</option>
+                <option value="4" {{ values.flush_prodcat == 4 ? 'selected' : '' }}>Do not flush</option>
+              </select>
+            </div>
+          </div>
+
+          {# flush_home #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="flush_home">Flush Home Page on Order</label>
+            <div class="col-sm-9">
+              <select class="form-control" id="flush_home" name="flush_home" {{ disabled ? 'disabled' : '' }}>
+                <option value="0" {{ values.flush_home == 0 ? 'selected' : '' }}>Do not flush</option>
+                <option value="1" {{ values.flush_home == 1 ? 'selected' : '' }}>Flush when stock changed for specified products</option>
+                <option value="2" {{ values.flush_home == 2 ? 'selected' : '' }}>Flush when stock or quantity changed for specified products</option>
+              </select>
+            </div>
+          </div>
+
+          {# flush_homeinput #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="flush_homeinput">Product IDs for Home Flush</label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="flush_homeinput" name="flush_homeinput" rows="3" {{ disabled ? 'disabled' : '' }}>{{ values.flush_homeinput|default('') }}</textarea>
+              <small class="form-text text-muted">Space or comma separated. If empty, any product update triggers flush.</small>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {# ================================================================== #}
+      {# Cache Rules                                                         #}
+      {# ================================================================== #}
+      <div class="card mb-3">
+        <div class="card-header">
+          <h3 class="card-header-title">Cache Rules</h3>
+        </div>
+        <div class="card-body">
+
+          {# nocache_vars #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="nocache_vars">Do-Not-Cache GET Parameters</label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="nocache_vars" name="nocache_vars" rows="4" {{ disabled ? 'disabled' : '' }}>{{ values.nocache_vars|default('') }}</textarea>
+              <small class="form-text text-muted">Comma-separated list of GET variables that prevent caching when present.</small>
+            </div>
+          </div>
+
+          {# nocache_urls #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="nocache_urls">URL Blacklist</label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="nocache_urls" name="nocache_urls" rows="6" {{ disabled ? 'disabled' : '' }}>{{ values.nocache_urls|default('') }}</textarea>
+              <small class="form-text text-muted">Relative URLs to exclude from caching. Start with <code>/</code>. One per line. Use <code>*</code> for partial matches.</small>
+            </div>
+          </div>
+
+          {# vary_bypass #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="vary_bypass">Context Vary Bypass</label>
+            <div class="col-sm-9">
+              <textarea class="form-control" id="vary_bypass" name="vary_bypass" rows="3" {{ disabled ? 'disabled' : '' }}>{{ values.vary_bypass|default('') }}</textarea>
+              <small class="form-text text-muted">Comma-delimited context names to bypass vary. Supported: <code>ctry</code>, <code>curr</code>, <code>lang</code>.</small>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {# Submit #}
+      <div class="card">
+        <div class="card-footer d-flex justify-content-end">
+          <button type="submit" name="submitCacheConfig" class="btn btn-primary">Save</button>
+        </div>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+{% endblock %}
