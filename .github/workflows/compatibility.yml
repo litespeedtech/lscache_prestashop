@@ -37,7 +37,24 @@ jobs:
         run: composer validate --no-check-all --no-check-publish 2>&1 || true
 
   # ================================================================
-  # 3. PHPStan — Static Analysis
+  # 3. Unit Tests — PHPUnit
+  # ================================================================
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: "Unit Tests"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+      - name: Install dependencies
+        run: composer install --dev --no-interaction --no-progress
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit --testdox
+
+  # ================================================================
+  # 4. PHPStan — Static Analysis
   # ================================================================
   phpstan:
     runs-on: ubuntu-latest
