@@ -8,7 +8,7 @@ use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class CustomizeController extends FrameworkBundleAdminController
+class EsiController extends FrameworkBundleAdminController
 {
     use NavPillsTrait;
 
@@ -63,22 +63,22 @@ class CustomizeController extends FrameworkBundleAdminController
             }
         }
 
-        return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/customize/list.html.twig', [
+        return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/esi/list.html.twig', [
             'layoutHeaderToolbarBtn' => [
                 'flush_pages' => [
                     'href' => $this->generateUrl('admin_litespeedcache_manage', ['purge_shops' => 1]),
                     'desc' => 'Flush Pages',
                 ],
                 'add' => [
-                    'href' => $this->generateUrl('admin_litespeedcache_customize_add'),
+                    'href' => $this->generateUrl('admin_litespeedcache_esi_add'),
                     'desc' => 'Add ESI Block',
                 ],
             ],
             'rows'       => $rows,
             'defaultIds' => $defaultIds,
-            'editUrl'    => $this->generateUrl('admin_litespeedcache_customize_edit', ['id' => '__ID__']),
-            'viewUrl'    => $this->generateUrl('admin_litespeedcache_customize_view', ['id' => '__ID__']),
-            'deleteUrl'  => $this->generateUrl('admin_litespeedcache_customize_delete', ['id' => '__ID__']),
+            'editUrl'    => $this->generateUrl('admin_litespeedcache_esi_edit', ['id' => '__ID__']),
+            'viewUrl'    => $this->generateUrl('admin_litespeedcache_esi_view', ['id' => '__ID__']),
+            'deleteUrl'  => $this->generateUrl('admin_litespeedcache_esi_delete', ['id' => '__ID__']),
         ], $request);
     }
 
@@ -98,7 +98,7 @@ class CustomizeController extends FrameworkBundleAdminController
                 $res = $config->saveModConfigValues($values, 'new');
                 if ($res) {
                     $this->addFlash('success', $this->trans('Settings saved. Please flush all cached pages.', 'Modules.Litespeedcache.Admin'));
-                    return $this->redirectToRoute('admin_litespeedcache_customize');
+                    return $this->redirectToRoute('admin_litespeedcache_esi');
                 }
                 $this->addFlash('error', $this->trans('Fail to update the settings.', 'Modules.Litespeedcache.Admin'));
             } else {
@@ -111,7 +111,7 @@ class CustomizeController extends FrameworkBundleAdminController
         // Module options for select: active modules not already in list
         $moduleOptions = $this->getAddModuleOptions($rows);
 
-        return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/customize/form.html.twig', [
+        return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/esi/form.html.twig', [
             'layoutHeaderToolbarBtn' => [
                 'flush_pages' => [
                     'href' => $this->generateUrl('admin_litespeedcache_manage', ['purge_shops' => 1]),
@@ -121,8 +121,8 @@ class CustomizeController extends FrameworkBundleAdminController
             'values'        => $values,
             'readonly'      => false,
             'moduleOptions' => $moduleOptions,
-            'backUrl'       => $this->generateUrl('admin_litespeedcache_customize'),
-            'formAction'    => $this->generateUrl('admin_litespeedcache_customize_add'),
+            'backUrl'       => $this->generateUrl('admin_litespeedcache_esi'),
+            'formAction'    => $this->generateUrl('admin_litespeedcache_esi_add'),
             'mode'          => 'add',
         ], $request);
     }
@@ -133,7 +133,7 @@ class CustomizeController extends FrameworkBundleAdminController
 
         if (!isset($rows[$id])) {
             $this->addFlash('error', $this->trans('ESI module not found.', 'Modules.Litespeedcache.Admin'));
-            return $this->redirectToRoute('admin_litespeedcache_customize');
+            return $this->redirectToRoute('admin_litespeedcache_esi');
         }
 
         $values = $rows[$id];
@@ -144,7 +144,7 @@ class CustomizeController extends FrameworkBundleAdminController
                 $res = $config->saveModConfigValues($values, 'edit');
                 if ($res) {
                     $this->addFlash('success', $this->trans('Settings saved. Please flush all cached pages.', 'Modules.Litespeedcache.Admin'));
-                    return $this->redirectToRoute('admin_litespeedcache_customize');
+                    return $this->redirectToRoute('admin_litespeedcache_esi');
                 }
                 $this->addFlash('error', $this->trans('Fail to update the settings.', 'Modules.Litespeedcache.Admin'));
             } else {
@@ -156,7 +156,7 @@ class CustomizeController extends FrameworkBundleAdminController
 
         $moduleOptions = [['id' => $id, 'name' => "[$id] " . $rows[$id]['name']]];
 
-        return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/customize/form.html.twig', [
+        return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/esi/form.html.twig', [
             'layoutHeaderToolbarBtn' => [
                 'flush_pages' => [
                     'href' => $this->generateUrl('admin_litespeedcache_manage', ['purge_shops' => 1]),
@@ -166,8 +166,8 @@ class CustomizeController extends FrameworkBundleAdminController
             'values'        => $values,
             'readonly'      => false,
             'moduleOptions' => $moduleOptions,
-            'backUrl'       => $this->generateUrl('admin_litespeedcache_customize'),
-            'formAction'    => $this->generateUrl('admin_litespeedcache_customize_edit', ['id' => $id]),
+            'backUrl'       => $this->generateUrl('admin_litespeedcache_esi'),
+            'formAction'    => $this->generateUrl('admin_litespeedcache_esi_edit', ['id' => $id]),
             'mode'          => 'edit',
         ], $request);
     }
@@ -178,13 +178,13 @@ class CustomizeController extends FrameworkBundleAdminController
 
         if (!isset($rows[$id])) {
             $this->addFlash('error', $this->trans('ESI module not found.', 'Modules.Litespeedcache.Admin'));
-            return $this->redirectToRoute('admin_litespeedcache_customize');
+            return $this->redirectToRoute('admin_litespeedcache_esi');
         }
 
         $values = $rows[$id];
         $moduleOptions = [['id' => $id, 'name' => "[$id] " . $rows[$id]['name']]];
 
-        return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/customize/form.html.twig', [
+        return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/esi/form.html.twig', [
             'layoutHeaderToolbarBtn' => [
                 'flush_pages' => [
                     'href' => $this->generateUrl('admin_litespeedcache_manage', ['purge_shops' => 1]),
@@ -194,7 +194,7 @@ class CustomizeController extends FrameworkBundleAdminController
             'values'        => $values,
             'readonly'      => true,
             'moduleOptions' => $moduleOptions,
-            'backUrl'       => $this->generateUrl('admin_litespeedcache_customize'),
+            'backUrl'       => $this->generateUrl('admin_litespeedcache_esi'),
             'formAction'    => '',
             'mode'          => 'view',
         ], $request);
@@ -211,7 +211,7 @@ class CustomizeController extends FrameworkBundleAdminController
             $this->addFlash('error', $this->trans('Fail to delete the settings.', 'Modules.Litespeedcache.Admin'));
         }
 
-        return $this->redirectToRoute('admin_litespeedcache_customize');
+        return $this->redirectToRoute('admin_litespeedcache_esi');
     }
 
     private function validateForm(Request $request, array $origValues): array

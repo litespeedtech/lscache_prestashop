@@ -446,16 +446,24 @@ class LiteSpeedCache extends Module
 
 
     /** Appends a cache generation comment to the page footer (debug mode only). */
+    /** @var bool|null Cached instant click setting */
+    private static $instantClick = null;
+
     public function hookDisplayFooterAfter(array $params): string
     {
-        if (self::isCacheable()) {
-            \Configuration::updateGlobalValue('LITESPEED_STAT_CACHED_RESP',
-                (int) \Configuration::getGlobalValue('LITESPEED_STAT_CACHED_RESP') + 1
-            );
+        $output = '';
+
+        // Instant Click — cache the config read
+        if (self::$instantClick === null) {
+            $advanced = json_decode(\Configuration::getGlobalValue('LITESPEED_CACHE_ADVANCED') ?: '{}', true);
+            self::$instantClick = !empty($advanced['instant_click']);
+        }
+        if (self::$instantClick) {
+            $output .= '<script src="//instant.page/5.2.0" type="module" integrity="sha384-jnZyxPjiipYXnSU0bbe99Xk6eL+HkjrHXb0TtY1l6eVPGs40IN/bDPd26Ua0NR6"></script>' . PHP_EOL;
         }
 
         if (!self::isCacheable() || !_LITESPEED_DEBUG_) {
-            return '';
+            return $output;
         }
         $comment = isset($_SERVER['HTTP_USER_AGENT'])
             ? '<!-- LiteSpeed Cache created with user_agent: ' . $_SERVER['HTTP_USER_AGENT'] . ' -->' . PHP_EOL
@@ -464,7 +472,7 @@ class LiteSpeedCache extends Module
         if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_FOOTER_COMMENT) {
             LSLog::log('Add html comments in footer ' . $comment, LSLog::LEVEL_FOOTER_COMMENT);
         }
-        return $comment;
+        return $output . $comment;
     }
 
     /** Called by Media override: filters private JS variables for ESI replacement. */
@@ -784,9 +792,15 @@ class LiteSpeedCache extends Module
 
     // ---- Private helpers --------------------------------------------------------
 
+    /** @var self|null */
+    private static $cachedInstance = null;
+
     private static function myInstance(): self
     {
-        return Module::getInstanceByName(self::MODULE_NAME);
+        if (self::$cachedInstance === null) {
+            self::$cachedInstance = Module::getInstanceByName(self::MODULE_NAME);
+        }
+        return self::$cachedInstance;
     }
 
     /**

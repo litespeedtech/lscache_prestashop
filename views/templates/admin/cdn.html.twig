@@ -44,33 +44,32 @@
             </div>
           </div>
 
-          {# cf_key #}
-          <div class="form-group row">
-            <label class="form-control-label col-sm-3" for="cf_key">
-              Global API Key/Token
-            </label>
-            <div class="col-sm-9">
-              <input type="text" class="form-control" id="cf_key" name="cf_key"
-                value="{{ values.cf_key|default('') }}"
-                autocomplete="new-password">
-              <small class="form-text text-muted">
-                Your API key/token is used to access the Cloudflare APIs.
-                <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">Get it from Cloudflare.</a>
-                Recommended: generate the token from the Cloudflare API token <em>WordPress</em> template.
-              </small>
-            </div>
-          </div>
-
           {# cf_email #}
           <div class="form-group row">
             <label class="form-control-label col-sm-3" for="cf_email">
               Email address
             </label>
             <div class="col-sm-9">
-              <input type="text" class="form-control" id="cf_email" name="cf_email"
+              <input type="email" class="form-control" id="cf_email" name="cf_email"
                 value="{{ values.cf_email|default('') }}">
               <small class="form-text text-muted">
                 Your Cloudflare account email address. Optional when using an API token.
+              </small>
+            </div>
+          </div>
+
+          {# cf_key #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="cf_key">
+              Global API Key / Token
+            </label>
+            <div class="col-sm-9">
+              <input type="password" class="form-control" id="cf_key" name="cf_key"
+                value="{{ values.cf_key|default('') }}"
+                autocomplete="new-password">
+              <small class="form-text text-muted">
+                Your API key or token is used to access the Cloudflare APIs.
+                <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">Get it from Cloudflare.</a>
               </small>
             </div>
           </div>
@@ -123,94 +122,428 @@
     {# ================================================================== #}
     {# SECTION 2 — Cloudflare status & actions                            #}
     {# ================================================================== #}
+    {% if cfReady %}
     <div class="card mb-3">
-      <div class="card-header">
-        <h3 class="card-header-title">
-          <i class="material-icons">cloud_queue</i>
-          Cloudflare
-        </h3>
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-header-title mb-0">Cloudflare</h3>
+        <span class="d-flex align-items-center">
+          <small class="text-muted mr-1">Domain:</small><span class="badge badge-success mr-2">{{ cfInfo.zone }}</span>
+          <small class="text-muted mr-1">Zone ID:</small>
+          <span class="badge badge-secondary js-copy-text" style="cursor:pointer;" data-text="{{ values.cf_zone_id }}" title="Click to copy Zone ID">{{ values.cf_zone_id }}</span>
+        </span>
       </div>
       <div class="card-body">
 
-        {% if not cfEnabled %}
-          <div class="alert alert-warning">
-            <i class="material-icons">warning</i>
-            <strong>WARNING</strong> —
-            To enable the following functionality, turn on the Cloudflare API in the CDN settings above.
-          </div>
-        {% elseif not cfReady %}
-          <div class="alert alert-warning">
-            <i class="material-icons">warning</i>
-            <strong>WARNING</strong> —
-            Cloudflare zone could not be resolved. Check your credentials and domain, then save again.
-          </div>
-        {% endif %}
-
-        {# Zone info #}
-        <div class="form-group row">
-          <label class="form-control-label col-sm-3">Cloudflare domain</label>
-          <div class="col-sm-9">
-            <p class="form-control-static">{{ cfInfo.domain }}</p>
-          </div>
-        </div>
-        <div class="form-group row">
-          <label class="form-control-label col-sm-3">Cloudflare zone</label>
-          <div class="col-sm-9">
-            <p class="form-control-static">{{ cfInfo.zone }}</p>
-          </div>
-        </div>
-
-        {# Dev mode #}
-        <div class="form-group row">
-          <label class="form-control-label col-sm-3">Development mode</label>
-          <div class="col-sm-9">
-            <form method="post" class="d-inline-block">
-              {% if cfInfo.dev_mode == 'on' %}
-                <button type="submit" name="cf_dev_off"
-                  class="btn btn-sm btn-secondary">
-                  TURN OFF
-                </button>
+        {# Proxy #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">Proxy Mode</label>
+            <div class="col-sm-9">
+              {% if cfProxy %}
+              <form method="post" class="d-inline">
+                {% if cfProxy.proxied %}
+                  <input type="hidden" name="cf_proxy_off" value="0">
+                  <span class="badge badge-success mr-2">ON</span>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#modal-cf-proxy">Disable</button>
+                {% else %}
+                  <input type="hidden" name="cf_proxy_on" value="1">
+                  <span class="badge badge-warning mr-2">OFF</span>
+                  <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#modal-cf-proxy">Enable</button>
+                {% endif %}
+              </form>
+              <small class="form-text text-muted">
+                {{ cfProxy.type }} → {{ cfProxy.ip }} — {{ cfProxy.proxied ? 'proxied through Cloudflare' : 'DNS only, not proxied' }}
+              </small>
               {% else %}
-                <button type="submit" name="cf_dev_on"
-                  class="btn btn-sm btn-danger"
-                  {{ not cfReady ? 'disabled' }}>
-                  TURN ON
-                </button>
+              <small class="text-muted">No A/AAAA record found</small>
               {% endif %}
-              <button type="submit" name="cf_dev_check"
-                class="btn btn-sm btn-outline-info ml-2"
-                {{ not cfReady ? 'disabled' }}>
-                Check status
-              </button>
-            </form>
-            <small class="form-text text-muted mt-1">
-              Temporarily bypasses the Cloudflare cache, allowing changes on the origin server to be seen in real time.<br>
-              Development mode will be automatically disabled after three hours.
-              <a href="https://developers.cloudflare.com/cache/how-to/enable-development-mode/" target="_blank" rel="noopener">Learn more</a>
-            </small>
+            </div>
           </div>
-        </div>
 
-        {# Purge all #}
-        <div class="form-group row">
-          <label class="form-control-label col-sm-3">Cloudflare cache</label>
-          <div class="col-sm-9">
-            <form method="post" class="d-inline-block">
-              <button type="submit" name="cf_purge_all" value="1"
-                class="btn btn-sm btn-warning"
-                {{ not cfReady ? 'disabled' }}
-                onclick="return confirm('Purge all Cloudflare cache?');">
-                <i class="material-icons" style="font-size:16px;vertical-align:middle;">delete_sweep</i>
-                Purge all
-              </button>
-            </form>
+          {# Optimize #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">Optimize for PrestaShop</label>
+            <div class="col-sm-9">
+              {% if cfOptimized %}
+                <span class="badge badge-success mr-2">Optimized</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#modal-cf-revert">Revert</button>
+                <small class="form-text text-muted">All Cloudflare settings are already optimized for PrestaShop.</small>
+              {% else %}
+                <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#modal-cf-optimize">Optimize ({{ cfPendingSettings|length }} changes)</button>
+                <small class="form-text text-muted">
+                  Apply optimal speed, security and cache settings in one click.
+                </small>
+              {% endif %}
+            </div>
           </div>
-        </div>
+
+          {# Block Bots #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">Block Problematic Bots</label>
+            <div class="col-sm-9">
+              {% if cfBotsBlocked %}
+                <span class="badge badge-success mr-2">Blocked</span>
+                <form method="post" class="d-inline">
+                  <button type="button" class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#modal-cf-unblock-bots">Unblock</button>
+                </form>
+                <small class="form-text text-muted">Facebook/Meta (ASN 32934) is blocked.</small>
+              {% else %}
+                <button type="button" class="btn btn-sm btn-outline-danger" data-toggle="modal" data-target="#modal-cf-block-bots">Block Bots</button>
+                <small class="form-text text-muted">
+                  Block aggressive crawlers by ASN. Currently: Facebook/Meta (ASN 32934).
+                </small>
+              {% endif %}
+            </div>
+          </div>
+
+          {# Block Countries #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">Block Problematic Countries</label>
+            <div class="col-sm-9">
+              {% if cfCountriesBlocked %}
+                <span class="badge badge-success mr-2">Blocked</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#modal-cf-unblock-countries">Unblock</button>
+                <small class="form-text text-muted">BR, CN, RU, IR, KP are blocked.</small>
+              {% else %}
+                <button type="button" class="btn btn-sm btn-outline-danger" data-toggle="modal" data-target="#modal-cf-block-countries">Block Countries</button>
+                <small class="form-text text-muted">
+                  Block all traffic from Brazil, China, Russia, Iran and North Korea.
+                </small>
+              {% endif %}
+            </div>
+          </div>
+
+          {# Dev mode #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">Development Mode</label>
+            <div class="col-sm-9">
+              {% if cfInfo.dev_mode == 'on' %}
+                <span class="badge badge-success mr-2">ON</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#modal-cf-dev">Disable</button>
+              {% else %}
+                <span class="badge badge-secondary mr-2">OFF</span>
+                <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#modal-cf-dev">Enable</button>
+              {% endif %}
+              <small class="form-text text-muted">
+                Temporarily bypass cache. See origin changes in realtime. Auto-disables after 3 hours.
+              </small>
+            </div>
+          </div>
+
+          {# Purge #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">Purge Cache</label>
+            <div class="col-sm-9">
+              <button type="button" class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#modal-cf-purge">Purge All</button>
+              <small class="form-text text-muted">
+                Remove all cached files from Cloudflare's edge servers.
+              </small>
+            </div>
+          </div>
+
 
       </div>
     </div>
+    {% endif %}
 
   </div>{# /col #}
 </div>{# /row #}
 {% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+
+{# ---- Modals ---- #}
+
+{# Proxy toggle modal #}
+<div class="modal fade" id="modal-cf-proxy" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Change Proxy Mode</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        {% if cfProxy is defined and cfProxy %}
+          {% if cfProxy.proxied %}
+            <p>Disable Cloudflare proxy for <strong>{{ cfInfo.domain }}</strong>?</p>
+            <p class="text-muted">Traffic will go directly to your server (DNS only). Cloudflare CDN, WAF and DDoS protection will be disabled.</p>
+          {% else %}
+            <p>Enable Cloudflare proxy for <strong>{{ cfInfo.domain }}</strong>?</p>
+            <p class="text-muted">Traffic will be routed through Cloudflare. CDN, WAF and DDoS protection will be active.</p>
+          {% endif %}
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+        <form method="post" class="d-inline">
+          {% if cfProxy is defined and cfProxy and cfProxy.proxied %}
+            <button type="submit" name="cf_proxy_off" value="0" class="btn btn-primary">Disable Proxy</button>
+          {% else %}
+            <button type="submit" name="cf_proxy_on" value="1" class="btn btn-primary">Enable Proxy</button>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Revert Optimize modal #}
+<div class="modal fade" id="modal-cf-revert" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Revert Optimization</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <p>Restore Cloudflare settings to their values before optimization?</p>
+        <p class="text-muted">This will revert all zone settings, remove the Redsys WAF rule, remove cache rules, and purge the CDN cache.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+        <form method="post" class="d-inline">
+          <button type="submit" name="cf_revert_optimize" value="1" class="btn btn-primary">Revert</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Unblock Bots modal #}
+<div class="modal fade" id="modal-cf-unblock-bots" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Unblock Bots</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <p>Remove the bot blocking rule?</p>
+        <p class="text-muted">Facebook/Meta crawlers (ASN 32934) will be allowed to access your site again.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+        <form method="post" class="d-inline">
+          <button type="submit" name="cf_unblock_bots" value="1" class="btn btn-primary">Unblock</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Block Bots modal #}
+<div class="modal fade" id="modal-cf-block-bots" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Block Problematic Bots</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <p>Create a WAF rule to block aggressive bot crawlers:</p>
+        <table class="table table-hover mb-3" style="font-size:13px;">
+          <thead><tr style="background:#f8f9fa;">
+            <th>Bot</th>
+            <th>ASN</th>
+            <th>Action</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td>Facebook / Meta</td>
+              <td><code>32934</code></td>
+              <td><span class="badge badge-danger">Block</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-muted">These bots are known to aggressively crawl e-commerce sites, consuming excessive server resources. The rule will not be duplicated if it already exists.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+        <form method="post" class="d-inline">
+          <button type="submit" name="cf_block_bots" value="1" class="btn btn-primary">Block Bots</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Block Countries modal #}
+<div class="modal fade" id="modal-cf-block-countries" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Block Problematic Countries</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <p>Create a WAF rule to block all traffic from these countries:</p>
+        <table class="table table-hover mb-3" style="font-size:13px;">
+          <thead><tr style="background:#f8f9fa;">
+            <th>Country</th>
+            <th>Code</th>
+            <th>Action</th>
+          </tr></thead>
+          <tbody>
+            <tr><td>Brazil</td><td><code>BR</code></td><td><span class="badge badge-danger">Block</span></td></tr>
+            <tr><td>China</td><td><code>CN</code></td><td><span class="badge badge-danger">Block</span></td></tr>
+            <tr><td>Russia</td><td><code>RU</code></td><td><span class="badge badge-danger">Block</span></td></tr>
+            <tr><td>Iran</td><td><code>IR</code></td><td><span class="badge badge-danger">Block</span></td></tr>
+            <tr><td>North Korea</td><td><code>KP</code></td><td><span class="badge badge-danger">Block</span></td></tr>
+          </tbody>
+        </table>
+        <p class="text-muted">All requests from these countries will be blocked. The rule will not be duplicated if it already exists.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+        <form method="post" class="d-inline">
+          <button type="submit" name="cf_block_countries" value="1" class="btn btn-primary">Block Countries</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Unblock Countries modal #}
+<div class="modal fade" id="modal-cf-unblock-countries" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Unblock Countries</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <p>Remove the country blocking rule?</p>
+        <p class="text-muted">Traffic from Brazil, China, Russia, Iran and North Korea will be allowed again.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+        <form method="post" class="d-inline">
+          <button type="submit" name="cf_unblock_countries" value="1" class="btn btn-primary">Unblock</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Dev mode modal #}
+<div class="modal fade" id="modal-cf-dev" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Development Mode</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        {% if cfInfo is defined and cfInfo.dev_mode == 'on' %}
+          <p>Disable Development Mode for <strong>{{ cfInfo.domain }}</strong>?</p>
+          <p class="text-muted">Cloudflare cache will resume normal operation.</p>
+        {% else %}
+          <p>Enable Development Mode for <strong>{{ cfInfo.domain }}</strong>?</p>
+          <p class="text-muted">Cloudflare cache will be bypassed for 3 hours. All requests will go directly to your origin server.</p>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+        <form method="post" class="d-inline">
+          {% if cfInfo is defined and cfInfo.dev_mode == 'on' %}
+            <button type="submit" name="cf_dev_off" value="1" class="btn btn-primary">Disable</button>
+          {% else %}
+            <button type="submit" name="cf_dev_on" value="1" class="btn btn-primary">Enable</button>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Purge modal #}
+<div class="modal fade" id="modal-cf-purge" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Purge Cloudflare Cache</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <p>Purge all cached content from Cloudflare for <strong>{{ cfInfo.domain }}</strong>?</p>
+        <p class="text-muted">All cached files will be removed from Cloudflare's edge servers. New requests will be fetched from your origin server.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+        <form method="post" class="d-inline">
+          <button type="submit" name="cf_purge_all" value="1" class="btn btn-primary">Purge All</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Optimize modal #}
+{% if not cfOptimized is defined or not cfOptimized %}
+<div class="modal fade" id="modal-cf-optimize" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Optimize Cloudflare for PrestaShop</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="p-3">
+          <p class="text-muted mb-0">The following {{ cfPendingSettings|length }} settings need to be changed:</p>
+        </div>
+
+        <table class="table table-hover mb-0" style="font-size:13px;">
+          <thead>
+            <tr style="background:#f8f9fa;">
+              <th>Setting</th>
+              <th style="width:90px;">Current</th>
+              <th style="width:90px;">Target</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for key, item in cfPendingSettings %}
+            <tr>
+              <td>{{ item.label }}</td>
+              <td><span class="badge badge-warning">{{ item.current }}</span></td>
+              <td><span class="badge badge-success">{{ item.target }}</span></td>
+            </tr>
+            {% endfor %}
+            <tr>
+              <td>Cache Rules <small class="text-muted">— Bypass PHP, cache static assets</small></td>
+              <td><span class="badge badge-secondary">auto</span></td>
+              <td><span class="badge badge-success">create</span></td>
+            </tr>
+            <tr>
+              <td>Redsys WAF Rule <small class="text-muted">— Allow ASN 31627</small></td>
+              <td><span class="badge badge-secondary">auto</span></td>
+              <td><span class="badge badge-success">create</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="p-3">
+          <small class="text-muted">Cache will be purged after applying. Existing rules will not be duplicated.</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+        <form method="post" class="d-inline">
+          <button type="submit" name="cf_optimize" value="1" class="btn btn-primary">Optimize Now</button>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.js-copy-text').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      navigator.clipboard.writeText(btn.dataset.text).then(function () {
+        var orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(function () { btn.textContent = orig; }, 1500);
+      });
+    });
+  });
+});
+</script>
 {% endblock %}

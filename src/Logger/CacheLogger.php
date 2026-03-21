@@ -60,6 +60,12 @@ class CacheLogger
     /** @var self|null */
     protected static $instance = null;
 
+    /** @var array|null Cached debug filters to avoid re-reading config on every log call */
+    private $debugFilters = null;
+
+    /** @var bool Guard against recursive calls from CacheConfig::init() */
+    private $filtering = false;
+
     /**
      * @return static
      */
@@ -153,13 +159,39 @@ class CacheLogger
         self::getInstance()->logDebug($mesg, $debugLevel);
     }
 
+    private function loadDebugFilters(): array
+    {
+        if ($this->debugFilters !== null) {
+            return $this->debugFilters;
+        }
+
+        // Prevent recursion: CacheConfig::get() may trigger init() which logs
+        if ($this->filtering) {
+            return ['uri_inc' => '', 'uri_exc' => '', 'str_exc' => ''];
+        }
+
+        $this->filtering = true;
+        try {
+            $config = \LiteSpeed\Cache\Config\CacheConfig::getInstance();
+            $this->debugFilters = [
+                'uri_inc' => trim($config->get(\LiteSpeed\Cache\Config\CacheConfig::CFG_DEBUG_URI_INC) ?? ''),
+                'uri_exc' => trim($config->get(\LiteSpeed\Cache\Config\CacheConfig::CFG_DEBUG_URI_EXC) ?? ''),
+                'str_exc' => trim($config->get(\LiteSpeed\Cache\Config\CacheConfig::CFG_DEBUG_STR_EXC) ?? ''),
+            ];
+        } catch (\Throwable $e) {
+            $this->debugFilters = ['uri_inc' => '', 'uri_exc' => '', 'str_exc' => ''];
+        }
+        $this->filtering = false;
+
+        return $this->debugFilters;
+    }
+
     private function passesDebugFilters(string $mesg): bool
     {
-        $config = \LiteSpeed\Cache\Config\CacheConfig::getInstance();
+        $filters = $this->loadDebugFilters();
         $requestUri = $_SERVER['REQUEST_URI'] ?? '';
 
-        // URI include filter: if set, only log when URI matches
-        $uriInc = trim($config->get(\LiteSpeed\Cache\Config\CacheConfig::CFG_DEBUG_URI_INC) ?? '');
+        $uriInc = $filters['uri_inc'];
         if ($uriInc !== '') {
             $patterns = preg_split("/\r?\n/", $uriInc, -1, PREG_SPLIT_NO_EMPTY);
             $matched = false;
@@ -177,7 +209,7 @@ class CacheLogger
         }
 
         // URI exclude filter: skip log if URI matches
-        $uriExc = trim($config->get(\LiteSpeed\Cache\Config\CacheConfig::CFG_DEBUG_URI_EXC) ?? '');
+        $uriExc = $filters['uri_exc'];
         if ($uriExc !== '') {
             $patterns = preg_split("/\r?\n/", $uriExc, -1, PREG_SPLIT_NO_EMPTY);
             foreach ($patterns as $p) {
@@ -190,7 +222,7 @@ class CacheLogger
         }
 
         // String exclude filter: skip log if message contains any listed string
-        $strExc = trim($config->get(\LiteSpeed\Cache\Config\CacheConfig::CFG_DEBUG_STR_EXC) ?? '');
+        $strExc = $filters['str_exc'];
         if ($strExc !== '') {
             $strings = preg_split("/\r?\n/", $strExc, -1, PREG_SPLIT_NO_EMPTY);
             foreach ($strings as $s) {

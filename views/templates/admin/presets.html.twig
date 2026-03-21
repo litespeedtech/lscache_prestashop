@@ -1,0 +1,104 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-12">
+
+    {# Intro #}
+    <div class="alert alert-info mb-4">
+      Use an official preset designed for LiteSpeed Cache to configure your site in one click. Try risk-free essential caching, extreme optimization, or something in between.
+    </div>
+
+    {# Presets cards #}
+    <div class="row">
+      {% for key, preset in presets %}
+      <div class="col-lg mb-4">
+        <div class="card h-100 {{ preset.recommended ? 'border-primary' : '' }}">
+          {% if preset.recommended %}
+          <div class="card-header bg-primary text-white text-center py-1">
+            <small class="font-weight-bold">RECOMMENDED</small>
+          </div>
+          {% endif %}
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title font-weight-bold {{ currentPreset == key ? 'text-primary' : '' }}">
+              {{ preset.name }}
+              {% if currentPreset == key %}
+                <span class="badge badge-primary ml-1">Active</span>
+              {% endif %}
+            </h5>
+
+            <ul class="list-unstyled mb-3 flex-grow-1">
+              {% for feature in preset.features %}
+              <li class="mb-1">
+                {% if loop.first and key != 'essentials' %}
+                  <small class="text-muted">{{ feature }}</small>
+                {% else %}
+                  <i class="material-icons text-success" style="font-size:16px; vertical-align:middle;">check</i>
+                  <small>{{ feature }}</small>
+                {% endif %}
+              </li>
+              {% endfor %}
+            </ul>
+
+            <div class="mb-3">
+              <p class="text-muted" style="font-size:12px;">
+                <strong>Who should use this?</strong><br>
+                {{ preset.description }}
+              </p>
+              <p style="font-size:11px; color:#868e96;">{{ preset.note }}</p>
+            </div>
+
+            <form method="post" class="mt-auto">
+              <input type="hidden" name="apply_preset" value="{{ key }}">
+              {% if currentPreset == key %}
+                <button type="submit" class="btn btn-outline-secondary btn-block btn-sm" onclick="return confirm('Re-apply the {{ preset.name }} preset? A backup of your current settings will be created.');">Re-apply</button>
+              {% else %}
+                <button type="submit" class="btn {{ preset.recommended ? 'btn-primary' : 'btn-outline-primary' }} btn-block btn-sm" onclick="return confirm('Apply the {{ preset.name }} preset? A backup of your current settings will be created.');">Apply Preset</button>
+              {% endif %}
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {# History / Backups #}
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-header-title">History</h3>
+      </div>
+      <div class="card-body {{ history is empty ? '' : 'p-0' }}">
+        {% if history is empty %}
+          <p class="text-muted mb-0">No presets have been applied yet. A backup is created automatically before each preset is applied.</p>
+        {% else %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size:13px;">
+              <thead><tr>
+                <th>Date</th>
+                <th>Preset Applied</th>
+                <th style="width:150px;">Action</th>
+              </tr></thead>
+              <tbody>
+                {% for backup in history %}
+                <tr>
+                  <td><small>{{ backup.date }}</small></td>
+                  <td>Backup created before applying <strong>{{ backup.preset }}</strong></td>
+                  <td>
+                    <form method="post" class="d-inline">
+                      <input type="hidden" name="restore_backup" value="{{ loop.index0 }}">
+                      <button type="submit" class="btn btn-sm btn-outline-primary" onclick="return confirm('Restore settings from {{ backup.date }}? Current settings will be overwritten.');">Restore</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+{% endblock %}
