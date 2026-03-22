@@ -91,6 +91,8 @@ class WarmupController extends FrameworkBundleAdminController
      */
     public function urlsAction(Request $request): JsonResponse
     {
+        @set_time_limit(300);
+
         $sitemap = trim($request->request->get('sitemap_url', ''));
         if (empty($sitemap)) {
             return new JsonResponse(['success' => false, 'error' => 'Please enter a valid Sitemap XML URL.'], 400);
@@ -270,12 +272,17 @@ class WarmupController extends FrameworkBundleAdminController
             $domain = $ssl ? \Configuration::get('PS_SHOP_DOMAIN_SSL') : \Configuration::get('PS_SHOP_DOMAIN');
             $shopUrl = ($ssl ? 'https://' : 'http://') . $domain;
         }
+        $shopUrl = rtrim($shopUrl, '/');
+
+        // Build URLs in a single SQL query — avoids N+1 getProductLink() calls
+        $rewriteEnabled = (bool) \Configuration::get('PS_REWRITING_SETTINGS');
 
         $sql = new \DbQuery();
-        $sql->select('p.id_product, pl.link_rewrite');
+        $sql->select('p.id_product, pl.link_rewrite, cl.link_rewrite AS cat_rewrite');
         $sql->from('product', 'p');
         $sql->innerJoin('product_shop', 'ps', 'ps.id_product = p.id_product AND ps.id_shop = ' . (int) $idShop);
         $sql->innerJoin('product_lang', 'pl', 'pl.id_product = p.id_product AND pl.id_lang = ' . (int) $idLang . ' AND pl.id_shop = ' . (int) $idShop);
+        $sql->leftJoin('category_lang', 'cl', 'cl.id_category = p.id_category_default AND cl.id_lang = ' . (int) $idLang . ' AND cl.id_shop = ' . (int) $idShop);
         $sql->where('p.active = 1');
         $sql->orderBy('p.id_product ASC');
 
@@ -284,22 +291,13 @@ class WarmupController extends FrameworkBundleAdminController
             return [];
         }
 
-        $link = new \Link();
-
         $urls = [];
-        $shopUrl = rtrim($shopUrl, '/');
-
-        foreach ($products as $product) {
-            try {
-                $url = $link->getProductLink((int) $product['id_product'], $product['link_rewrite'], null, null, $idLang, $idShop);
-            } catch (\Throwable $e) {
-                $url = $shopUrl . '/' . $product['link_rewrite'] . '.html';
-            }
-            if ($url) {
-                if (strpos($url, 'http') !== 0) {
-                    $url = $shopUrl . '/' . ltrim($url, '/');
-                }
-                $urls[] = $url;
+        foreach ($products as $row) {
+            if ($rewriteEnabled) {
+                $cat = $row['cat_rewrite'] ? $row['cat_rewrite'] . '/' : '';
+                $urls[] = $shopUrl . '/' . $cat . $row['id_product'] . '-' . $row['link_rewrite'] . '.html';
+            } else {
+                $urls[] = $shopUrl . '/index.php?id_product=' . $row['id_product'] . '&controller=product';
             }
         }
 
@@ -308,17 +306,26 @@ class WarmupController extends FrameworkBundleAdminController
 
     private function parseSitemap(string $sitemapUrl): array
     {
-        $xml = @simplexml_load_file($sitemapUrl);
+        $content = $this->fetchUrl($sitemapUrl);
+        if (!$content) {
+            return [];
+        }
+
+        $xml = @simplexml_load_string($content);
         if ($xml === false) {
             return [];
         }
 
         $urls = [];
 
+        // Sitemap index: fetch each child sitemap
         if (isset($xml->sitemap)) {
             foreach ($xml->sitemap as $entry) {
-                $childUrl = (string) $entry->loc;
-                $childXml = @simplexml_load_file($childUrl);
+                $childContent = $this->fetchUrl((string) $entry->loc);
+                if (!$childContent) {
+                    continue;
+                }
+                $childXml = @simplexml_load_string($childContent);
                 if ($childXml !== false && isset($childXml->url)) {
                     foreach ($childXml->url as $item) {
                         $urls[] = (string) $item->loc;
@@ -334,6 +341,25 @@ class WarmupController extends FrameworkBundleAdminController
         }
 
         return $urls;
+    }
+
+    private function fetchUrl(string $url): string
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'lscache_runner');
+        curl_setopt($ch, CURLOPT_ENCODING, '');
+        $result = curl_exec($ch);
+        curl_close($ch);
+
+        return $result ?: '';
     }
 
     private function getDefaultCookies(string $url): string
