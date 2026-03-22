@@ -1,0 +1,14 @@
+# Apache
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(?!(?:controllers|views|mails|translations|config)\b).*\.php$ - [F,L]
+</IfModule>
+
+# LiteSpeed
+<IfModule LiteSpeed>
+    RewriteEngine On
+    RewriteRule ^(?!(?:controllers|views|mails|translations|config)\b).*\.php$ - [F,L]
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
