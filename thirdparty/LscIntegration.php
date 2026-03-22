@@ -1,5 +1,4 @@
 <?php
-
 /**
  * LiteSpeed Cache for Prestashop — backward-compatibility shim.
  * The real implementation is in LiteSpeed\Cache\Integration\Integration.

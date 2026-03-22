@@ -1,8 +1,10 @@
 <?php
-
 /**
- * For the full copyright and license information, please view the
- * docs/licenses/LICENSE.txt file that was distributed with this source code.
+ * LiteSpeed Cache for PrestaShop.
+ *
+ * @author    LiteSpeed Technologies
+ * @copyright Copyright (c) 2017-2024 LiteSpeed Technologies, Inc.
+ * @license   https://opensource.org/licenses/GPL-3.0
  */
 header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
 header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');

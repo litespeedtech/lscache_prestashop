@@ -1,5 +1,4 @@
 <?php
-
 /**
  * LiteSpeed Cache for Prestashop — ESI front controller.
  *

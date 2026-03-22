@@ -1,5 +1,4 @@
 <?php
-
 /**
  * LiteSpeed Cache for PrestaShop — Redis object cache driver.
  *

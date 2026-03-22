@@ -1,5 +1,4 @@
 <?php
-
 /**
  * LiteSpeed Cache — Cache override (PS 8 / PS 9 compatible).
  *

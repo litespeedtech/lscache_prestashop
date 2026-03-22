@@ -1,5 +1,4 @@
 <?php
-
 /**
  * LiteSpeed Cache — Adds Redis option to the Performance > Caching form.
  *
