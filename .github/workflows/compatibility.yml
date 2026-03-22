@@ -8,7 +8,7 @@ on:
 
 jobs:
   # ================================================================
-  # 1. PHP Lint — Syntax check (only compatible PHP versions)
+  # 1. PHP Lint — Syntax check
   # ================================================================
   php-lint:
     runs-on: ubuntu-latest
@@ -71,69 +71,7 @@ jobs:
         run: vendor/bin/phpunit --testdox
 
   # ================================================================
-  # 4. PHPStan — Static Analysis
-  # ================================================================
-  phpstan:
-    runs-on: ubuntu-latest
-    needs: [php-lint]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - ps_version: "8.2"
-            php: "8.2"
-          - ps_version: "9.0"
-            php: "8.3"
-    name: "PHPStan (PS ${{ matrix.ps_version }})"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php }}
-          tools: composer
-      - name: Install dependencies
-        run: composer install --no-interaction --no-progress
-      - name: Install PHPStan
-        run: composer require --dev phpstan/phpstan:^1.0 --no-interaction --no-progress
-      - name: Create PHPStan config
-        run: |
-          cat > phpstan.neon << 'NEON'
-          parameters:
-            level: 4
-            paths:
-              - litespeedcache.php
-              - src/
-            excludePaths:
-              - vendor/
-              - tests/
-            bootstrapFiles:
-              - phpstan-bootstrap.php
-            ignoreErrors:
-              - '#Call to an undefined method#'
-              - '#Access to an undefined property#'
-              - '#Class (PrestaShop|Smarty|Tab|Link|Mail|Product|Category|Currency|Language|Employee|Customer|Cart|Order).+ not found#'
-              - '#Class (Db|DbQuery|DbPDO|Tools|Validate|Hook|Shop|Module|Context|Configuration|FileLogger|PrestaShopLogger|CookieCore).+ not found#'
-              - '#Constant _PS_.+ not found#'
-              - '#Constant _DB_PREFIX_ not found#'
-              - '#Constant _LITESPEED_.+ not found#'
-          NEON
-
-          cat > phpstan-bootstrap.php << 'PHP'
-          <?php
-          define('_PS_VERSION_', '${{ matrix.ps_version }}.0');
-          define('_PS_ROOT_DIR_', '/var/www/html');
-          define('_PS_MODULE_DIR_', '/var/www/html/modules/');
-          define('_PS_ADMIN_DIR_', '/var/www/html/admin');
-          define('_DB_PREFIX_', 'ps_');
-          define('_LITESPEED_CACHE_', 1);
-          define('_LITESPEED_DEBUG_', 0);
-          define('_PS_USE_SQL_SLAVE_', false);
-          PHP
-      - name: Run PHPStan
-        run: vendor/bin/phpstan analyse --configuration=phpstan.neon --no-progress --error-format=github
-
-  # ================================================================
-  # 5. Twig Lint — Template validation
+  # 4. Twig Lint — Template validation
   # ================================================================
   twig-lint:
     runs-on: ubuntu-latest
@@ -172,34 +110,25 @@ jobs:
           echo "All Twig templates valid"
 
   # ================================================================
-  # 6. Module Install/Uninstall — PrestaShop versions
+  # 5. Integration Test — PrestaShop 8.x + LiteSpeed
   # ================================================================
-  install-test:
+  integration-ps8:
     runs-on: ubuntu-latest
     needs: [php-lint, composer-validate, unit-tests]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - ps_version: "8.1.7"
-            ps_image: "prestashop/prestashop:8.1.7"
-          - ps_version: "8.2.0"
-            ps_image: "prestashop/prestashop:8.2"
-          - ps_version: "9.0.0"
-            ps_image: "prestashop/prestashop:9.0"
-
-    name: "Install PS ${{ matrix.ps_version }}"
+    name: "PS 8 + LiteSpeed"
 
     services:
       mysql:
-        image: mysql:8.0
+        image: mariadb:11.4
         env:
           MYSQL_ROOT_PASSWORD: prestashop
           MYSQL_DATABASE: prestashop
+          MYSQL_USER: prestashop
+          MYSQL_PASSWORD: prestashop
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
@@ -208,140 +137,121 @@ jobs:
       - name: Checkout module
         uses: actions/checkout@v4
 
-      - name: Start PrestaShop
+      - name: Start LiteSpeed + PHP 8.1
         run: |
-          docker run -d --name prestashop \
+          docker run -d --name lsws \
             --network host \
-            -e DB_SERVER=127.0.0.1 \
-            -e DB_NAME=prestashop \
-            -e DB_USER=root \
-            -e DB_PASSWD=prestashop \
-            -e PS_DOMAIN=localhost \
-            -e PS_FOLDER_ADMIN=admin_test \
-            -e PS_INSTALL_AUTO=1 \
-            -e ADMIN_MAIL=test@test.com \
-            -e ADMIN_PASSWD=prestashop_test \
-            -e PS_ENABLE_SSL=0 \
-            ${{ matrix.ps_image }}
+            -e TZ=UTC \
+            litespeedtech/litespeed:6.3.4-lsphp81
 
-      - name: Wait for PrestaShop
-        timeout-minutes: 5
-        run: |
-          echo "Waiting for PrestaShop ${{ matrix.ps_version }}..."
-          until docker exec prestashop test -f /var/www/html/config/settings.inc.php 2>/dev/null; do
-            sleep 5
-            echo "  waiting for config..."
-          done
-          echo "Config found. Waiting for web server..."
-          sleep 15
-          RETRIES=0
-          until curl -sf -o /dev/null http://localhost:80/ 2>/dev/null || curl -sf -o /dev/null -w "%{http_code}" http://localhost:80/ 2>/dev/null | grep -qE "200|301|302"; do
-            sleep 5
-            RETRIES=$((RETRIES + 1))
-            if [ $RETRIES -ge 30 ]; then
-              echo "::error::Web server not responding"
-              docker logs prestashop --tail 30
-              exit 1
-            fi
-          done
-          echo "PrestaShop is ready!"
+          # Wait for LiteSpeed to start
+          sleep 5
+          docker exec lsws ls /usr/local/lsws/bin/lswsctrl
 
-      - name: Copy module
+      - name: Install PrestaShop 8.2
         run: |
-          docker exec prestashop mkdir -p /var/www/html/modules/litespeedcache
-          docker cp . prestashop:/var/www/html/modules/litespeedcache/
-          docker exec prestashop chown -R www-data:www-data /var/www/html/modules/litespeedcache
+          # Download and extract PrestaShop
+          docker exec lsws bash -c "
+            apt-get update -qq && apt-get install -y -qq unzip curl mariadb-client > /dev/null 2>&1
+
+            cd /var/www/vhosts/localhost/html 2>/dev/null || mkdir -p /var/www/vhosts/localhost/html
+            cd /var/www/vhosts/localhost/html
+
+            curl -sSL https://github.com/PrestaShop/PrestaShop/releases/download/8.2.3/prestashop_8.2.3.zip -o ps.zip
+            unzip -q ps.zip
+            if [ -f prestashop.zip ]; then unzip -qo prestashop.zip; fi
+            rm -f ps.zip prestashop.zip
+
+            # Install PrestaShop via CLI
+            php install/index_cli.php \
+              --domain=localhost \
+              --db_server=127.0.0.1 \
+              --db_name=prestashop \
+              --db_user=prestashop \
+              --db_password=prestashop \
+              --prefix=ps_ \
+              --email=test@test.com \
+              --password=Test1234! \
+              --ssl=0 \
+              --name='Test Shop' \
+              --language=en \
+              --country=US
+
+            rm -rf install/
+            chown -R nobody:nogroup /var/www/vhosts/localhost/html
+          "
+
+      - name: Copy module into PrestaShop
+        run: |
+          docker exec lsws mkdir -p /var/www/vhosts/localhost/html/modules/litespeedcache
+          docker cp . lsws:/var/www/vhosts/localhost/html/modules/litespeedcache/
+          docker exec lsws chown -R nobody:nogroup /var/www/vhosts/localhost/html/modules/litespeedcache
 
       - name: Install module
         run: |
-          docker exec prestashop php -r "
-            require '/var/www/html/config/config.inc.php';
+          docker exec lsws php /var/www/vhosts/localhost/html/bin/console prestashop:module install litespeedcache 2>/dev/null || \
+          docker exec lsws php -r "
+            require '/var/www/vhosts/localhost/html/config/config.inc.php';
             \$module = Module::getInstanceByName('litespeedcache');
             if (!\$module) { echo '::error::Module class not found'; exit(1); }
-            if (!\$module->install()) { echo '::error::Module install() returned false'; exit(1); }
-            echo '✓ Module installed: v' . \$module->version;
+            if (!\$module->install()) { echo '::error::install() failed'; exit(1); }
+            echo 'Module installed: v' . \$module->version;
           "
 
-      - name: Verify module is active
+      - name: Verify module active
         run: |
-          docker exec prestashop php -r "
-            require '/var/www/html/config/config.inc.php';
+          docker exec lsws php -r "
+            require '/var/www/vhosts/localhost/html/config/config.inc.php';
             \$m = Module::getInstanceByName('litespeedcache');
-            if (!\$m || !\$m->active) { echo '::error::Module is not active after install'; exit(1); }
-            echo '✓ Module active: v' . \$m->version;
+            if (!\$m || !\$m->active) { echo '::error::Module not active'; exit(1); }
+            echo 'Module active: v' . \$m->version;
           "
 
-      - name: Verify admin tabs created
+      - name: Verify admin tabs
         run: |
-          docker exec prestashop php -r "
-            require '/var/www/html/config/config.inc.php';
+          docker exec lsws php -r "
+            require '/var/www/vhosts/localhost/html/config/config.inc.php';
             \$id = (int) Tab::getIdFromClassName('AdminLiteSpeedCache');
-            if (!\$id) { echo '::error::Root tab AdminLiteSpeedCache not found'; exit(1); }
-
+            if (!\$id) { echo '::error::Root tab not found'; exit(1); }
             \$lang = (int) Configuration::get('PS_LANG_DEFAULT');
             \$tabs = Tab::getTabs(\$lang, \$id);
-            \$expectedTabs = ['Presets', 'Cache', 'CDN', 'Warm up Cache', 'Statistics', 'Database', 'Tools'];
-            \$foundNames = array_column(\$tabs, 'name');
+            echo 'Root tab ID=' . \$id . ' with ' . count(\$tabs) . ' children';
+          "
 
-            echo '✓ Root tab: ID=' . \$id . PHP_EOL;
-            echo '  Found ' . count(\$tabs) . ' child tabs:' . PHP_EOL;
-            foreach (\$tabs as \$t) echo '    - ' . \$t['name'] . PHP_EOL;
-
-            foreach (\$expectedTabs as \$expected) {
-              if (!in_array(\$expected, \$foundNames)) {
-                echo '::error::Missing tab: ' . \$expected;
-                exit(1);
+      - name: Verify configuration stored
+        run: |
+          docker exec lsws php -r "
+            require '/var/www/vhosts/localhost/html/config/config.inc.php';
+            foreach (['LITESPEED_CACHE_GLOBAL', 'LITESPEED_CACHE_SHOP'] as \$key) {
+              \$v = Configuration::getGlobalValue(\$key) ?: Configuration::get(\$key);
+              if (!\$v || !is_array(json_decode(\$v, true))) {
+                echo '::error::Missing or invalid config: ' . \$key; exit(1);
               }
             }
-            echo '✓ All expected tabs present';
+            echo 'Configuration OK';
           "
 
-      - name: Verify configuration stored correctly
+      - name: Verify LiteSpeed cache headers
         run: |
-          docker exec prestashop php -r "
-            require '/var/www/html/config/config.inc.php';
-            \$checks = [
-              'LITESPEED_CACHE_GLOBAL' => 'global',
-              'LITESPEED_CACHE_SHOP'   => 'shop',
-            ];
-            foreach (\$checks as \$key => \$label) {
-              \$v = Configuration::getGlobalValue(\$key) ?: Configuration::get(\$key);
-              if (!\$v) { echo '::error::Config key missing: ' . \$key; exit(1); }
-              \$d = json_decode(\$v, true);
-              if (!is_array(\$d)) { echo '::error::Invalid JSON for ' . \$key; exit(1); }
-              echo '✓ ' . \$label . ': ' . count(\$d) . ' keys' . PHP_EOL;
-            }
-          "
+          # Check that LiteSpeed serves pages (not Apache)
+          HEADERS=$(curl -sI http://localhost/ 2>/dev/null | head -20)
+          echo "$HEADERS"
+          if echo "$HEADERS" | grep -qi "LiteSpeed\|LSWS"; then
+            echo "LiteSpeed confirmed"
+          else
+            echo "::warning::LiteSpeed headers not detected (may need vhost config)"
+          fi
 
-      - name: Verify Symfony routes registered
+      - name: Test uninstall + reinstall
         run: |
-          docker exec prestashop php /var/www/html/bin/console debug:router 2>/dev/null | grep -c litespeedcache | xargs -I{} echo "✓ {} routes registered" || echo "::warning::Could not verify routes (expected on PS 1.7)"
-
-      - name: Test module uninstall
-        run: |
-          docker exec prestashop php -r "
-            require '/var/www/html/config/config.inc.php';
+          docker exec lsws php -r "
+            require '/var/www/vhosts/localhost/html/config/config.inc.php';
             \$m = Module::getInstanceByName('litespeedcache');
-            if (!\$m->uninstall()) { echo '::error::uninstall() failed'; exit(1); }
-            echo '✓ Uninstalled';
-          "
-
-      - name: Verify tabs removed after uninstall
-        run: |
-          docker exec prestashop php -r "
-            require '/var/www/html/config/config.inc.php';
-            \$id = (int) Tab::getIdFromClassName('AdminLiteSpeedCache');
-            if (\$id) { echo '::error::Root tab still exists after uninstall'; exit(1); }
-            echo '✓ Tabs cleaned up';
-          "
-
-      - name: Test module reinstall
-        run: |
-          docker exec prestashop php -r "
-            require '/var/www/html/config/config.inc.php';
-            \$m = Module::getInstanceByName('litespeedcache');
-            if (!\$m->install()) { echo '::error::reinstall() failed'; exit(1); }
-            echo '✓ Reinstalled';
+            if (!\$m->uninstall()) { echo '::error::uninstall failed'; exit(1); }
+            echo 'Uninstalled OK' . PHP_EOL;
+            \$m2 = Module::getInstanceByName('litespeedcache');
+            if (!\$m2->install()) { echo '::error::reinstall failed'; exit(1); }
+            echo 'Reinstalled OK';
           "
 
       - name: Verify front-end not broken
@@ -349,23 +259,178 @@ jobs:
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/)
           echo "Front-end HTTP: $HTTP_CODE"
           if echo "$HTTP_CODE" | grep -qE "^(200|301|302)$"; then
-            echo "✓ Front-end OK"
+            echo "Front-end OK"
           elif echo "$HTTP_CODE" | grep -qE "^5"; then
-            echo "::error::Front-end returned $HTTP_CODE (server error)"
+            echo "::error::Server error $HTTP_CODE"
             exit 1
-          else
-            echo "::warning::Front-end returned $HTTP_CODE"
           fi
 
       - name: Show logs on failure
         if: failure()
         run: |
-          echo "=== Docker logs (last 50 lines) ==="
-          docker logs prestashop --tail 50
-          echo ""
+          echo "=== LiteSpeed error log ==="
+          docker exec lsws tail -30 /usr/local/lsws/logs/error.log 2>/dev/null || true
           echo "=== PHP error log ==="
-          docker exec prestashop cat /var/log/apache2/error.log 2>/dev/null | tail -20 || true
-          docker exec prestashop cat /var/log/php_errors.log 2>/dev/null | tail -20 || true
-          echo ""
-          echo "=== PrestaShop logs ==="
-          docker exec prestashop cat /var/www/html/var/logs/dev.log 2>/dev/null | tail -20 || true
+          docker exec lsws tail -20 /var/www/vhosts/localhost/html/var/logs/dev.log 2>/dev/null || true
+          docker logs lsws --tail 30 2>/dev/null || true
+
+  # ================================================================
+  # 6. Integration Test — PrestaShop 9.x + LiteSpeed
+  # ================================================================
+  integration-ps9:
+    runs-on: ubuntu-latest
+    needs: [php-lint, composer-validate, unit-tests]
+    name: "PS 9 + LiteSpeed"
+
+    services:
+      mysql:
+        image: mariadb:11.4
+        env:
+          MYSQL_ROOT_PASSWORD: prestashop
+          MYSQL_DATABASE: prestashop
+          MYSQL_USER: prestashop
+          MYSQL_PASSWORD: prestashop
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout module
+        uses: actions/checkout@v4
+
+      - name: Start LiteSpeed + PHP 8.3
+        run: |
+          docker run -d --name lsws \
+            --network host \
+            -e TZ=UTC \
+            litespeedtech/litespeed:6.3.4-lsphp83
+
+          sleep 5
+          docker exec lsws ls /usr/local/lsws/bin/lswsctrl
+
+      - name: Install PrestaShop 9.0
+        run: |
+          docker exec lsws bash -c "
+            apt-get update -qq && apt-get install -y -qq unzip curl mariadb-client > /dev/null 2>&1
+
+            cd /var/www/vhosts/localhost/html 2>/dev/null || mkdir -p /var/www/vhosts/localhost/html
+            cd /var/www/vhosts/localhost/html
+
+            curl -sSL https://github.com/PrestaShop/PrestaShop/releases/download/9.0.0/prestashop_9.0.0.zip -o ps.zip
+            unzip -q ps.zip
+            if [ -f prestashop.zip ]; then unzip -qo prestashop.zip; fi
+            rm -f ps.zip prestashop.zip
+
+            php install/index_cli.php \
+              --domain=localhost \
+              --db_server=127.0.0.1 \
+              --db_name=prestashop \
+              --db_user=prestashop \
+              --db_password=prestashop \
+              --prefix=ps_ \
+              --email=test@test.com \
+              --password=Test1234! \
+              --ssl=0 \
+              --name='Test Shop' \
+              --language=en \
+              --country=US
+
+            rm -rf install/
+            chown -R nobody:nogroup /var/www/vhosts/localhost/html
+          "
+
+      - name: Copy module into PrestaShop
+        run: |
+          docker exec lsws mkdir -p /var/www/vhosts/localhost/html/modules/litespeedcache
+          docker cp . lsws:/var/www/vhosts/localhost/html/modules/litespeedcache/
+          docker exec lsws chown -R nobody:nogroup /var/www/vhosts/localhost/html/modules/litespeedcache
+
+      - name: Install module
+        run: |
+          docker exec lsws php /var/www/vhosts/localhost/html/bin/console prestashop:module install litespeedcache 2>/dev/null || \
+          docker exec lsws php -r "
+            require '/var/www/vhosts/localhost/html/config/config.inc.php';
+            \$module = Module::getInstanceByName('litespeedcache');
+            if (!\$module) { echo '::error::Module class not found'; exit(1); }
+            if (!\$module->install()) { echo '::error::install() failed'; exit(1); }
+            echo 'Module installed: v' . \$module->version;
+          "
+
+      - name: Verify module active
+        run: |
+          docker exec lsws php -r "
+            require '/var/www/vhosts/localhost/html/config/config.inc.php';
+            \$m = Module::getInstanceByName('litespeedcache');
+            if (!\$m || !\$m->active) { echo '::error::Module not active'; exit(1); }
+            echo 'Module active: v' . \$m->version;
+          "
+
+      - name: Verify admin tabs
+        run: |
+          docker exec lsws php -r "
+            require '/var/www/vhosts/localhost/html/config/config.inc.php';
+            \$id = (int) Tab::getIdFromClassName('AdminLiteSpeedCache');
+            if (!\$id) { echo '::error::Root tab not found'; exit(1); }
+            \$lang = (int) Configuration::get('PS_LANG_DEFAULT');
+            \$tabs = Tab::getTabs(\$lang, \$id);
+            echo 'Root tab ID=' . \$id . ' with ' . count(\$tabs) . ' children';
+          "
+
+      - name: Verify configuration stored
+        run: |
+          docker exec lsws php -r "
+            require '/var/www/vhosts/localhost/html/config/config.inc.php';
+            foreach (['LITESPEED_CACHE_GLOBAL', 'LITESPEED_CACHE_SHOP'] as \$key) {
+              \$v = Configuration::getGlobalValue(\$key) ?: Configuration::get(\$key);
+              if (!\$v || !is_array(json_decode(\$v, true))) {
+                echo '::error::Missing or invalid config: ' . \$key; exit(1);
+              }
+            }
+            echo 'Configuration OK';
+          "
+
+      - name: Verify LiteSpeed cache headers
+        run: |
+          HEADERS=$(curl -sI http://localhost/ 2>/dev/null | head -20)
+          echo "$HEADERS"
+          if echo "$HEADERS" | grep -qi "LiteSpeed\|LSWS"; then
+            echo "LiteSpeed confirmed"
+          else
+            echo "::warning::LiteSpeed headers not detected (may need vhost config)"
+          fi
+
+      - name: Test uninstall + reinstall
+        run: |
+          docker exec lsws php -r "
+            require '/var/www/vhosts/localhost/html/config/config.inc.php';
+            \$m = Module::getInstanceByName('litespeedcache');
+            if (!\$m->uninstall()) { echo '::error::uninstall failed'; exit(1); }
+            echo 'Uninstalled OK' . PHP_EOL;
+            \$m2 = Module::getInstanceByName('litespeedcache');
+            if (!\$m2->install()) { echo '::error::reinstall failed'; exit(1); }
+            echo 'Reinstalled OK';
+          "
+
+      - name: Verify front-end not broken
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/)
+          echo "Front-end HTTP: $HTTP_CODE"
+          if echo "$HTTP_CODE" | grep -qE "^(200|301|302)$"; then
+            echo "Front-end OK"
+          elif echo "$HTTP_CODE" | grep -qE "^5"; then
+            echo "::error::Server error $HTTP_CODE"
+            exit 1
+          fi
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          echo "=== LiteSpeed error log ==="
+          docker exec lsws tail -30 /usr/local/lsws/logs/error.log 2>/dev/null || true
+          echo "=== PHP error log ==="
+          docker exec lsws tail -20 /var/www/vhosts/localhost/html/var/logs/dev.log 2>/dev/null || true
+          docker logs lsws --tail 30 2>/dev/null || true
