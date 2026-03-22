@@ -9,10 +9,6 @@ declare(strict_types=1);
  * @license    https://opensource.org/licenses/GPL-3.0
  */
 
-if (!defined('_PS_VERSION_')) {
-    exit;
-}
-
 namespace LiteSpeed\Cache\Service\Esi;
 
 use LiteSpeed\Cache\Config\CacheConfig;

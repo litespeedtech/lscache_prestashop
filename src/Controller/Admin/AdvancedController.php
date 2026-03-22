@@ -1,9 +1,5 @@
 <?php
 
-if (!defined('_PS_VERSION_')) {
-    exit;
-}
-
 namespace LiteSpeed\Cache\Controller\Admin;
 
 use LiteSpeed\Cache\Config\CacheConfig as Conf;

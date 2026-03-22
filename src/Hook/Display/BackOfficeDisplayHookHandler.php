@@ -22,10 +22,6 @@
  * @license  https://opensource.org/licenses/GPL-3.0
  */
 
-if (!defined('_PS_VERSION_')) {
-    exit;
-}
-
 namespace LiteSpeed\Cache\Hook\Display;
 
 class BackOfficeDisplayHookHandler

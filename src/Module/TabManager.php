@@ -32,7 +32,7 @@ class TabManager
     public function install(): void
     {
         foreach ($this->tabs() as $t) {
-            if ((int) \Tab::getIdFromClassName($t['class_name'])) {
+            if (self::getTabId($t['class_name'])) {
                 continue;
             }
             $this->createTab($t);
@@ -46,7 +46,7 @@ class TabManager
     public function sync(): void
     {
         foreach ($this->tabs() as $t) {
-            if ((int) \Tab::getIdFromClassName($t['class_name'])) {
+            if (self::getTabId($t['class_name'])) {
                 continue;
             }
             $this->createTab($t);
@@ -76,24 +76,32 @@ class TabManager
         }
         $tab->id_parent = is_int($t['ParentClassName'])
             ? $t['ParentClassName']
-            : (int) \Tab::getIdFromClassName($t['ParentClassName']);
+            : self::getTabId($t['ParentClassName']);
         $tab->module = $this->module->name;
         $tab->add();
     }
 
     /**
      * Removes admin tabs.  Called from LiteSpeedCache::uninstall().
-     *
-     * PS 1.7.1+ removes tabs automatically when $module->tabs is populated;
-     * earlier 1.7 versions need manual deletion.
      */
     public function uninstall(): void
     {
         foreach ($this->tabs() as $t) {
-            if ($id_tab = (int) \Tab::getIdFromClassName($t['class_name'])) {
+            if ($id_tab = self::getTabId($t['class_name'])) {
                 (new \Tab($id_tab))->delete();
             }
         }
+    }
+
+    /**
+     * Returns the tab ID for a given class name using a direct DB query.
+     * Replaces deprecated Tab::getIdFromClassName().
+     */
+    private static function getTabId(string $className): int
+    {
+        return (int) \Db::getInstance()->getValue(
+            'SELECT id_tab FROM `' . _DB_PREFIX_ . 'tab` WHERE class_name = \'' . pSQL($className) . '\''
+        );
     }
 
     /**
