@@ -1,10 +1,10 @@
 <?php
 
+namespace LiteSpeed\Cache\Tests\Unit\Update;
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
-
-namespace LiteSpeed\Cache\Tests\Unit\Update;
 
 use LiteSpeed\Cache\Update\ModuleUpdater;
 use PHPUnit\Framework\TestCase;

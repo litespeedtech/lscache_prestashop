@@ -1,10 +1,10 @@
 <?php
 
+namespace LiteSpeed\Cache\Tests\Unit\Config;
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
-
-namespace LiteSpeed\Cache\Tests\Unit\Config;
 
 use LiteSpeed\Cache\Config\CdnConfig;
 use PHPUnit\Framework\TestCase;

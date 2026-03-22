@@ -1,10 +1,10 @@
 <?php
 
+namespace LiteSpeed\Cache\Tests\Unit\Controller\Admin;
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
-
-namespace LiteSpeed\Cache\Tests\Unit\Controller\Admin;
 
 use LiteSpeed\Cache\Controller\Admin\TtlController;
 use PHPUnit\Framework\TestCase;

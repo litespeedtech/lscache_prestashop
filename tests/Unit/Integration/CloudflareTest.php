@@ -1,10 +1,10 @@
 <?php
 
+namespace LiteSpeed\Cache\Tests\Unit\Integration;
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
-
-namespace LiteSpeed\Cache\Tests\Unit\Integration;
 
 use LiteSpeed\Cache\Integration\Cloudflare;
 use PHPUnit\Framework\TestCase;
