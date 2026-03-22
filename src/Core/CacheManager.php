@@ -23,6 +23,7 @@ use LiteSpeed\Cache\Core\CacheState;
 /**
  * CacheManager — cache tag management, purge logic and HTTP header generation.
  */
+use Context;
 class CacheManager
 {
     const LSHEADER_PURGE        = 'X-Litespeed-Purge2';
@@ -150,7 +151,7 @@ class CacheManager
         // Customer group (role) exclusion
         $noRoles = ExclusionsConfig::getNoCacheRoles();
         if (!empty($noRoles)) {
-            $ctx = \Context::getContext();
+            $ctx = Context::getContext();
             if ($ctx->customer && $ctx->customer->id) {
                 $customerGroups = \Customer::getGroupsStatic((int) $ctx->customer->id);
                 foreach ($noRoles as $roleId) {
@@ -165,7 +166,7 @@ class CacheManager
         // Category exclusion
         $noCats = ExclusionsConfig::getNoCacheCatIds();
         if (!empty($noCats)) {
-            $ctx = \Context::getContext();
+            $ctx = Context::getContext();
             $catId = null;
             if (!empty($ctx->controller)) {
                 $ctrl = $ctx->controller;
@@ -186,7 +187,7 @@ class CacheManager
 
     public function hasNotification(): bool
     {
-        if (($smarty = \Context::getContext()->smarty) !== null) {
+        if (($smarty = Context::getContext()->smarty) !== null) {
             $notification = $smarty->getTemplateVars('notifications');
             if (is_array($notification)) {
                 if (!empty($notification['error'])
@@ -848,7 +849,7 @@ class CacheManager
             if (($ccflag & CacheState::PRIV) === 0) {
                 $cacheControlHeader .= 'public,max-age=' . $ttl;
                 $tags[] = $prefix;
-                $shopId = \Context::getContext()->shop->id;
+                $shopId = Context::getContext()->shop->id;
                 $tags[] = $prefix . '_' . Conf::TAG_PREFIX_SHOP . $shopId;
             } else {
                 $cacheControlHeader .= 'private,no-vary,max-age=' . $ttl;

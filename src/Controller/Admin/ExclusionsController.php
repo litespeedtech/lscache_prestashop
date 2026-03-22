@@ -19,6 +19,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+use Context;
 class ExclusionsController extends AbstractController
 {
     use NavPillsTrait;
@@ -35,7 +36,7 @@ class ExclusionsController extends AbstractController
             return $this->redirectToRoute('admin_litespeedcache_exclusions');
         }
 
-        $groups = \Group::getGroups((int) \Context::getContext()->language->id);
+        $groups = \Group::getGroups((int) Context::getContext()->language->id);
 
         return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/exclusions.html.twig', [
             'values'       => $excl,

@@ -23,6 +23,7 @@ use LiteSpeed\Cache\Esi\EsiModuleConfig;
  * Integration — abstract base class for third-party module ESI integrations.
  * Subclasses extend LscIntegration (global alias) which maps to this class.
  */
+use Context;
 abstract class Integration
 {
     /** @var array Static registry of integrated modules and shared state */
@@ -246,7 +247,7 @@ abstract class Integration
 
     protected function isLoggedIn(): bool
     {
-        $context = \Context::getContext();
+        $context = Context::getContext();
         return ($context->customer !== null) && $context->customer->isLogged();
     }
 

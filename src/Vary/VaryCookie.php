@@ -22,6 +22,7 @@ use LiteSpeed\Cache\Core\CacheState;
  * VaryCookie — vary cookie management for cache differentiation.
  * Extends CookieCore to access internal PS cookie variables.
  */
+use Context;
 class VaryCookie extends \CookieCore
 {
     const BM_HAS_VARYCOOKIE    = 1;
@@ -51,7 +52,7 @@ class VaryCookie extends \CookieCore
         $this->_modified      = false;
         $this->_allow_writing = false;
 
-        $context      = \Context::getContext();
+        $context      = Context::getContext();
         $psCookie     = $context->cookie;
         $this->_path   = $psCookie->_path;
         $this->_domain = $psCookie->_domain;

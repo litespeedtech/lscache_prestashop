@@ -21,13 +21,14 @@ use LiteSpeed\Cache\Esi\EsiItem;
 /**
  * CacheHelper — static utility class for cache directory, ESI URL generation, .htaccess management.
  */
+use Context;
 class CacheHelper
 {
     private static $internal = [];
 
     private static function initInternals(): void
     {
-        $ctx    = \Context::getContext();
+        $ctx    = Context::getContext();
         $cookie = $ctx->cookie;
         $config = Conf::getInstance();
 

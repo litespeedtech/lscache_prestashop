@@ -35,6 +35,7 @@ use LiteSpeed\Cache\Core\CacheManager;
 use LiteSpeed\Cache\Core\CacheState;
 use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
 
+use Context;
 class FrontDisplayHookHandler
 {
     /** @var CacheConfig */
@@ -244,7 +245,7 @@ class FrontDisplayHookHandler
         $result = ['type' => '', 'id' => 0];
 
         try {
-            $context = \Context::getContext();
+            $context = Context::getContext();
             $controller = $context->controller ?? null;
             if (!$controller) {
                 return $result;

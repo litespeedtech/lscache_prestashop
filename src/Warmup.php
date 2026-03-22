@@ -36,6 +36,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+use Context;
 class Warmup extends Command
 {
     protected $output;
@@ -177,7 +178,7 @@ class Warmup extends Command
             return [];
         }
 
-        $context = \Context::getContext();
+        $context = Context::getContext();
         if (!$context->link) {
             $context->link = new \Link();
         }

@@ -7,6 +7,7 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+use Context;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -28,7 +29,7 @@ trait NavPillsTrait
 
     protected function getTabTitle(string $currentRoute): string
     {
-        $idLang = (int) \Context::getContext()->language->id;
+        $idLang = (int) Context::getContext()->language->id;
         $parentId = (int) \Tab::getIdFromClassName('AdminLiteSpeedCache');
         if (!$parentId) {
             return 'LiteSpeed Cache';
@@ -55,8 +56,8 @@ trait NavPillsTrait
 
     private function buildBreadcrumb(string $currentRoute): ?array
     {
-        $idLang = (int) \Context::getContext()->language->id;
-        $link = \Context::getContext()->link;
+        $idLang = (int) Context::getContext()->language->id;
+        $link = Context::getContext()->link;
         $parentId = (int) \Tab::getIdFromClassName('AdminLiteSpeedCache');
         if (!$parentId) {
             return null;
@@ -81,8 +82,8 @@ trait NavPillsTrait
 
     private function buildHeaderTabContent(string $currentRoute): array
     {
-        $idLang = (int) \Context::getContext()->language->id;
-        $link = \Context::getContext()->link;
+        $idLang = (int) Context::getContext()->language->id;
+        $link = Context::getContext()->link;
 
         $parentId = (int) \Tab::getIdFromClassName('AdminLiteSpeedCache');
         if (!$parentId) {
@@ -94,11 +95,7 @@ trait NavPillsTrait
             return [];
         }
 
-        // Only use native PS sub-tabs (head_tabs), no custom nav pills
         $html = '';
-
-        // Wrap in \Twig\Markup so PS9 Twig won't escape the HTML
-        // PS8 Smarty calls __toString() transparently
         return [new \Twig\Markup($html, 'UTF-8')];
     }
 }
