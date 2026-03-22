@@ -11,6 +11,10 @@
  * @license  https://opensource.org/licenses/GPL-3.0
  */
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use LiteSpeed\Cache\Esi\EsiItem;
 use LiteSpeed\Cache\Helper\CacheHelper as LSHelper;
 use LiteSpeed\Cache\Logger\CacheLogger as LSLog;

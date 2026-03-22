@@ -7,6 +7,7 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
+
 namespace LiteSpeed\Cache\Module;
 
 /**
@@ -55,7 +56,7 @@ class TabManager
     private function createTab(array $t): void
     {
         $tab             = new \Tab();
-        $tab->active     = 1;
+        $tab->active     = true;
         $tab->class_name = $t['class_name'];
         if (!empty($t['route_name'])) {
             $tab->route_name = $t['route_name'];

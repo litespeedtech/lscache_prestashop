@@ -1,13 +1,18 @@
 <?php
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 namespace LiteSpeed\Cache\Controller\Admin;
 
 use LiteSpeed\Cache\Config\CdnConfig;
 use LiteSpeed\Cache\Integration\Cloudflare;
-use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class CdnController extends FrameworkBundleAdminController
+class CdnController extends AbstractController
 {
     use NavPillsTrait;
 
@@ -170,7 +175,7 @@ class CdnController extends FrameworkBundleAdminController
                 $this->addFlash('success', $this->trans('Cloudflare zone resolved: %s', 'Modules.Litespeedcache.Admin', [$zoneId]));
             } else {
                 $new[CdnConfig::CF_ZONE_ID] = '';
-                $this->addFlash('warning', $this->trans('Cloudflare zone not found for domain "%s". Check your API credentials and domain name.', [$new[CdnConfig::CF_DOMAIN]], 'Modules.Litespeedcache.Admin'));
+                $this->addFlash('warning', $this->trans('Cloudflare zone not found for domain "%domain%". Check your API credentials and domain name.', ['%domain%' => $new[CdnConfig::CF_DOMAIN]], 'Modules.Litespeedcache.Admin'));
             }
         }
 

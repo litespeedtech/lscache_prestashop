@@ -22,6 +22,10 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 /**
  * This is shared for panda and transform theme from Sunnytoo.com
  * You can comment out the ST Modules not used.

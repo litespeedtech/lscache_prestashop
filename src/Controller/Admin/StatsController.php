@@ -1,4 +1,9 @@
 <?php
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 namespace LiteSpeed\Cache\Controller\Admin;
 
 use LiteSpeed\Cache\Config\CacheConfig as Conf;
@@ -7,11 +12,11 @@ use LiteSpeed\Cache\Config\ObjConfig;
 use LiteSpeed\Cache\Helper\CacheHelper;
 use LiteSpeed\Cache\Integration\Cloudflare;
 use LiteSpeed\Cache\Integration\ObjectCache;
-use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class StatsController extends FrameworkBundleAdminController
+class StatsController extends AbstractController
 {
     use NavPillsTrait;
 

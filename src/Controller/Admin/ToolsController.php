@@ -1,4 +1,5 @@
 <?php
+
 namespace LiteSpeed\Cache\Controller\Admin;
 
 use LiteSpeed\Cache\Config\CacheConfig as Conf;
@@ -7,14 +8,15 @@ use LiteSpeed\Cache\Config\ExclusionsConfig;
 use LiteSpeed\Cache\Config\ObjConfig;
 use LiteSpeed\Cache\Core\CacheState;
 use LiteSpeed\Cache\Helper\CacheHelper;
+use LiteSpeed\Cache\Helper\ObjectCacheActivator;
 use LiteSpeed\Cache\Module\TabManager;
 use LiteSpeed\Cache\Update\ModuleUpdater;
-use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class ToolsController extends FrameworkBundleAdminController
+class ToolsController extends AbstractController
 {
     use NavPillsTrait;
 
@@ -666,22 +668,22 @@ class ToolsController extends FrameworkBundleAdminController
             return;
         }
 
-        if (!empty($data['global'])) {
+        if (isset($data['global'])) {
             \Configuration::updateGlobalValue(Conf::ENTRY_ALL, json_encode($data['global']));
         }
-        if (!empty($data['shop'])) {
+        if (isset($data['shop'])) {
             \Configuration::updateValue(Conf::ENTRY_SHOP, json_encode($data['shop']));
         }
-        if (!empty($data['module_cfg'])) {
+        if (isset($data['module_cfg'])) {
             \Configuration::updateValue(Conf::ENTRY_MODULE, json_encode($data['module_cfg']));
         }
-        if (!empty($data['cdn'])) {
+        if (isset($data['cdn'])) {
             \Configuration::updateGlobalValue(CdnConfig::ENTRY, json_encode($data['cdn']));
         }
-        if (!empty($data['object'])) {
+        if (isset($data['object'])) {
             \Configuration::updateGlobalValue(ObjConfig::ENTRY, json_encode($data['object']));
         }
-        if (!empty($data['exclusions'])) {
+        if (isset($data['exclusions'])) {
             \Configuration::updateGlobalValue(ExclusionsConfig::ENTRY, json_encode($data['exclusions']));
         }
         if (isset($data['advanced'])) {
@@ -691,11 +693,30 @@ class ToolsController extends FrameworkBundleAdminController
             \Configuration::updateGlobalValue('LITESPEED_CACHE_BYPASS', (int) $data['bypass']);
         }
 
-        // Reset singletons
-        // Config will reload on next request
+        // Reset singletons so they pick up imported values
         CdnConfig::reset();
         ObjConfig::reset();
         ExclusionsConfig::reset();
+
+        // Regenerate .htaccess if cache settings changed
+        if (isset($data['global'])) {
+            $global = $data['global'];
+            CacheHelper::htAccessUpdate(
+                (bool) ($global[Conf::CFG_ENABLED] ?? false),
+                (($global[Conf::CFG_GUESTMODE] ?? 0) == 1),
+                (bool) ($global[Conf::CFG_DIFFMOBILE] ?? false)
+            );
+        }
+
+        // Regenerate Redis connection config if object cache settings changed
+        if (isset($data['object'])) {
+            $obj = $data['object'];
+            if (!empty($obj[ObjConfig::OBJ_ENABLE])) {
+                ObjectCacheActivator::enable($obj);
+            } else {
+                ObjectCacheActivator::disable();
+            }
+        }
 
         \Configuration::updateGlobalValue('LITESPEED_LAST_IMPORT', json_encode([
             'file' => $file->getClientOriginalName(),

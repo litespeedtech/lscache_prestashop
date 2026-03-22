@@ -22,6 +22,10 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 /**
  * LiteSpeed Cache needs to do ESI hole punch automatically.
  * So any private data in javascript variable needs to be replaced with esi:include.

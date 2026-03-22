@@ -1,5 +1,9 @@
 <?php
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 namespace LiteSpeed\Cache\Tests\Unit\Config;
 
 use LiteSpeed\Cache\Config\CacheConfig;

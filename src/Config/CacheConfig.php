@@ -6,7 +6,6 @@
  * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 namespace LiteSpeed\Cache\Config;
 
 use LiteSpeed\Cache\Esi\EsiModuleConfig as EsiConf;
@@ -663,6 +662,9 @@ class CacheConfig
             'actionObjectCartRuleAddAfter',
             'actionObjectCartRuleUpdateAfter',
             'actionObjectCartRuleDeleteAfter',
+            'actionObjectSpecificPriceRuleAddAfter',
+            'actionObjectSpecificPriceRuleUpdateAfter',
+            'actionObjectSpecificPriceRuleDeleteAfter',
             'litespeedCachePurge',
             'litespeedCacheProductUpdate',
             'litespeedNotCacheable',

@@ -22,6 +22,10 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 // You can comment out the lines if you do not use IQIT Modules (warehouse theme)
 
 include __DIR__ . '/LscIqitCompare.php';

@@ -7,15 +7,19 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 namespace LiteSpeed\Cache\Controller\Admin;
 
 use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Config\ExclusionsConfig;
-use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class ExclusionsController extends FrameworkBundleAdminController
+class ExclusionsController extends AbstractController
 {
     use NavPillsTrait;
 

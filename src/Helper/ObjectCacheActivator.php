@@ -1,4 +1,6 @@
 <?php
+
+
 namespace LiteSpeed\Cache\Helper;
 
 use LiteSpeed\Cache\Config\ObjConfig;

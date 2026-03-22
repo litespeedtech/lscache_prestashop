@@ -22,6 +22,10 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 // for integration with PrestaChamps gdprpro module
 
 use LiteSpeed\Cache\Config\CacheConfig as Conf;

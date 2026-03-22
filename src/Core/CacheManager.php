@@ -7,6 +7,7 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
+
 namespace LiteSpeed\Cache\Core;
 
 use LiteSpeed\Cache\Config\CacheConfig as Conf;
@@ -48,6 +49,7 @@ class CacheManager
     public function isCacheableRoute(int $controllerType, string $controllerClass): string
     {
         $reason = '';
+        $res = false;
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
             $reason = 'Not GET request';
         } elseif ($controllerType != \DispatcherCore::FC_FRONT) {
@@ -696,6 +698,9 @@ class CacheManager
             case 'actionobjectcartruleaddafter':
             case 'actionobjectcartruleupdateafter':
             case 'actionobjectcartruledeleteafter':
+            case 'actionobjectspecificpriceruleaddafter':
+            case 'actionobjectspecificpriceruleupdateafter':
+            case 'actionobjectspecificpriceruledeleteafter':
                 $tags['pub'] = [Conf::TAG_HOME, Conf::TAG_SEARCH, Conf::TAG_PREFIX_PRODUCT, Conf::TAG_PREFIX_CATEGORY];
                 break;
 

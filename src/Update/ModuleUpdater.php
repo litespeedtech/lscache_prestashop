@@ -1,5 +1,9 @@
 <?php
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 namespace LiteSpeed\Cache\Update;
 
 class ModuleUpdater
@@ -309,7 +313,7 @@ class ModuleUpdater
             $entryName = $zip->getNameIndex($i);
             $relativePath = substr($entryName, $skipPrefixLen);
 
-            if ($relativePath === '' || $relativePath === false) {
+            if ($relativePath === '') {
                 continue;
             }
 

@@ -1,12 +1,16 @@
 <?php
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 namespace LiteSpeed\Cache\Controller\Admin;
 
-use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class DatabaseController extends FrameworkBundleAdminController
+class DatabaseController extends AbstractController
 {
     use NavPillsTrait;
 

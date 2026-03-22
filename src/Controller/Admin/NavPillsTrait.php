@@ -1,4 +1,9 @@
 <?php
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 namespace LiteSpeed\Cache\Controller\Admin;
 
 use Symfony\Component\HttpFoundation\Request;

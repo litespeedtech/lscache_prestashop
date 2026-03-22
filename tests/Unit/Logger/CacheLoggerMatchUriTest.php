@@ -1,5 +1,9 @@
 <?php
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 namespace LiteSpeed\Cache\Tests\Unit\Logger;
 
 use LiteSpeed\Cache\Logger\CacheLogger;

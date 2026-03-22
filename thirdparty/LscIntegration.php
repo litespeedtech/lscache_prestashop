@@ -8,4 +8,9 @@
  * the old name to the new namespaced abstract class. PHP correctly resolves
  * `extends LscIntegration` to `extends LiteSpeed\Cache\Integration\Integration`.
  */
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 class_alias(\LiteSpeed\Cache\Integration\Integration::class, 'LscIntegration');

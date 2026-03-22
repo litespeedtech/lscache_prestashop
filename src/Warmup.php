@@ -21,6 +21,8 @@
  * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
+
+
 namespace LiteSpeed\Cache;
 
 use LiteSpeed\Cache\Config\CdnConfig;

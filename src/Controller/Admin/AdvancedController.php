@@ -1,14 +1,18 @@
 <?php
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 namespace LiteSpeed\Cache\Controller\Admin;
 
 use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Helper\CacheHelper;
-use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class AdvancedController extends FrameworkBundleAdminController
+class AdvancedController extends AbstractController
 {
     use NavPillsTrait;
 
@@ -127,7 +131,7 @@ class AdvancedController extends FrameworkBundleAdminController
         $block .= "# END LSCache Vary Cookie\n";
 
         // Insert before first RewriteRule or at end
-        if (preg_match('/(<IfModule mod_rewrite\.c>)/i', $content, $m, PREG_OFFSET_MATCH)) {
+        if (preg_match('/(<IfModule mod_rewrite\.c>)/i', $content, $m, PREG_OFFSET_CAPTURE)) {
             $content = substr($content, 0, $m[0][1]) . $block . substr($content, $m[0][1]);
         } else {
             $content .= $block;

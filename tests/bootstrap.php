@@ -196,21 +196,20 @@ if (!class_exists('Twig\Markup')) {
     // Already available via composer — skip
 }
 
-// ---- PrestaShop Bundle stubs ----
-if (!class_exists('PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController')) {
-    // Create namespace directories
-    if (!class_exists('Symfony\Component\HttpFoundation\Response')) {
-        eval('namespace Symfony\Component\HttpFoundation; class Response {}');
-        eval('namespace Symfony\Component\HttpFoundation; class Request {}');
-        eval('namespace Symfony\Component\HttpFoundation; class JsonResponse extends Response {}');
-    }
-    eval('namespace PrestaShopBundle\Controller\Admin; class FrameworkBundleAdminController {
+// ---- Symfony / PrestaShop Bundle stubs ----
+if (!class_exists('Symfony\Component\HttpFoundation\Response')) {
+    eval('namespace Symfony\Component\HttpFoundation; class Response {}');
+    eval('namespace Symfony\Component\HttpFoundation; class Request {}');
+    eval('namespace Symfony\Component\HttpFoundation; class JsonResponse extends Response {}');
+}
+if (!class_exists('Symfony\Bundle\FrameworkBundle\Controller\AbstractController')) {
+    eval('namespace Symfony\Bundle\FrameworkBundle\Controller; abstract class AbstractController {
         protected function trans($id, $domain = null, $params = []) { return $id; }
         protected function addFlash($type, $msg) {}
         protected function redirectToRoute($route) { return new \Symfony\Component\HttpFoundation\Response(); }
+        protected function redirect($url) { return new \Symfony\Component\HttpFoundation\Response(); }
         protected function render($template, $params = []) { return new \Symfony\Component\HttpFoundation\Response(); }
         protected function generateUrl($route, $params = []) { return "/"; }
-        protected function getContext() { return \Context::getContext(); }
         protected function createForm($type) { return null; }
         public function get($service) { return null; }
     }');

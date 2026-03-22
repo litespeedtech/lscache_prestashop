@@ -7,6 +7,7 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
+
 namespace LiteSpeed\Cache\Admin;
 
 use LiteSpeed\Cache\Config\CacheConfig as Conf;

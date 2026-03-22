@@ -1,14 +1,19 @@
 <?php
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 namespace LiteSpeed\Cache\Controller\Admin;
 
 use LiteSpeed\Cache\Config\CdnConfig;
 use LiteSpeed\Cache\Config\ObjConfig;
-use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class WarmupController extends FrameworkBundleAdminController
+class WarmupController extends AbstractController
 {
     use NavPillsTrait;
 

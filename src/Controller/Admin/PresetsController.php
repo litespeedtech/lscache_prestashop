@@ -1,5 +1,9 @@
 <?php
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 namespace LiteSpeed\Cache\Controller\Admin;
 
 use LiteSpeed\Cache\Config\CacheConfig as Conf;
@@ -7,11 +11,11 @@ use LiteSpeed\Cache\Config\CdnConfig;
 use LiteSpeed\Cache\Config\ExclusionsConfig;
 use LiteSpeed\Cache\Config\ObjConfig;
 use LiteSpeed\Cache\Helper\CacheHelper;
-use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class PresetsController extends FrameworkBundleAdminController
+class PresetsController extends AbstractController
 {
     use NavPillsTrait;
 

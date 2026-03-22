@@ -7,6 +7,7 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
+
 namespace LiteSpeed\Cache\Integration;
 
 /**

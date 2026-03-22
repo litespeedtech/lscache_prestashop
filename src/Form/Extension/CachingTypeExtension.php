@@ -6,6 +6,7 @@
  * modifying core files. Registered via services.yml tag.
  */
 
+
 namespace LiteSpeed\Cache\Form\Extension;
 
 use PrestaShopBundle\Form\Admin\AdvancedParameters\Performance\CachingType;
