@@ -6,11 +6,11 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class AdvancedController extends AbstractController
+class AdvancedController extends FrameworkBundleAdminController
 {
     use NavPillsTrait;
 

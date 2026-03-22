@@ -1,18 +1,20 @@
 {
-    "name": "iitespeedtech/litespeedcache",
+    "name": "litespeedtech/litespeedcache",
     "description": "PrestaShop Full Page Cache Module for LiteSpeed Web Server",
     "homepage": "https://github.com/ecomlabs-es/lscache_prestashop",
     "type": "prestashop-module",
-    "config": {
-        "preferred-install": "dist",
-        "classmap-authoritative": false,
-        "optimize-autoloader": true,
-        "prepend-autoloader": false
+    "author": "LiteSpeedTech",
+    "license": "GPL-3.0+",
+    "require": {
+        "php": ">=8.1"
     },
     "autoload": {
         "psr-4": {
             "LiteSpeed\\Cache\\": "src/"
-        }
+        },
+        "classmap": [
+            "litespeedcache.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
@@ -28,6 +30,10 @@
         "cs-fix": "php-cs-fixer fix",
         "cs-check": "php-cs-fixer fix --dry-run --diff"
     },
-    "author": "LiteSpeedTech",
-    "license": "GPL-3.0+"
+    "config": {
+        "preferred-install": "dist",
+        "optimize-autoloader": true,
+        "prepend-autoloader": false,
+        "sort-packages": true
+    }
 }

@@ -1,0 +1,9 @@
+# Exclude dev/CI files from module distribution (composer archive / git export)
+/.github/           export-ignore
+/.php-cs-fixer.*    export-ignore
+/tests/             export-ignore
+/phpunit.xml*       export-ignore
+/.gitattributes     export-ignore
+/.gitignore         export-ignore
+/.editorconfig      export-ignore
+/CONTRIBUTING.md    export-ignore

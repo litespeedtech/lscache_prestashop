@@ -12,11 +12,11 @@ use LiteSpeed\Cache\Config\ObjConfig;
 use LiteSpeed\Cache\Helper\CacheHelper;
 use LiteSpeed\Cache\Integration\Cloudflare;
 use LiteSpeed\Cache\Integration\ObjectCache;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class StatsController extends AbstractController
+class StatsController extends FrameworkBundleAdminController
 {
     use NavPillsTrait;
 

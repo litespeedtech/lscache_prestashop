@@ -8,11 +8,11 @@ if (!defined('_PS_VERSION_')) {
 
 use LiteSpeed\Cache\Config\CdnConfig;
 use LiteSpeed\Cache\Integration\Cloudflare;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class CdnController extends AbstractController
+class CdnController extends FrameworkBundleAdminController
 {
     use NavPillsTrait;
 

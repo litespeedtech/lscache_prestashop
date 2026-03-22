@@ -8,11 +8,11 @@ if (!defined('_PS_VERSION_')) {
 
 use LiteSpeed\Cache\Admin\ConfigValidator;
 use LiteSpeed\Cache\Config\CacheConfig as Conf;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class TtlController extends AbstractController
+class TtlController extends FrameworkBundleAdminController
 {
     use NavPillsTrait;
 

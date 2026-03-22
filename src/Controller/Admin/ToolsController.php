@@ -14,12 +14,12 @@ use LiteSpeed\Cache\Helper\CacheHelper;
 use LiteSpeed\Cache\Helper\ObjectCacheActivator;
 use LiteSpeed\Cache\Module\TabManager;
 use LiteSpeed\Cache\Update\ModuleUpdater;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class ToolsController extends AbstractController
+class ToolsController extends FrameworkBundleAdminController
 {
     use NavPillsTrait;
 

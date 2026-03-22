@@ -16,11 +16,11 @@ if (!defined('_PS_VERSION_')) {
 use LiteSpeed\Cache\Config\ObjConfig;
 use LiteSpeed\Cache\Helper\ObjectCacheActivator;
 use LiteSpeed\Cache\Integration\ObjectCache;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class ObjController extends AbstractController
+class ObjController extends FrameworkBundleAdminController
 {
     use NavPillsTrait;
 

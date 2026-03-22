@@ -9,11 +9,11 @@ if (!defined('_PS_VERSION_')) {
 use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Esi\EsiModuleConfig as EsiConf;
 use LiteSpeed\Cache\Helper\CacheHelper;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class EsiController extends AbstractController
+class EsiController extends FrameworkBundleAdminController
 {
     use NavPillsTrait;
 

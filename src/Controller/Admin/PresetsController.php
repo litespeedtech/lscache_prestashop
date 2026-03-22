@@ -11,11 +11,11 @@ use LiteSpeed\Cache\Config\CdnConfig;
 use LiteSpeed\Cache\Config\ExclusionsConfig;
 use LiteSpeed\Cache\Config\ObjConfig;
 use LiteSpeed\Cache\Helper\CacheHelper;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class PresetsController extends AbstractController
+class PresetsController extends FrameworkBundleAdminController
 {
     use NavPillsTrait;
 

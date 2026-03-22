@@ -6,11 +6,11 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class ConfigController extends AbstractController
+class ConfigController extends FrameworkBundleAdminController
 {
     public function indexAction(Request $request): Response
     {
