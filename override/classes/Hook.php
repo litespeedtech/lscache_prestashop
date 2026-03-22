@@ -31,7 +31,8 @@ class Hook extends HookCore
 {
     public static function coreCallHook($module, $method, $params)
     {
-        if (defined('_LITESPEED_DEBUG_')
+        if (defined('_LITESPEED_DEBUG_') && _LITESPEED_DEBUG_
+            && class_exists('\LiteSpeed\Cache\Logger\CacheLogger', false)
             && _LITESPEED_DEBUG_ >= \LiteSpeed\Cache\Logger\CacheLogger::LEVEL_HOOK_DETAIL) {
             // No logic added here. This is to print out all hook events, for module customization,
             // to add purge or tagging event hook
@@ -50,11 +51,11 @@ class Hook extends HookCore
         $html = parent::coreCallHook($module, $method, $params);
 
         // Ensure ESI markers are injected even when hooks return NULL or empty output
-        if (defined('_LITESPEED_CACHE_') && (is_string($html) || $html === null)
+        if (defined('_LITESPEED_CACHE_') && class_exists('LiteSpeedCache', false)
+                && (is_string($html) || $html === null)
                 && ($marker = LiteSpeedCache::injectCallHook($module, $method, $params)) !== false) {
-            // Normalize empty hook output to avoid generating an empty ESI block
-            if ($html === null || $html === '') {
-                $html = '&nbsp;';
+            if ($html === null) {
+                $html = '';
             }
             $html = $marker . $html . LiteSpeedCache::ESI_MARKER_END;
         }
@@ -74,8 +75,12 @@ class Hook extends HookCore
 
         $html = parent::coreRenderWidget($module, $hook_name, $params);
 
-        if (defined('_LITESPEED_CACHE_') && is_string($html)
-                && ($marker = LiteSpeedCache::injectRenderWidget($module, $hook_name,$params)) !== false) {
+        if (defined('_LITESPEED_CACHE_') && class_exists('LiteSpeedCache', false)
+                && (is_string($html) || $html === null)
+                && ($marker = LiteSpeedCache::injectRenderWidget($module, $hook_name, $params)) !== false) {
+            if ($html === null) {
+                $html = '';
+            }
             $html = $marker . $html . LiteSpeedCache::ESI_MARKER_END;
         }
 

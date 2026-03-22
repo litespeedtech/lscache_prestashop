@@ -18,12 +18,18 @@ abstract class Cache extends CacheCore
             $caching_system = _PS_CACHING_SYSTEM_;
 
             if ($caching_system === 'CacheRedis') {
-                if (!class_exists(\LiteSpeed\Cache\Cache\CacheRedis::class)) {
-                    require_once _PS_MODULE_DIR_ . 'litespeedcache/vendor/autoload.php';
+                $autoloader = _PS_MODULE_DIR_ . 'litespeedcache/vendor/autoload.php';
+                if (!class_exists(\LiteSpeed\Cache\Cache\CacheRedis::class, false)) {
+                    if (is_file($autoloader)) {
+                        require_once $autoloader;
+                    }
                 }
-                self::$instance = new \LiteSpeed\Cache\Cache\CacheRedis();
-
-                return self::$instance;
+                if (class_exists(\LiteSpeed\Cache\Cache\CacheRedis::class)) {
+                    self::$instance = new \LiteSpeed\Cache\Cache\CacheRedis();
+                    return self::$instance;
+                }
+                // Module disabled or missing — disable cache entirely
+                return null;
             }
 
             if (class_exists($caching_system)) {

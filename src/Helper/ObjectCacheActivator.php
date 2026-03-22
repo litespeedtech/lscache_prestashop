@@ -7,7 +7,7 @@ use PrestaShop\PrestaShop\Adapter\Configuration\PhpParameters;
 /**
  * Activates / deactivates the Redis object cache driver in PrestaShop.
  *
- *  1. Writes (or removes) config/litespeed_redis.php inside the module dir
+ *  1. Writes (or removes) src/Cache/redis_parameters_autoloader.php inside the module dir
  *     — the connection file read by CacheRedis at bootstrap time.
  *  2. Patches parameters.php via PrestaShop's own PhpParameters class
  *     — sets ps_caching='CacheRedis' and ps_cache_enable=true/false.
@@ -78,7 +78,7 @@ class ObjectCacheActivator
     private static function configFilePath(): string
     {
         $dir = defined('_PS_MODULE_DIR_') ? _PS_MODULE_DIR_ : '';
-        return $dir . 'litespeedcache/config/litespeed_redis.php';
+        return $dir . 'litespeedcache/src/Cache/redis_parameters_autoloader.php';
     }
 
     private static function parametersFilePath(): string

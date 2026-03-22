@@ -157,7 +157,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         }
 
         $content = $module->{$item->getParam('mt')}($params);
-        $item->setContent($content ?: '&nbsp;');
+        $item->setContent(is_string($content) ? $content : '');
     }
 
     private function processToken(EsiItem $item): void

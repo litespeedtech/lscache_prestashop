@@ -660,6 +660,9 @@ class CacheConfig
             'actionObjectManufacturerDeleteAfter',
             'actionObjectManufacturerAddAfter',
             'actionObjectStoreUpdateAfter',
+            'actionObjectCartRuleAddAfter',
+            'actionObjectCartRuleUpdateAfter',
+            'actionObjectCartRuleDeleteAfter',
             'litespeedCachePurge',
             'litespeedCacheProductUpdate',
             'litespeedNotCacheable',
@@ -675,6 +678,7 @@ class CacheConfig
             $hooks[] = 'actionClearSf2Cache';
         }
 
+        $hooks[] = 'displayBackOfficeHeader';
         $hooks[] = 'actionHtaccessCreate';
 
         return $hooks;

@@ -201,10 +201,10 @@ class EsiModuleConfig implements \JsonSerializable
         return isset($this->data[self::FLD_ASVAR]) && (bool) $this->data[self::FLD_ASVAR];
     }
 
-    public function onlyCacheEmtpy(array $params): bool
+    public function onlyCacheEmpty(array $params): bool
     {
-        if ($this->customHandler && method_exists($this->customHandler, 'onlyCacheEmtpy')) {
-            return (bool) $this->customHandler->onlyCacheEmtpy($params);
+        if ($this->customHandler && method_exists($this->customHandler, 'onlyCacheEmpty')) {
+            return (bool) $this->customHandler->onlyCacheEmpty($params);
         }
 
         return isset($this->data[self::FLD_ONLY_CACHE_EMPTY]) && (bool) $this->data[self::FLD_ONLY_CACHE_EMPTY];

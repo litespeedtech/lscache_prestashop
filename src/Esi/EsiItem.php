@@ -138,9 +138,9 @@ class EsiItem
         return $this->conf->isPrivate($this->sdata['param']);
     }
 
-    public function onlyCacheEmtpy(): bool
+    public function onlyCacheEmpty(): bool
     {
-        return $this->conf->onlyCacheEmtpy($this->sdata['param']);
+        return $this->conf->onlyCacheEmpty($this->sdata['param']);
     }
 
     public function ignoreEmptyContent(): bool
@@ -175,7 +175,7 @@ class EsiItem
     {
         $this->content = trim($content);
 
-        if ($this->sdata['inlStart'] == false || $this->onlyCacheEmtpy()) {
+        if ($this->sdata['inlStart'] == false || $this->onlyCacheEmpty()) {
             if ($this->content === '' && $this->ignoreEmptyContent()) {
                 $this->sdata['inc'] = '';
                 return;

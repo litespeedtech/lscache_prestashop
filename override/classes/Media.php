@@ -33,7 +33,7 @@ class Media extends MediaCore
 {
     public static function addJsDef($jsDef)
     {
-        if (defined('_LITESPEED_CACHE_')) {
+        if (defined('_LITESPEED_CACHE_') && class_exists('LiteSpeedCache', false)) {
             LiteSpeedCache::filterJsDef($jsDef);
         }
         parent::addJsDef($jsDef);

@@ -693,6 +693,12 @@ class CacheManager
                 $tags['pub'] = [Conf::TAG_STORES];
                 break;
 
+            case 'actionobjectcartruleaddafter':
+            case 'actionobjectcartruleupdateafter':
+            case 'actionobjectcartruledeleteafter':
+                $tags['pub'] = [Conf::TAG_HOME, Conf::TAG_SEARCH, Conf::TAG_PREFIX_PRODUCT, Conf::TAG_PREFIX_CATEGORY];
+                break;
+
             case 'addwebserviceresources':
                 return $this->getPurgeTagsByWebService($args);
 

@@ -125,7 +125,7 @@ class CacheHelper
             $ccInclude = $isPrivate ? 'private' : 'public';
             $ccInclude .= ',no-vary';
 
-            if ($item->onlyCacheEmtpy() && $item->getContent() !== '') {
+            if ($item->onlyCacheEmpty() && $item->getContent() !== '') {
                 $ccInline = 'no-cache';
                 $ttl      = 0;
             } else {
