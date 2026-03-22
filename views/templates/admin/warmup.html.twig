@@ -328,7 +328,6 @@
     var crawlEndpoint    = '{{ crawlAction }}';
     var saveEndpoint     = '{{ saveStateAction }}';
     var loadCheckUrl     = '{{ loadCheckAction }}';
-    var redisEnabled     = {{ redisEnabled ? 'true' : 'false' }};
     var cdnEnabled       = {{ cdnEnabled ? 'true' : 'false' }};
     var blacklist        = {{ blacklist|json_encode|raw }};
     var warmupSettings   = {{ warmupSettings|json_encode|raw }};
@@ -557,22 +556,17 @@
         }
 
         var sitemapUrls = data.sitemapUrls || [];
-        var productUrls = data.productUrls || [];
         var cookie = data.cookie || '';
 
         // Calculate total URLs across all phases
         globalTotal = sitemapUrls.length;
         if (cookie) globalTotal += sitemapUrls.length;
-        if (redisEnabled && productUrls.length > 0) {
-          globalTotal += productUrls.length;
-          if (cookie) globalTotal += productUrls.length;
-        }
         if (warmupSettings.mobile_crawl && warmupSettings.mobile_useragent) {
           globalTotal += sitemapUrls.length;
           if (cookie) globalTotal += sitemapUrls.length;
         }
 
-        logLine('Loaded ' + sitemapUrls.length + ' sitemap URLs, ' + productUrls.length + ' product URLs.');
+        logLine('Loaded ' + sitemapUrls.length + ' URLs from sitemap.');
         logLine('Concurrency: ' + warmupSettings.concurrent + ', Delay: ' + warmupSettings.crawl_delay + 'us, Load limit: ' + warmupSettings.load_limit + '\n');
 
         // Phase 1: Desktop
@@ -588,22 +582,7 @@
           if (r1b.stopped) { finish(totalSuccess, totalFail, globalTotal, true); return; }
         }
 
-        // Phase 2: Redis product prices
-        if (redisEnabled && productUrls.length > 0) {
-          logHeader('REDIS — Product prices (' + productUrls.length + ' URLs)');
-          var r2 = await crawlPhase('Redis — Product prices', productUrls, '', ua);
-          totalSuccess += r2.success; totalFail += r2.fail;
-          if (r2.stopped) { finish(totalSuccess, totalFail, globalTotal, true); return; }
-
-          if (cookie) {
-            logHeader('REDIS — Product prices with vary cookie');
-            var r2b = await crawlPhase('Redis — Prices (cookie)', productUrls, cookie, ua);
-            totalSuccess += r2b.success; totalFail += r2b.fail;
-            if (r2b.stopped) { finish(totalSuccess, totalFail, globalTotal, true); return; }
-          }
-        }
-
-        // Phase 3: Mobile
+        // Phase 2: Mobile
         if (warmupSettings.mobile_crawl && warmupSettings.mobile_useragent) {
           var mobileUA = warmupSettings.mobile_useragent;
           logHeader('MOBILE CACHE — Full page cache (' + sitemapUrls.length + ' URLs)');

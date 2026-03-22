@@ -121,13 +121,11 @@ class WarmupController extends FrameworkBundleAdminController
             return new JsonResponse(['success' => false, 'error' => 'No URLs found in the sitemap.'], 400);
         }
 
-        $productUrls = $this->getProductUrls($request);
         $cookie = $this->getDefaultCookies($sitemapUrls[0]);
 
         return new JsonResponse([
             'success' => true,
             'sitemapUrls' => $sitemapUrls,
-            'productUrls' => $productUrls,
             'cookie' => $cookie,
         ]);
     }
@@ -294,49 +292,6 @@ class WarmupController extends FrameworkBundleAdminController
         }
 
         return '';
-    }
-
-    private function getProductUrls(Request $request): array
-    {
-        $shopUrl = trim($request->request->get('shop_url', ''));
-        $idLang = (int) \Configuration::get('PS_LANG_DEFAULT');
-        $idShop = (int) \Configuration::get('PS_SHOP_DEFAULT');
-
-        if (!$shopUrl) {
-            $ssl = \Configuration::get('PS_SSL_ENABLED');
-            $domain = $ssl ? \Configuration::get('PS_SHOP_DOMAIN_SSL') : \Configuration::get('PS_SHOP_DOMAIN');
-            $shopUrl = ($ssl ? 'https://' : 'http://') . $domain;
-        }
-        $shopUrl = rtrim($shopUrl, '/');
-
-        // Build URLs in a single SQL query — avoids N+1 getProductLink() calls
-        $rewriteEnabled = (bool) \Configuration::get('PS_REWRITING_SETTINGS');
-
-        $sql = new \DbQuery();
-        $sql->select('p.id_product, pl.link_rewrite, cl.link_rewrite AS cat_rewrite');
-        $sql->from('product', 'p');
-        $sql->innerJoin('product_shop', 'ps', 'ps.id_product = p.id_product AND ps.id_shop = ' . (int) $idShop);
-        $sql->innerJoin('product_lang', 'pl', 'pl.id_product = p.id_product AND pl.id_lang = ' . (int) $idLang . ' AND pl.id_shop = ' . (int) $idShop);
-        $sql->leftJoin('category_lang', 'cl', 'cl.id_category = p.id_category_default AND cl.id_lang = ' . (int) $idLang . ' AND cl.id_shop = ' . (int) $idShop);
-        $sql->where('p.active = 1');
-        $sql->orderBy('p.id_product ASC');
-
-        $products = \Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
-        if (empty($products)) {
-            return [];
-        }
-
-        $urls = [];
-        foreach ($products as $row) {
-            if ($rewriteEnabled) {
-                $cat = $row['cat_rewrite'] ? $row['cat_rewrite'] . '/' : '';
-                $urls[] = $shopUrl . '/' . $cat . $row['id_product'] . '-' . $row['link_rewrite'] . '.html';
-            } else {
-                $urls[] = $shopUrl . '/index.php?id_product=' . $row['id_product'] . '&controller=product';
-            }
-        }
-
-        return $urls;
     }
 
     private function parseSitemap(string $sitemapUrl): array
