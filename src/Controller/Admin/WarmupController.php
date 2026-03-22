@@ -280,17 +280,14 @@ class WarmupController extends AbstractController
             return [];
         }
 
-        $context = \Context::getContext();
-        if (!$context->link) {
-            $context->link = new \Link();
-        }
+        $link = new \Link();
 
         $urls    = [];
         $shopUrl = rtrim($shopUrl, '/');
 
         foreach ($products as $product) {
             try {
-                $url = $context->link->getProductLink((int) $product['id_product'], $product['link_rewrite'], null, null, $idLang, $idShop);
+                $url = $link->getProductLink((int) $product['id_product'], $product['link_rewrite'], null, null, $idLang, $idShop);
             } catch (\Throwable $e) {
                 $url = $shopUrl . '/' . $product['link_rewrite'] . '.html';
             }
