@@ -1,13 +1,11 @@
 <?php
 
-
 namespace LiteSpeed\Cache\Controller\Admin;
 
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Core\CacheState;
 use LiteSpeed\Cache\Helper\CacheHelper;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -17,7 +15,6 @@ use Symfony\Component\HttpFoundation\Response;
 class ManageController extends AbstractController
 {
     use NavPillsTrait;
-
 
     public function indexAction(Request $request): Response
     {
@@ -39,35 +36,36 @@ class ManageController extends AbstractController
                 $this->addFlash('success', $this->trans('Notified LiteSpeed Server to flush all pages of this PrestaShop.', 'Modules.Litespeedcache.Admin'));
             }
             $referer = $request->headers->get('referer');
-            return $referer ? $this->redirect($referer) : $this->redirectToRoute('admin_litespeedcache_manage');
 
+            return $referer ? $this->redirect($referer) : $this->redirectToRoute('admin_litespeedcache_manage');
         } elseif ($request->query->has('purge_all')) {
             if ($this->doPurge(1, 'ALL')) {
                 $this->addFlash('success', $this->trans('Notified LiteSpeed Server to flush the entire cache storage.', 'Modules.Litespeedcache.Admin'));
             }
-            return $this->redirectToRoute('admin_litespeedcache_manage');
 
+            return $this->redirectToRoute('admin_litespeedcache_manage');
         } elseif ($request->isMethod('POST') && $request->request->has('submitPurgeSelection')) {
             $this->handlePurgeSelection($request);
-            return $this->redirectToRoute('admin_litespeedcache_manage');
 
+            return $this->redirectToRoute('admin_litespeedcache_manage');
         } elseif ($request->isMethod('POST') && $request->request->has('submitPurgeId')) {
             $purgeSelectionValues = $this->handlePurgeIds($request);
+
             return $this->redirectToRoute('admin_litespeedcache_manage');
         }
 
         return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/tools/purge.html.twig', [
-            'active_tab'               => 'admin_litespeedcache_tools_purge',
-            'layoutHeaderToolbarBtn'   => [
+            'active_tab' => 'admin_litespeedcache_tools_purge',
+            'layoutHeaderToolbarBtn' => [
                 'flush_pages' => [
                     'href' => $this->generateUrl('admin_litespeedcache_manage', ['purge_shops' => 1]),
                     'desc' => 'Flush Pages',
                 ],
             ],
-            'shopLevel'                => $shopLevel,
-            'licenseOk'                => $licenseOk,
-            'purgeAllUrl'              => $this->generateUrl('admin_litespeedcache_manage', ['purge_all' => 1]),
-            'purgeSelectionValues'     => $purgeSelectionValues,
+            'shopLevel' => $shopLevel,
+            'licenseOk' => $licenseOk,
+            'purgeAllUrl' => $this->generateUrl('admin_litespeedcache_manage', ['purge_all' => 1]),
+            'purgeSelectionValues' => $purgeSelectionValues,
         ], $request);
     }
 
@@ -77,14 +75,14 @@ class ManageController extends AbstractController
         $info = [];
 
         $map = [
-            'cbPurge_home'     => ['H',    'Home Page'],
-            'cbPurge_404'      => ['D404', 'All 404 Pages'],
-            'cbPurge_brand'    => ['M',    'All Brands Pages'],
+            'cbPurge_home' => ['H',    'Home Page'],
+            'cbPurge_404' => ['D404', 'All 404 Pages'],
+            'cbPurge_brand' => ['M',    'All Brands Pages'],
             'cbPurge_supplier' => ['L',    'All Suppliers Pages'],
-            'cbPurge_sitemap'  => ['SP',   'Site Map'],
-            'cbPurge_cms'      => ['G',    'All CMS Pages'],
-            'cbPurge_pc'       => ['N',    'All Product Comments'],
-            'cbPurge_priv'     => ['PRIV', 'All Private ESI Blocks'],
+            'cbPurge_sitemap' => ['SP',   'Site Map'],
+            'cbPurge_cms' => ['G',    'All CMS Pages'],
+            'cbPurge_pc' => ['N',    'All Product Comments'],
+            'cbPurge_priv' => ['PRIV', 'All Private ESI Blocks'],
         ];
 
         foreach ($map as $cb => [$tag, $label]) {
@@ -98,7 +96,9 @@ class ManageController extends AbstractController
         }
 
         if ($request->request->get('cbPurge_search')) {
-            $tags[] = 'SR'; $tags[] = 'C'; $tags[] = 'P';
+            $tags[] = 'SR';
+            $tags[] = 'C';
+            $tags[] = 'P';
             $info[] = 'All Categories and Products Pages';
         }
 
@@ -122,27 +122,28 @@ class ManageController extends AbstractController
         $id = $request->request->get('purgeids', '');
 
         $preMap = [
-            'prod'     => 'P',
-            'cat'      => 'C',
-            'brand'    => 'M',
+            'prod' => 'P',
+            'cat' => 'C',
+            'brand' => 'M',
             'supplier' => 'L',
-            'cms'      => 'G',
-            'pc'       => 'N',
-            'shop'     => 'S',
+            'cms' => 'G',
+            'pc' => 'N',
+            'shop' => 'S',
         ];
 
         if (!isset($preMap[$by])) {
             $this->addFlash('error', $this->trans('Illegal entrance', 'Modules.Litespeedcache.Admin'));
+
             return ['purgeby' => $by, 'purgeids' => $id];
         }
 
-        $pre  = $preMap[$by];
-        $ids  = preg_split('/[\s,]+/', $id, -1, PREG_SPLIT_NO_EMPTY);
+        $pre = $preMap[$by];
+        $ids = preg_split('/[\s,]+/', $id, -1, PREG_SPLIT_NO_EMPTY);
         $tags = [];
-        $ok   = !empty($ids);
+        $ok = !empty($ids);
 
         foreach ($ids as $i) {
-            if (((string)((int)$i) === (string)$i) && ((int)$i > 0)) {
+            if (((string) ((int) $i) === (string) $i) && ((int) $i > 0)) {
                 $tags[] = $pre . $i;
             } else {
                 $ok = false;
@@ -152,6 +153,7 @@ class ManageController extends AbstractController
 
         if (!$ok) {
             $this->addFlash('error', $this->trans('Please enter valid IDs', 'Modules.Litespeedcache.Admin'));
+
             return ['purgeby' => $by, 'purgeids' => $id];
         }
 
@@ -171,9 +173,11 @@ class ManageController extends AbstractController
             if (!headers_sent() && $tags === '*') {
                 header('X-LiteSpeed-Purge: *');
             }
+
             return true;
         }
         $this->addFlash('warning', $this->trans('No action taken. This Module is not enabled. Only action allowed is Flush All Prestashop Pages.', 'Modules.Litespeedcache.Admin'));
+
         return false;
     }
 }

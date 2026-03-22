@@ -1,6 +1,5 @@
 <?php
 
-
 namespace LiteSpeed\Cache\Update;
 
 if (!defined('_PS_VERSION_')) {
@@ -39,6 +38,7 @@ class ModuleUpdater
                 'ts' => time(),
                 'releases' => $releases,
             ]));
+
             return $releases;
         }
 
@@ -97,13 +97,13 @@ class ModuleUpdater
             }
 
             $releases[] = [
-                'tag_name'     => $release['tag_name'] ?? '',
-                'name'         => $release['name'] ?? $release['tag_name'] ?? '',
+                'tag_name' => $release['tag_name'] ?? '',
+                'name' => $release['name'] ?? $release['tag_name'] ?? '',
                 'published_at' => $release['published_at'] ?? '',
-                'body'         => $release['body'] ?? '',
+                'body' => $release['body'] ?? '',
                 'download_url' => $downloadUrl,
-                'is_asset'     => $isAsset,
-                'prerelease'   => !empty($release['prerelease']),
+                'is_asset' => $isAsset,
+                'prerelease' => !empty($release['prerelease']),
             ];
         }
 
@@ -123,6 +123,7 @@ class ModuleUpdater
         if ($cmp === 0) {
             return 'current';
         }
+
         return $cmp > 0 ? 'newer' : 'older';
     }
 
@@ -145,14 +146,15 @@ class ModuleUpdater
                 $version = $m[1];
             }
             $backups[] = [
-                'file'    => $file->getFilename(),
+                'file' => $file->getFilename(),
                 'version' => $version,
-                'date'    => date('Y-m-d H:i:s', $file->getMTime()),
-                'size'    => round($file->getSize() / 1048576, 2), // MB
+                'date' => date('Y-m-d H:i:s', $file->getMTime()),
+                'size' => round($file->getSize() / 1048576, 2), // MB
             ];
         }
 
-        usort($backups, fn($a, $b) => strcmp($b['date'], $a['date']));
+        usort($backups, fn ($a, $b) => strcmp($b['date'], $a['date']));
+
         return $backups;
     }
 
@@ -285,10 +287,12 @@ class ModuleUpdater
         $content = @file_get_contents($url, false, $context);
         if ($content === false) {
             @unlink($tmpFile);
+
             return null;
         }
 
         file_put_contents($tmpFile, $content);
+
         return $tmpFile;
     }
 
@@ -310,7 +314,7 @@ class ModuleUpdater
         // If zipball, root is "user-repo-hash/"
         $skipPrefixLen = strlen($rootPrefix);
 
-        for ($i = 0; $i < $zip->numFiles; $i++) {
+        for ($i = 0; $i < $zip->numFiles; ++$i) {
             $entryName = $zip->getNameIndex($i);
             $relativePath = substr($entryName, $skipPrefixLen);
 
@@ -344,6 +348,7 @@ class ModuleUpdater
         }
 
         $zip->close();
+
         return true;
     }
 
@@ -405,6 +410,7 @@ class ModuleUpdater
         if (is_file($path)) {
             return unlink($path);
         }
+
         return false;
     }
 }

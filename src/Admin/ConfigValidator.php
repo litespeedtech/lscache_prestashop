@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -6,7 +7,6 @@
  * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Admin;
 
@@ -33,33 +33,34 @@ use LiteSpeed\Cache\Config\CacheConfig as Conf;
 class ConfigValidator
 {
     // Change-tracking bitmask — mirrors the BMC_* constants in the config controller.
-    const SCOPE_SHOP = 1;   // change is per-shop
-    const SCOPE_ALL  = 2;   // change is global
-    const PURGE_NONE = 4;   // effective immediately, no purge needed
-    const PURGE_MAY  = 8;   // purge recommended but not required
-    const PURGE_MUST = 16;  // purge required
-    const PURGE_DONE = 32;  // auto-purge will run
-    const HTACCESS   = 64;  // .htaccess update required
+    public const SCOPE_SHOP = 1;   // change is per-shop
+    public const SCOPE_ALL = 2;   // change is global
+    public const PURGE_NONE = 4;   // effective immediately, no purge needed
+    public const PURGE_MAY = 8;   // purge recommended but not required
+    public const PURGE_MUST = 16;  // purge required
+    public const PURGE_DONE = 32;  // auto-purge will run
+    public const HTACCESS = 64;  // .htaccess update required
 
     private const SPLIT = '/[\s,]+/';
 
     /**
      * Validates a single configuration field.
      *
-     * @param string $name  Config key (one of Conf::CFG_*)
-     * @param mixed  $post  Raw POST value
-     * @param mixed  $orig  Current stored value (used for change detection)
+     * @param string $name Config key (one of Conf::CFG_*)
+     * @param mixed $post Raw POST value
+     * @param mixed $orig Current stored value (used for change detection)
      *
-     * @return array{0: mixed, 1: string[], 2: int}  [normalisedValue, errors, changeFlags]
+     * @return array{0: mixed, 1: string[], 2: int} [normalisedValue, errors, changeFlags]
      */
     public function validate(string $name, $post, $orig): array
     {
         switch ($name) {
             case Conf::CFG_ENABLED:
                 $post = (int) $post;
-                $c    = ($post !== $orig)
+                $c = ($post !== $orig)
                     ? self::SCOPE_ALL | self::HTACCESS | ($post === 0 ? self::PURGE_DONE : self::PURGE_NONE)
                     : 0;
+
                 return [$post, [], $c];
 
             case Conf::CFG_PUBLIC_TTL:
@@ -77,19 +78,23 @@ class ConfigValidator
 
             case Conf::CFG_DIFFMOBILE:
                 $post = $this->clamp($post, 0, 2);
+
                 return [$post, [], $post !== $orig ? self::SCOPE_ALL | self::PURGE_MUST : 0];
 
             case Conf::CFG_DIFFCUSTGRP:
                 $post = $this->clamp($post, 0, 3);
+
                 return [$post, [], $post !== $orig ? self::SCOPE_SHOP | self::PURGE_MUST : 0];
 
             case Conf::CFG_FLUSH_ALL:
             case Conf::CFG_FLUSH_PRODCAT:
                 $post = $this->clamp($post, 0, 4);
+
                 return [$post, [], $post !== $orig ? self::SCOPE_ALL | self::PURGE_NONE : 0];
 
             case Conf::CFG_FLUSH_HOME:
                 $post = $this->clamp($post, 0, 2);
+
                 return [$post, [], $post !== $orig ? self::SCOPE_ALL | self::PURGE_NONE : 0];
 
             case Conf::CFG_FLUSH_HOME_INPUT:
@@ -97,6 +102,7 @@ class ConfigValidator
 
             case Conf::CFG_GUESTMODE:
                 $post = (int) $post;
+
                 return [$post, [], $post !== $orig ? self::SCOPE_ALL | self::PURGE_NONE | self::HTACCESS : 0];
 
             case Conf::CFG_NOCACHE_VAR:
@@ -104,21 +110,24 @@ class ConfigValidator
 
             case Conf::CFG_NOCACHE_URL:
                 $clean = $this->split((string) $post);
-                $post  = empty($clean) ? '' : implode("\n", $clean);
+                $post = empty($clean) ? '' : implode("\n", $clean);
+
                 return [$post, [], $post !== $orig ? self::SCOPE_ALL | self::PURGE_MUST : 0];
 
             case Conf::CFG_VARY_BYPASS:
-                $clean   = $this->split((string) $post);
+                $clean = $this->split((string) $post);
                 $invalid = array_diff($clean, ['ctry', 'curr', 'lang']);
                 if (!empty($invalid)) {
                     return [(string) $orig, ['Value not supported: ' . implode(', ', $invalid)], 0];
                 }
                 $post = empty($clean) ? '' : implode(', ', $clean);
+
                 return [$post, [], $post !== $orig ? self::SCOPE_ALL | self::PURGE_MUST : 0];
 
             case Conf::CFG_DEBUG_HEADER:
             case Conf::CFG_DEBUG:
                 $post = (int) $post;
+
                 return [$post, [], $post !== $orig ? self::SCOPE_ALL | self::PURGE_NONE : 0];
 
             case Conf::CFG_DEBUG_LEVEL:
@@ -126,6 +135,7 @@ class ConfigValidator
                 if ($post < 1 || $post > 10) {
                     return [(int) $orig, ['Valid range is 1 to 10.'], 0];
                 }
+
                 return [$post, [], $post !== $orig ? self::SCOPE_ALL | self::PURGE_NONE : 0];
 
             case Conf::CFG_ALLOW_IPS:
@@ -154,6 +164,7 @@ class ConfigValidator
             return [$post, [], 0];
         }
         $c = $scope | ($dirPurge ? ($post < $orig ? self::PURGE_MUST : self::PURGE_MAY) : 0);
+
         return [$post, [], $c];
     }
 
@@ -167,6 +178,7 @@ class ConfigValidator
         if ($post < $min || $post > $max) {
             return [(int) $orig, ["Must be within the {$min} to {$max} range"], 0];
         }
+
         return [$post, [], $post !== $orig ? $scope : 0];
     }
 
@@ -184,6 +196,7 @@ class ConfigValidator
             return [$post, [], 0];
         }
         $c = $scope | ($post === 0 ? self::PURGE_MUST : ($post < $orig ? self::PURGE_MUST : self::PURGE_MAY));
+
         return [$post, [], $c];
     }
 
@@ -199,6 +212,7 @@ class ConfigValidator
                 return [(string) $orig, ['Invalid value'], 0];
             }
         }
+
         return [$post, [], $post !== $orig ? $scope : 0];
     }
 
@@ -214,13 +228,14 @@ class ConfigValidator
                 return [(string) $orig, ['Invalid value'], 0];
             }
         }
+
         return [$post, [], $post !== $orig ? $scope : 0];
     }
 
     /** Comma/space-separated list of IP addresses / hostnames. */
     private function ipList($post, $orig, int $scope): array
     {
-        $clean  = $this->split((string) $post);
+        $clean = $this->split((string) $post);
         $errors = [];
         foreach ($clean as $ip) {
             if (!preg_match('/^[[:alnum:]._-]+$/', $ip)) {
@@ -231,12 +246,14 @@ class ConfigValidator
             return [(string) $orig, $errors, 0];
         }
         $post = empty($clean) ? '' : implode(', ', $clean);
+
         return [$post, [], $post !== $orig ? $scope : 0];
     }
 
     private function clamp($value, int $min, int $max): int
     {
         $v = (int) $value;
+
         return ($v < $min || $v > $max) ? $min : $v;
     }
 

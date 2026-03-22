@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -6,7 +7,6 @@
  * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license    https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Hook\Action;
 
@@ -27,7 +27,7 @@ class DispatcherHookHandler
 
     public function __construct(CacheManager $cache, CacheConfig $config)
     {
-        $this->cache  = $cache;
+        $this->cache = $cache;
         $this->config = $config;
     }
 
@@ -37,7 +37,7 @@ class DispatcherHookHandler
             return;
         }
 
-        $controllerType  = $params['controller_type'];
+        $controllerType = $params['controller_type'];
         $controllerClass = $params['controller_class'];
 
         if (_LITESPEED_DEBUG_ > 0) {
@@ -76,6 +76,7 @@ class DispatcherHookHandler
 
         if ($controllerClass === 'litespeedcacheesiModuleFrontController') {
             CacheState::set(CacheState::ESI_REQ);
+
             return 'esi request';
         }
 
@@ -84,16 +85,19 @@ class DispatcherHookHandler
             if ($reason && _LITESPEED_DEBUG_ >= LSLog::LEVEL_NOCACHE_REASON) {
                 LSLog::log('setNotCacheable - ' . $reason, LSLog::LEVEL_NOCACHE_REASON);
             }
+
             return $reason;
         }
 
         if (isset($_SERVER['LSCACHE_VARY_VALUE'])
             && in_array($_SERVER['LSCACHE_VARY_VALUE'], ['guest', 'guestm'], true)) {
             CacheState::set(CacheState::CACHEABLE | CacheState::GUEST | CacheState::CAN_INJECT_ESI);
+
             return 'cacheable guest & allow esiInject';
         }
 
         CacheState::set(CacheState::CACHEABLE | CacheState::CAN_INJECT_ESI);
+
         return 'cacheable & allow esiInject';
     }
 }

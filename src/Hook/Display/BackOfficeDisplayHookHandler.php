@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for PrestaShop.
  *

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -6,7 +7,6 @@
  * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license    https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Hook\Action;
 
@@ -30,7 +30,7 @@ class CacheHookHandler
 
     public function __construct(CacheManager $cache, Conf $config)
     {
-        $this->cache  = $cache;
+        $this->cache = $cache;
         $this->config = $config;
     }
 
@@ -46,6 +46,7 @@ class CacheHookHandler
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
                 LSLog::log(__METHOD__ . ' Illegal entrance - missing from', LSLog::LEVEL_PURGE_EVENT);
             }
+
             return;
         }
 
@@ -57,6 +58,7 @@ class CacheHookHandler
             } elseif (_LITESPEED_DEBUG_ >= LSLog::LEVEL_PURGE_EVENT) {
                 LSLog::log($msg . ' Illegal tags - module not activated', LSLog::LEVEL_PURGE_EVENT);
             }
+
             return;
         }
 
@@ -119,7 +121,7 @@ class CacheHookHandler
     public function onHtaccessCreate(array $params): void
     {
         $enable = (bool) $this->config->get(Conf::CFG_ENABLED);
-        $guest  = ($this->config->get(Conf::CFG_GUESTMODE) == 1);
+        $guest = ($this->config->get(Conf::CFG_GUESTMODE) == 1);
         $mobile = (bool) $this->config->get(Conf::CFG_DIFFMOBILE);
         CacheHelper::htAccessUpdate($enable, $guest, $mobile);
     }
@@ -136,7 +138,7 @@ class CacheHookHandler
 
     private function purgeCloudflare(): void
     {
-        $cdn    = CdnConfig::getAll();
+        $cdn = CdnConfig::getAll();
         $zoneId = $cdn[CdnConfig::CF_ZONE_ID] ?? '';
 
         if (!$cdn[CdnConfig::CF_ENABLE] || !$cdn[CdnConfig::CF_PURGE] || !$zoneId || !$cdn[CdnConfig::CF_KEY]) {
@@ -171,7 +173,8 @@ class CacheHookHandler
                 try {
                     $cf = new Cloudflare($cdnCfg[CdnConfig::CF_KEY], $cdnCfg[CdnConfig::CF_EMAIL]);
                     $cf->purgeAll($cdnCfg[CdnConfig::CF_ZONE_ID]);
-                } catch (\Exception $e) {}
+                } catch (\Exception $e) {
+                }
             }
         }
     }

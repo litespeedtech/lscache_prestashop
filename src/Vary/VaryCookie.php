@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -7,7 +8,6 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-
 namespace LiteSpeed\Cache\Vary;
 
 if (!defined('_PS_VERSION_')) {
@@ -15,33 +15,32 @@ if (!defined('_PS_VERSION_')) {
 }
 
 use LiteSpeed\Cache\Config\CacheConfig;
-use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
 use LiteSpeed\Cache\Core\CacheState;
+use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
 
-/**
+/*
  * VaryCookie — vary cookie management for cache differentiation.
  * Extends CookieCore to access internal PS cookie variables.
  */
-use Context;
 class VaryCookie extends \CookieCore
 {
-    const BM_HAS_VARYCOOKIE    = 1;
-    const BM_VARYCOOKIE_CHANGED = 2;
-    const BM_HAS_VARYVALUE     = 4;
-    const BM_VARYVALUE_CHANGED  = 8;
-    const BM_IS_GUEST          = 16;
-    const BM_IS_MOBILEVIEW     = 32;
-    const BM_UPDATE_FAILED     = 128;
+    public const BM_HAS_VARYCOOKIE = 1;
+    public const BM_VARYCOOKIE_CHANGED = 2;
+    public const BM_HAS_VARYVALUE = 4;
+    public const BM_VARYVALUE_CHANGED = 8;
+    public const BM_IS_GUEST = 16;
+    public const BM_IS_MOBILEVIEW = 32;
+    public const BM_UPDATE_FAILED = 128;
 
-    const DEFAULT_VARY_COOKIE_NAME = '_lscache_vary';
-    const AMP_VARY_COOKIE_NAME     = '_lscache_vary_amp';
-    const PRIVATE_SESSION_COOKIE   = 'lsc_private';
+    public const DEFAULT_VARY_COOKIE_NAME = '_lscache_vary';
+    public const AMP_VARY_COOKIE_NAME = '_lscache_vary_amp';
+    public const PRIVATE_SESSION_COOKIE = 'lsc_private';
 
     private $vd;
     private $name;
     private $debug_header;
-    private $status       = 0;
-    private $mobile_device = null;
+    private $status = 0;
+    private $mobile_device;
 
     public function __construct(string $name = '', string $path = '')
     {
@@ -49,15 +48,15 @@ class VaryCookie extends \CookieCore
             $name = self::DEFAULT_VARY_COOKIE_NAME;
         }
         parent::__construct($name, $path);
-        $this->_modified      = false;
+        $this->_modified = false;
         $this->_allow_writing = false;
 
-        $context      = Context::getContext();
-        $psCookie     = $context->cookie;
-        $this->_path   = $psCookie->_path;
+        $context = \Context::getContext();
+        $psCookie = $context->cookie;
+        $this->_path = $psCookie->_path;
         $this->_domain = $psCookie->_domain;
         $this->_secure = $psCookie->_secure;
-        $this->name   = $name;
+        $this->name = $name;
 
         if ($name === self::DEFAULT_VARY_COOKIE_NAME) {
             $this->init($context, $psCookie);
@@ -74,18 +73,19 @@ class VaryCookie extends \CookieCore
                 && (($this->vd['vv']['nv'] === 'guest' && $this->vd['cv']['nv'] === null)
                     || ($this->vd['vv']['nv'] === 'guestm' && $this->vd['cv']['nv'] === 'mobile~1~'))) {
                 return false;
-            } else {
-                return true;
             }
+
+            return true;
         }
+
         return $this->vd['cv']['ov'] !== $this->vd['cv']['nv'];
     }
 
     public static function setVary(): bool
     {
-        $vary      = new self();
+        $vary = new self();
         $vary->writeVary();
-        $changed   = $vary->envChanged();
+        $changed = $vary->envChanged();
         $debug_info = '';
 
         if ($changed) {
@@ -117,12 +117,13 @@ class VaryCookie extends \CookieCore
     {
         if (headers_sent()) {
             $this->status |= self::BM_UPDATE_FAILED;
+
             return;
         }
 
         // Workaround for PS validator — access $_COOKIE via variable variable
         $cookies = ${'_COOKIE'};
-        $ov      = null;
+        $ov = null;
 
         if (isset($cookies[self::AMP_VARY_COOKIE_NAME])) {
             $ov = $cookies[self::AMP_VARY_COOKIE_NAME];
@@ -143,6 +144,7 @@ class VaryCookie extends \CookieCore
             $id = uniqid();
         }
         $val = $_SERVER['REMOTE_ADDR'] . $_SERVER['REMOTE_PORT'] . microtime() . $id;
+
         return md5($val);
     }
 
@@ -150,6 +152,7 @@ class VaryCookie extends \CookieCore
     {
         if (headers_sent()) {
             $this->status |= self::BM_UPDATE_FAILED;
+
             return;
         }
 
@@ -160,16 +163,16 @@ class VaryCookie extends \CookieCore
         }
 
         if ($this->vd['ps']['ov'] === null) {
-            $privateId           = $this->getPrivateId();
+            $privateId = $this->getPrivateId();
             $this->vd['ps']['nv'] = $privateId;
             setcookie(self::PRIVATE_SESSION_COOKIE, $privateId, 0, $this->_path, $this->_domain, $this->_secure, true);
         }
 
         if ($this->status & self::BM_VARYCOOKIE_CHANGED) {
-            $val  = $this->vd['cv']['nv'];
+            $val = $this->vd['cv']['nv'];
             $time = 0;
             if ($val === null) {
-                $val  = '';
+                $val = '';
                 $time = 1000;
             }
             if (!setcookie($this->vd['cv']['name'], $val, $time, $this->_path, $this->_domain, $this->_secure, true)) {
@@ -212,6 +215,7 @@ class VaryCookie extends \CookieCore
                 }
             }
         }
+
         return $this->mobile_device;
     }
 
@@ -227,16 +231,16 @@ class VaryCookie extends \CookieCore
             return;
         }
 
-        $conf             = CacheConfig::getInstance();
+        $conf = CacheConfig::getInstance();
         $diffCustomerGroup = $conf->getDiffCustomerGroup();
-        $diffMobile       = $conf->get(CacheConfig::CFG_DIFFMOBILE);
-        $isMobile         = $diffMobile ? $this->getMobileDevice($context) : false;
-        $bypass           = $conf->getContextBypass();
+        $diffMobile = $conf->get(CacheConfig::CFG_DIFFMOBILE);
+        $isMobile = $diffMobile ? $this->getMobileDevice($context) : false;
+        $bypass = $conf->getContextBypass();
         $this->debug_header = $conf->get(CacheConfig::CFG_DEBUG_HEADER);
 
         // Workaround for PS validator — access $_COOKIE via variable variable
         $cookies = ${'_COOKIE'};
-        $data    = [];
+        $data = [];
 
         if (CacheState::isRestrictedIP()) {
             $data['dev'] = 1;
@@ -254,8 +258,8 @@ class VaryCookie extends \CookieCore
             }
         }
         if ($diffMobile && $isMobile) {
-            $data['mobile']       = 1;
-            $this->status        |= self::BM_IS_MOBILEVIEW;
+            $data['mobile'] = 1;
+            $this->status |= self::BM_IS_MOBILEVIEW;
         }
         if (($diffCustomerGroup != 0) && ($context->customer !== null) && $context->customer->logged && $context->customer->id) {
             if ($diffCustomerGroup == 1) {
@@ -274,9 +278,9 @@ class VaryCookie extends \CookieCore
             foreach ($data as $k => $v) {
                 $newVal .= $k . '~' . $v . '~';
             }
-            $this->vd['cv']['nv']   = $newVal;
+            $this->vd['cv']['nv'] = $newVal;
             $this->vd['cv']['data'] = $data;
-            $this->status          |= self::BM_HAS_VARYCOOKIE;
+            $this->status |= self::BM_HAS_VARYCOOKIE;
         }
 
         if (isset($cookies[$this->vd['cv']['name']])) {
@@ -294,7 +298,7 @@ class VaryCookie extends \CookieCore
         if (isset($_SERVER['LSCACHE_VARY_VALUE'])) {
             $ov = $_SERVER['LSCACHE_VARY_VALUE'];
             $this->vd['vv']['ov'] = $this->vd['vv']['nv'] = $ov;
-            $this->status        |= self::BM_HAS_VARYVALUE;
+            $this->status |= self::BM_HAS_VARYVALUE;
 
             if ($diffMobile) {
                 if ($ov === 'guest' && $isMobile) {

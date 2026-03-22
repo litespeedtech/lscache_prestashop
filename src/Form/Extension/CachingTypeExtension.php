@@ -1,11 +1,11 @@
 <?php
+
 /**
  * LiteSpeed Cache — Adds Redis option to the Performance > Caching form.
  *
  * Standard Symfony Form Extension: extends the core CachingType without
  * modifying core files. Registered via services.yml tag.
  */
-
 
 namespace LiteSpeed\Cache\Form\Extension;
 
@@ -21,11 +21,11 @@ use Symfony\Component\Form\FormBuilderInterface;
 class CachingTypeExtension extends AbstractTypeExtension
 {
     private static $extensionsList = [
-        'CacheMemcache'  => ['memcache'],
+        'CacheMemcache' => ['memcache'],
         'CacheMemcached' => ['memcached'],
-        'CacheApc'       => ['apc', 'apcu'],
-        'CacheXcache'    => ['xcache'],
-        'CacheRedis'     => ['redis'],
+        'CacheApc' => ['apc', 'apcu'],
+        'CacheXcache' => ['xcache'],
+        'CacheRedis' => ['redis'],
     ];
 
     /**
@@ -61,6 +61,7 @@ class CachingTypeExtension extends AbstractTypeExtension
             if ($disabled) {
                 return $value . ' (extension not available)';
             }
+
             return $value;
         };
 
@@ -76,6 +77,7 @@ class CachingTypeExtension extends AbstractTypeExtension
                 }
                 $disabled = true;
             }
+
             return $disabled ? ['disabled' => true] : [];
         };
 

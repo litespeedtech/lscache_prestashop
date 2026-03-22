@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for PrestaShop — Redis object cache driver.
  *
@@ -23,8 +24,8 @@ class CacheRedis extends \CacheCore
     protected ?\Redis $redis = null;
 
     protected bool $is_connected = false;
-    protected int  $default_ttl  = 360;
-    protected string $prefix     = '';
+    protected int $default_ttl = 360;
+    protected string $prefix = '';
 
     /** @var array In-memory cache for current request */
     private array $localCache = [];
@@ -37,7 +38,10 @@ class CacheRedis extends \CacheCore
     public function __destruct()
     {
         if ($this->is_connected && $this->redis) {
-            try { $this->redis->close(); } catch (\Exception $e) {}
+            try {
+                $this->redis->close();
+            } catch (\Exception $e) {
+            }
         }
     }
 
@@ -68,12 +72,12 @@ class CacheRedis extends \CacheCore
             return;
         }
 
-        $host = (string) ($cfg['host']     ?? 'localhost');
-        $port = (int)    ($cfg['port']     ?? 6379);
+        $host = (string) ($cfg['host'] ?? 'localhost');
+        $port = (int) ($cfg['port'] ?? 6379);
         $pass = (string) ($cfg['password'] ?? '');
-        $db   = (int)    ($cfg['db']       ?? 0);
-        $this->default_ttl = (int)    ($cfg['ttl']    ?? 360);
-        $this->prefix      = (string) ($cfg['prefix'] ?? '');
+        $db = (int) ($cfg['db'] ?? 0);
+        $this->default_ttl = (int) ($cfg['ttl'] ?? 360);
+        $this->prefix = (string) ($cfg['prefix'] ?? '');
 
         try {
             $this->redis = new \Redis();
@@ -90,7 +94,7 @@ class CacheRedis extends \CacheCore
             $this->is_connected = true;
         } catch (\Exception $e) {
             $this->is_connected = false;
-            $this->redis        = null;
+            $this->redis = null;
         }
     }
 
@@ -121,6 +125,7 @@ class CacheRedis extends \CacheCore
         if (is_null($value)) {
             return false;
         }
+
         return $this->_set($key, $value, $ttl);
     }
 
@@ -129,6 +134,7 @@ class CacheRedis extends \CacheCore
         if (!$this->is_connected) {
             return false;
         }
+
         return $this->_get($key);
     }
 
@@ -137,6 +143,7 @@ class CacheRedis extends \CacheCore
         if (!$this->is_connected) {
             return false;
         }
+
         return $this->_exists($key);
     }
 
@@ -152,12 +159,13 @@ class CacheRedis extends \CacheCore
 
         if (strpos($key, '*') === false) {
             $this->_delete($key);
+
             return true;
         }
 
         // Wildcard: use SCAN with pattern
         $pattern = $this->k($key);
-        $cursor  = null;
+        $cursor = null;
         do {
             $found = $this->redis->scan($cursor, $pattern, 200);
             if (is_array($found) && $found) {
@@ -178,7 +186,7 @@ class CacheRedis extends \CacheCore
             return false;
         }
 
-        $ttl    = $ttl > 0 ? (int) $ttl : $this->default_ttl;
+        $ttl = $ttl > 0 ? (int) $ttl : $this->default_ttl;
         $newKey = $this->k($key);
 
         try {

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -6,7 +7,6 @@
  * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Integration;
 
@@ -30,7 +30,7 @@ class ObjectCache
     {
         return [
             'memcached' => extension_loaded('memcached'),
-            'redis'     => extension_loaded('redis'),
+            'redis' => extension_loaded('redis'),
         ];
     }
 
@@ -41,8 +41,8 @@ class ObjectCache
     public static function getStats(array $cfg): ?array
     {
         $method = $cfg[ObjConfig::OBJ_METHOD] ?? 'redis';
-        $host   = $cfg[ObjConfig::OBJ_HOST]   ?? 'localhost';
-        $port   = (int) ($cfg[ObjConfig::OBJ_PORT] ?? 6379);
+        $host = $cfg[ObjConfig::OBJ_HOST] ?? 'localhost';
+        $port = (int) ($cfg[ObjConfig::OBJ_PORT] ?? 6379);
 
         try {
             if ($method === 'redis') {
@@ -60,8 +60,8 @@ class ObjectCache
                 if ($db > 0) {
                     $redis->select($db);
                 }
-                $info    = $redis->info();
-                $ksInfo  = $redis->info('keyspace');
+                $info = $redis->info();
+                $ksInfo = $redis->info('keyspace');
                 $redis->close();
 
                 $keys = 0;
@@ -71,17 +71,17 @@ class ObjectCache
                     }
                 }
 
-                $hits    = (int) ($info['keyspace_hits']        ?? 0);
-                $misses  = (int) ($info['keyspace_misses']       ?? 0);
-                $total   = $hits + $misses;
-                $clients = (int) ($info['connected_clients']     ?? 0);
-                $ops     = (int) ($info['instantaneous_ops_per_sec'] ?? 0);
+                $hits = (int) ($info['keyspace_hits'] ?? 0);
+                $misses = (int) ($info['keyspace_misses'] ?? 0);
+                $total = $hits + $misses;
+                $clients = (int) ($info['connected_clients'] ?? 0);
+                $ops = (int) ($info['instantaneous_ops_per_sec'] ?? 0);
 
                 $uptimeSeconds = (int) ($info['uptime_in_seconds'] ?? 0);
-                $startedAt     = date('Y-m-d H:i', time() - $uptimeSeconds);
-                $days          = (int) floor($uptimeSeconds / 86400);
-                $hours         = (int) floor(($uptimeSeconds % 86400) / 3600);
-                $minutes       = (int) floor(($uptimeSeconds % 3600) / 60);
+                $startedAt = date('Y-m-d H:i', time() - $uptimeSeconds);
+                $days = (int) floor($uptimeSeconds / 86400);
+                $hours = (int) floor(($uptimeSeconds % 86400) / 3600);
+                $minutes = (int) floor(($uptimeSeconds % 3600) / 60);
                 if ($days > 0) {
                     $uptimeHuman = $days . 'd ' . $hours . 'h';
                 } else {
@@ -89,17 +89,17 @@ class ObjectCache
                 }
 
                 return [
-                    'method'      => 'Redis',
-                    'version'     => $info['redis_version']             ?? '-',
-                    'hits'        => $hits,
-                    'misses'      => $misses,
-                    'ratio'       => $total > 0 ? round($hits / $total * 100, 2) : 0.0,
-                    'memory'      => $info['used_memory_human']         ?? '-',
-                    'memory_peak' => $info['used_memory_peak_human']    ?? '-',
-                    'keys'        => $keys,
+                    'method' => 'Redis',
+                    'version' => $info['redis_version'] ?? '-',
+                    'hits' => $hits,
+                    'misses' => $misses,
+                    'ratio' => $total > 0 ? round($hits / $total * 100, 2) : 0.0,
+                    'memory' => $info['used_memory_human'] ?? '-',
+                    'memory_peak' => $info['used_memory_peak_human'] ?? '-',
+                    'keys' => $keys,
                     'ops_per_sec' => $ops,
-                    'clients'     => $clients,
-                    'uptime'      => $startedAt,
+                    'clients' => $clients,
+                    'uptime' => $startedAt,
                     'uptime_human' => $uptimeHuman,
                     'fragmentation' => $info['mem_fragmentation_ratio'] ?? '-',
                 ];
@@ -109,26 +109,26 @@ class ObjectCache
                 if (!extension_loaded('memcached')) {
                     return null;
                 }
-                $mc    = new \Memcached();
+                $mc = new \Memcached();
                 $mc->addServer($host, $port);
                 $stats = $mc->getStats();
-                $s     = $stats[$host . ':' . $port] ?? null;
+                $s = $stats[$host . ':' . $port] ?? null;
                 if (!$s) {
                     return null;
                 }
 
-                $hits   = (int) ($s['get_hits']   ?? 0);
-                $misses = (int) ($s['get_misses']  ?? 0);
-                $total  = $hits + $misses;
+                $hits = (int) ($s['get_hits'] ?? 0);
+                $misses = (int) ($s['get_misses'] ?? 0);
+                $total = $hits + $misses;
 
                 return [
-                    'method'  => 'Memcached',
-                    'hits'    => $hits,
-                    'misses'  => $misses,
-                    'ratio'   => $total > 0 ? round($hits / $total * 100, 1) : 0.0,
-                    'memory'  => round(($s['bytes'] ?? 0) / 1048576, 2) . ' MB',
-                    'uptime'  => (int) ($s['uptime'] ?? 0),
-                    'keys'    => (int) ($s['curr_items'] ?? 0),
+                    'method' => 'Memcached',
+                    'hits' => $hits,
+                    'misses' => $misses,
+                    'ratio' => $total > 0 ? round($hits / $total * 100, 1) : 0.0,
+                    'memory' => round(($s['bytes'] ?? 0) / 1048576, 2) . ' MB',
+                    'uptime' => (int) ($s['uptime'] ?? 0),
+                    'keys' => (int) ($s['curr_items'] ?? 0),
                     'version' => $s['version'] ?? '-',
                 ];
             }
@@ -175,18 +175,18 @@ class ObjectCache
         }
 
         $point = [
-            'ts'      => time(),
-            'label'   => date('H:i'),
-            'lat'     => $latency,
-            'ops'     => (int) ($info['instantaneous_ops_per_sec']  ?? 0),
-            'in'      => round((float) ($info['instantaneous_input_kbps']  ?? 0) * 1024, 0),
-            'out'     => round((float) ($info['instantaneous_output_kbps'] ?? 0) * 1024, 0),
-            'mem'     => (int) ($info['used_memory'] ?? 0),
-            'hits'    => (int) ($info['keyspace_hits']   ?? 0),
-            'misses'  => (int) ($info['keyspace_misses'] ?? 0),
+            'ts' => time(),
+            'label' => date('H:i'),
+            'lat' => $latency,
+            'ops' => (int) ($info['instantaneous_ops_per_sec'] ?? 0),
+            'in' => round((float) ($info['instantaneous_input_kbps'] ?? 0) * 1024, 0),
+            'out' => round((float) ($info['instantaneous_output_kbps'] ?? 0) * 1024, 0),
+            'mem' => (int) ($info['used_memory'] ?? 0),
+            'hits' => (int) ($info['keyspace_hits'] ?? 0),
+            'misses' => (int) ($info['keyspace_misses'] ?? 0),
         ];
 
-        $raw     = \Configuration::getGlobalValue('LITESPEED_STAT_REDIS_HISTORY');
+        $raw = \Configuration::getGlobalValue('LITESPEED_STAT_REDIS_HISTORY');
         $history = $raw ? (json_decode($raw, true) ?? []) : [];
         $history[] = $point;
 
@@ -207,8 +207,8 @@ class ObjectCache
     public static function testConnection(array $cfg): bool
     {
         $method = $cfg[ObjConfig::OBJ_METHOD] ?? 'redis';
-        $host   = $cfg[ObjConfig::OBJ_HOST]   ?? 'localhost';
-        $port   = (int) ($cfg[ObjConfig::OBJ_PORT] ?? 6379);
+        $host = $cfg[ObjConfig::OBJ_HOST] ?? 'localhost';
+        $port = (int) ($cfg[ObjConfig::OBJ_PORT] ?? 6379);
 
         try {
             if ($method === 'redis') {

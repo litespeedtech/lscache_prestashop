@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -8,7 +9,6 @@ declare(strict_types=1);
  * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license    https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Service\Esi;
 
@@ -34,17 +34,18 @@ class EsiRenderer
 
     public function __construct(CacheConfig $config, EsiMarkerManager $markerManager)
     {
-        $this->config        = $config;
+        $this->config = $config;
         $this->markerManager = $markerManager;
     }
 
     /**
      * Attempt to inject an ESI marker for a renderWidget call.
      *
-     * @param  object       $module     The PrestaShop module instance
-     * @param  string       $hook_name  The hook being rendered
-     * @param  array|false  $params     Hook parameters (includes smarty, etc.)
-     * @return string|false  ESI marker string on success, false if injection is not applicable
+     * @param object $module The PrestaShop module instance
+     * @param string $hook_name The hook being rendered
+     * @param array|false $params Hook parameters (includes smarty, etc.)
+     *
+     * @return string|false ESI marker string on success, false if injection is not applicable
      */
     public function injectRenderWidget($module, string $hook_name, $params = false)
     {
@@ -64,16 +65,18 @@ class EsiRenderer
         if (!empty($mp)) {
             $esiParam['mp'] = json_encode($mp, JSON_UNESCAPED_UNICODE);
         }
+
         return $this->markerManager->registerMarker($esiParam, $conf);
     }
 
     /**
      * Attempt to inject an ESI marker for a hook call (non-widget).
      *
-     * @param  object       $module  The PrestaShop module instance
-     * @param  string       $method  The hook method name
-     * @param  array|false  $params  Hook parameters
-     * @return string|false  ESI marker string on success, false if injection is not applicable
+     * @param object $module The PrestaShop module instance
+     * @param string $method The hook method name
+     * @param array|false $params Hook parameters
+     *
+     * @return string|false ESI marker string on success, false if injection is not applicable
      */
     public function injectCallHook($module, string $method, $params = false)
     {
@@ -93,15 +96,17 @@ class EsiRenderer
         if (!empty($mp)) {
             $esiParam['mp'] = json_encode($mp, JSON_UNESCAPED_UNICODE);
         }
+
         return $this->markerManager->registerMarker($esiParam, $conf);
     }
 
     /**
      * Extract module parameters from hook params based on template argument spec.
      *
-     * @param  array|false  $params  Hook parameters
-     * @param  string|null  $tas     Comma-separated template argument specifiers
-     * @return array|false  Extracted parameter values, or false if none
+     * @param array|false $params Hook parameters
+     * @param string|null $tas Comma-separated template argument specifiers
+     *
+     * @return array|false Extracted parameter values, or false if none
      */
     private function getModuleParams($params, ?string $tas)
     {
@@ -120,6 +125,7 @@ class EsiRenderer
                 $mp[] = (isset($parts[1]) && $val) ? $val[$parts[1]] : $val;
             }
         }
+
         return $mp;
     }
 }

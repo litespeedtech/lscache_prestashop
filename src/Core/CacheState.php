@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -6,7 +7,6 @@
  * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Core;
 
@@ -30,25 +30,27 @@ if (!defined('_PS_VERSION_')) {
  */
 final class CacheState
 {
-    const CACHEABLE      = 1;
-    const PRIV           = 2;    // "private" is a PHP reserved word
-    const CAN_INJECT_ESI = 4;
-    const ESI_ON         = 8;
-    const ESI_REQ        = 16;
-    const GUEST          = 32;
-    const ERROR_CODE     = 64;
-    const NOT_CACHEABLE  = 128;
-    const VARY_CHECKED   = 256;
-    const VARY_CHANGED   = 512;
-    const FRONT_CTRL     = 1024;
-    const MOD_ACTIVE     = 2048;
-    const MOD_ALLOWIP    = 4096;
+    public const CACHEABLE = 1;
+    public const PRIV = 2;    // "private" is a PHP reserved word
+    public const CAN_INJECT_ESI = 4;
+    public const ESI_ON = 8;
+    public const ESI_REQ = 16;
+    public const GUEST = 32;
+    public const ERROR_CODE = 64;
+    public const NOT_CACHEABLE = 128;
+    public const VARY_CHECKED = 256;
+    public const VARY_CHANGED = 512;
+    public const FRONT_CTRL = 1024;
+    public const MOD_ACTIVE = 2048;
+    public const MOD_ALLOWIP = 4096;
 
-    private static int $flag          = 0;
+    private static int $flag = 0;
     private static string $noCacheReason = '';
 
     /** Static-only class — no instantiation. */
-    private function __construct() {}
+    private function __construct()
+    {
+    }
 
     // ---- Low-level bitfield operations ------------------------------------------
 
@@ -86,7 +88,7 @@ final class CacheState
     /** Resets state for testing or multi-request CLI scenarios. */
     public static function reset(): void
     {
-        self::$flag          = 0;
+        self::$flag = 0;
         self::$noCacheReason = '';
     }
 
@@ -142,11 +144,21 @@ final class CacheState
     public static function debugInfo(): string
     {
         $info = [];
-        if (self::$flag & self::MOD_ALLOWIP) { $info[] = 'Allowed IP'; }
-        if (self::$flag & self::FRONT_CTRL)  { $info[] = 'FrontController'; }
-        if (self::$flag & self::GUEST)       { $info[] = 'Guest'; }
-        if (self::$flag & self::CACHEABLE)   { $info[] = 'Cacheable'; }
-        if (self::$noCacheReason)            { $info[] = 'NO CACHE reason: ' . self::$noCacheReason; }
+        if (self::$flag & self::MOD_ALLOWIP) {
+            $info[] = 'Allowed IP';
+        }
+        if (self::$flag & self::FRONT_CTRL) {
+            $info[] = 'FrontController';
+        }
+        if (self::$flag & self::GUEST) {
+            $info[] = 'Guest';
+        }
+        if (self::$flag & self::CACHEABLE) {
+            $info[] = 'Cacheable';
+        }
+        if (self::$noCacheReason) {
+            $info[] = 'NO CACHE reason: ' . self::$noCacheReason;
+        }
 
         return implode('; ', $info);
     }

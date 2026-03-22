@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -21,7 +22,6 @@
  * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -30,57 +30,55 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Config\CdnConfig;
-use LiteSpeed\Cache\Config\ObjConfig;
 use LiteSpeed\Cache\Config\ExclusionsConfig;
+use LiteSpeed\Cache\Config\ObjConfig;
 use LiteSpeed\Cache\Core\CacheManager;
 use LiteSpeed\Cache\Core\CacheState;
 use LiteSpeed\Cache\Helper\CacheHelper;
 use LiteSpeed\Cache\Helper\ObjectCacheActivator;
-use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
-use LiteSpeed\Cache\Module\TabManager;
-use LiteSpeed\Cache\Vary\VaryCookie;
-
+use LiteSpeed\Cache\Hook\Action\AuthHookHandler;
+use LiteSpeed\Cache\Hook\Action\CacheHookHandler;
+use LiteSpeed\Cache\Hook\Action\CatalogEntitiesHookHandler;
 // Hook handlers
-use LiteSpeed\Cache\Hook\Action\ProductHookHandler;
 use LiteSpeed\Cache\Hook\Action\CategoryHookHandler;
 use LiteSpeed\Cache\Hook\Action\CmsHookHandler;
-use LiteSpeed\Cache\Hook\Action\PricingHookHandler;
-use LiteSpeed\Cache\Hook\Action\AuthHookHandler;
-use LiteSpeed\Cache\Hook\Action\OrderHookHandler;
-use LiteSpeed\Cache\Hook\Action\CacheHookHandler;
-use LiteSpeed\Cache\Hook\Action\EsiHookHandler;
-use LiteSpeed\Cache\Hook\Action\CatalogEntitiesHookHandler;
 use LiteSpeed\Cache\Hook\Action\DispatcherHookHandler;
-use LiteSpeed\Cache\Hook\Display\FrontDisplayHookHandler;
+use LiteSpeed\Cache\Hook\Action\EsiHookHandler;
+use LiteSpeed\Cache\Hook\Action\OrderHookHandler;
+use LiteSpeed\Cache\Hook\Action\PricingHookHandler;
+use LiteSpeed\Cache\Hook\Action\ProductHookHandler;
 use LiteSpeed\Cache\Hook\Display\BackOfficeDisplayHookHandler;
+use LiteSpeed\Cache\Hook\Display\FrontDisplayHookHandler;
 use LiteSpeed\Cache\Hook\Filter\ContentFilterHookHandler;
-
-// ESI services
+use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
+use LiteSpeed\Cache\Module\TabManager;
 use LiteSpeed\Cache\Service\Esi\EsiMarkerManager;
-use LiteSpeed\Cache\Service\Esi\EsiRenderer;
+// ESI services
 use LiteSpeed\Cache\Service\Esi\EsiOutputProcessor;
+use LiteSpeed\Cache\Service\Esi\EsiRenderer;
 use LiteSpeed\Cache\Service\Esi\EsiResponseConfigurator;
+use LiteSpeed\Cache\Vary\VaryCookie;
 
 class LiteSpeedCache extends Module
 {
-    const MODULE_NAME = 'litespeedcache';
+    public const MODULE_NAME = 'litespeedcache';
 
     // Bitmask constants kept for backward compatibility with third-party integrations.
-    const CCBM_CACHEABLE        = CacheState::CACHEABLE;
-    const CCBM_PRIVATE          = CacheState::PRIV;
-    const CCBM_CAN_INJECT_ESI   = CacheState::CAN_INJECT_ESI;
-    const CCBM_ESI_ON           = CacheState::ESI_ON;
-    const CCBM_ESI_REQ          = CacheState::ESI_REQ;
-    const CCBM_GUEST            = CacheState::GUEST;
-    const CCBM_ERROR_CODE       = CacheState::ERROR_CODE;
-    const CCBM_NOT_CACHEABLE    = CacheState::NOT_CACHEABLE;
-    const CCBM_VARY_CHECKED     = CacheState::VARY_CHECKED;
-    const CCBM_VARY_CHANGED     = CacheState::VARY_CHANGED;
-    const CCBM_FRONT_CONTROLLER = CacheState::FRONT_CTRL;
-    const CCBM_MOD_ACTIVE       = CacheState::MOD_ACTIVE;
-    const CCBM_MOD_ALLOWIP      = CacheState::MOD_ALLOWIP;
+    public const CCBM_CACHEABLE = CacheState::CACHEABLE;
+    public const CCBM_PRIVATE = CacheState::PRIV;
+    public const CCBM_CAN_INJECT_ESI = CacheState::CAN_INJECT_ESI;
+    public const CCBM_ESI_ON = CacheState::ESI_ON;
+    public const CCBM_ESI_REQ = CacheState::ESI_REQ;
+    public const CCBM_GUEST = CacheState::GUEST;
+    public const CCBM_ERROR_CODE = CacheState::ERROR_CODE;
+    public const CCBM_NOT_CACHEABLE = CacheState::NOT_CACHEABLE;
+    public const CCBM_VARY_CHECKED = CacheState::VARY_CHECKED;
+    public const CCBM_VARY_CHANGED = CacheState::VARY_CHANGED;
+    public const CCBM_FRONT_CONTROLLER = CacheState::FRONT_CTRL;
+    public const CCBM_MOD_ACTIVE = CacheState::MOD_ACTIVE;
+    public const CCBM_MOD_ALLOWIP = CacheState::MOD_ALLOWIP;
 
-    const ESI_MARKER_END = '_LSCESIEND_';
+    public const ESI_MARKER_END = '_LSCESIEND_';
 
     /** @var CacheManager */
     private $cache;
@@ -115,7 +113,7 @@ class LiteSpeedCache extends Module
         ];
 
         $this->controllers = ['esi'];
-        $this->bootstrap   = true;
+        $this->bootstrap = true;
 
         parent::__construct();
 
@@ -123,7 +121,7 @@ class LiteSpeedCache extends Module
         $this->description = $this->trans('Integrates with LiteSpeed Full Page Cache on LiteSpeed Server.', [], 'Modules.Litespeedcache.Admin');
 
         $this->config = Conf::getInstance();
-        $this->cache  = new CacheManager($this->config);
+        $this->cache = new CacheManager($this->config);
 
         CacheState::set($this->config->moduleEnabled());
 
@@ -137,16 +135,16 @@ class LiteSpeedCache extends Module
         // Auto-register backoffice header hook if missing
         if ($this->active && $this->id) {
             try {
-                $hookId = (int) \Hook::getIdByName('displayBackOfficeHeader');
+                $hookId = (int) Hook::getIdByName('displayBackOfficeHeader');
                 if ($hookId) {
-                    $registered = \Db::getInstance()->getValue(
+                    $registered = Db::getInstance()->getValue(
                         'SELECT 1 FROM `' . _DB_PREFIX_ . 'hook_module` WHERE id_module = ' . (int) $this->id . ' AND id_hook = ' . $hookId
                     );
                     if (!$registered) {
                         $this->registerHook('displayBackOfficeHeader');
                     }
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
             }
         }
 
@@ -170,15 +168,50 @@ class LiteSpeedCache extends Module
 
     // ---- State accessors --------------------------------------------------------
 
-    public static function isActive(): bool          { return CacheState::isActive(); }
-    public static function isActiveForUser(): bool    { return CacheState::isActiveForUser(); }
-    public static function isRestrictedIP(): bool     { return CacheState::isRestrictedIP(); }
-    public static function isCacheable(): bool        { return CacheState::isCacheable(); }
-    public static function isEsiRequest(): bool       { return CacheState::isEsiRequest(); }
-    public static function canInjectEsi(): bool       { return CacheState::canInjectEsi(); }
-    public static function isFrontController(): bool  { return CacheState::isFrontController(); }
-    public static function getCCFlag(): int           { return CacheState::flag(); }
-    public static function getCCFlagDebugInfo(): string { return CacheState::debugInfo(); }
+    public static function isActive(): bool
+    {
+        return CacheState::isActive();
+    }
+
+    public static function isActiveForUser(): bool
+    {
+        return CacheState::isActiveForUser();
+    }
+
+    public static function isRestrictedIP(): bool
+    {
+        return CacheState::isRestrictedIP();
+    }
+
+    public static function isCacheable(): bool
+    {
+        return CacheState::isCacheable();
+    }
+
+    public static function isEsiRequest(): bool
+    {
+        return CacheState::isEsiRequest();
+    }
+
+    public static function canInjectEsi(): bool
+    {
+        return CacheState::canInjectEsi();
+    }
+
+    public static function isFrontController(): bool
+    {
+        return CacheState::isFrontController();
+    }
+
+    public static function getCCFlag(): int
+    {
+        return CacheState::flag();
+    }
+
+    public static function getCCFlagDebugInfo(): string
+    {
+        return CacheState::debugInfo();
+    }
 
     public function setEsiOn(): void
     {
@@ -337,15 +370,17 @@ class LiteSpeedCache extends Module
             $args = $args[0];
         }
 
-        $event = \Tools::strtolower(\Tools::substr($method, 4));
+        $event = Tools::strtolower(Tools::substr($method, 4));
 
         // Cache clear hooks must always run
         if ($event === 'actionclearcompilecache') {
             $this->cacheHook()->onClearCompileCache(is_array($args) ? $args : []);
+
             return;
         }
         if ($event === 'actionclearsf2cache') {
             $this->cacheHook()->onClearSf2Cache(is_array($args) ? $args : []);
+
             return;
         }
 
@@ -356,6 +391,7 @@ class LiteSpeedCache extends Module
         $resolved = $this->resolveHandler($event);
         if ($resolved) {
             $resolved['instance']->{$resolved['method']}(is_array($args) ? $args : []);
+
             return;
         }
 
@@ -368,51 +404,51 @@ class LiteSpeedCache extends Module
         if (self::$hookMap === null) {
             self::$hookMap = [
                 // Product
-                'actionproductadd'              => ['handler' => 'product', 'method' => 'onProductAdd'],
-                'actionproductsave'             => ['handler' => 'product', 'method' => 'onProductSave'],
-                'actionproductupdate'           => ['handler' => 'product', 'method' => 'onProductUpdate'],
-                'actionproductdelete'           => ['handler' => 'product', 'method' => 'onProductDelete'],
-                'actionproductattributedelete'  => ['handler' => 'product', 'method' => 'onProductAttributeDelete'],
-                'deleteproductattribute'        => ['handler' => 'product', 'method' => 'onDeleteProductAttribute'],
-                'updateproduct'                 => ['handler' => 'product', 'method' => 'onUpdateProduct'],
-                'actionupdatequantity'          => ['handler' => 'product', 'method' => 'onUpdateQuantity'],
-                'litespeedcacheproductupdate'   => ['handler' => 'product', 'method' => 'onCacheProductUpdate'],
+                'actionproductadd' => ['handler' => 'product', 'method' => 'onProductAdd'],
+                'actionproductsave' => ['handler' => 'product', 'method' => 'onProductSave'],
+                'actionproductupdate' => ['handler' => 'product', 'method' => 'onProductUpdate'],
+                'actionproductdelete' => ['handler' => 'product', 'method' => 'onProductDelete'],
+                'actionproductattributedelete' => ['handler' => 'product', 'method' => 'onProductAttributeDelete'],
+                'deleteproductattribute' => ['handler' => 'product', 'method' => 'onDeleteProductAttribute'],
+                'updateproduct' => ['handler' => 'product', 'method' => 'onUpdateProduct'],
+                'actionupdatequantity' => ['handler' => 'product', 'method' => 'onUpdateQuantity'],
+                'litespeedcacheproductupdate' => ['handler' => 'product', 'method' => 'onCacheProductUpdate'],
                 // Category
-                'categoryupdate'                => ['handler' => 'category', 'method' => 'onCategoryUpdate'],
-                'actioncategoryupdate'          => ['handler' => 'category', 'method' => 'onActionCategoryUpdate'],
-                'actioncategoryadd'             => ['handler' => 'category', 'method' => 'onCategoryAdd'],
-                'actioncategorydelete'          => ['handler' => 'category', 'method' => 'onCategoryDelete'],
+                'categoryupdate' => ['handler' => 'category', 'method' => 'onCategoryUpdate'],
+                'actioncategoryupdate' => ['handler' => 'category', 'method' => 'onActionCategoryUpdate'],
+                'actioncategoryadd' => ['handler' => 'category', 'method' => 'onCategoryAdd'],
+                'actioncategorydelete' => ['handler' => 'category', 'method' => 'onCategoryDelete'],
                 // CMS
-                'actionobjectcmsaddafter'       => ['handler' => 'cms', 'method' => 'onCmsAdd'],
-                'actionobjectcmsupdateafter'    => ['handler' => 'cms', 'method' => 'onCmsUpdate'],
-                'actionobjectcmsdeleteafter'    => ['handler' => 'cms', 'method' => 'onCmsDelete'],
+                'actionobjectcmsaddafter' => ['handler' => 'cms', 'method' => 'onCmsAdd'],
+                'actionobjectcmsupdateafter' => ['handler' => 'cms', 'method' => 'onCmsUpdate'],
+                'actionobjectcmsdeleteafter' => ['handler' => 'cms', 'method' => 'onCmsDelete'],
                 // Pricing
-                'actionobjectspecificpriceaddafter'    => ['handler' => 'pricing', 'method' => 'onSpecificPriceAdd'],
+                'actionobjectspecificpriceaddafter' => ['handler' => 'pricing', 'method' => 'onSpecificPriceAdd'],
                 'actionobjectspecificpriceupdateafter' => ['handler' => 'pricing', 'method' => 'onSpecificPriceUpdate'],
                 'actionobjectspecificpricedeleteafter' => ['handler' => 'pricing', 'method' => 'onSpecificPriceDelete'],
-                'actionobjectcartruleaddafter'         => ['handler' => 'pricing', 'method' => 'onCartRuleAdd'],
-                'actionobjectcartruleupdateafter'      => ['handler' => 'pricing', 'method' => 'onCartRuleUpdate'],
-                'actionobjectcartruledeleteafter'      => ['handler' => 'pricing', 'method' => 'onCartRuleDelete'],
-                'actionobjectspecificpriceruleaddafter'    => ['handler' => 'pricing', 'method' => 'onSpecificPriceRuleAdd'],
+                'actionobjectcartruleaddafter' => ['handler' => 'pricing', 'method' => 'onCartRuleAdd'],
+                'actionobjectcartruleupdateafter' => ['handler' => 'pricing', 'method' => 'onCartRuleUpdate'],
+                'actionobjectcartruledeleteafter' => ['handler' => 'pricing', 'method' => 'onCartRuleDelete'],
+                'actionobjectspecificpriceruleaddafter' => ['handler' => 'pricing', 'method' => 'onSpecificPriceRuleAdd'],
                 'actionobjectspecificpriceruleupdateafter' => ['handler' => 'pricing', 'method' => 'onSpecificPriceRuleUpdate'],
                 'actionobjectspecificpriceruledeleteafter' => ['handler' => 'pricing', 'method' => 'onSpecificPriceRuleDelete'],
                 // Auth
-                'actionauthentication'          => ['handler' => 'auth', 'method' => 'onAuthentication'],
-                'actioncustomerlogoutafter'     => ['handler' => 'auth', 'method' => 'onCustomerLogout'],
-                'actioncustomeraccountadd'      => ['handler' => 'auth', 'method' => 'onCustomerAccountAdd'],
+                'actionauthentication' => ['handler' => 'auth', 'method' => 'onAuthentication'],
+                'actioncustomerlogoutafter' => ['handler' => 'auth', 'method' => 'onCustomerLogout'],
+                'actioncustomeraccountadd' => ['handler' => 'auth', 'method' => 'onCustomerAccountAdd'],
                 // Order
-                'displayorderconfirmation'      => ['handler' => 'order', 'method' => 'onOrderConfirmation'],
+                'displayorderconfirmation' => ['handler' => 'order', 'method' => 'onOrderConfirmation'],
                 // Catalog entities
-                'actionobjectsupplieraddafter'          => ['handler' => 'catalog', 'method' => 'onSupplierAdd'],
-                'actionobjectsupplierupdateafter'       => ['handler' => 'catalog', 'method' => 'onSupplierUpdate'],
-                'actionobjectsupplierdeleteafter'       => ['handler' => 'catalog', 'method' => 'onSupplierDelete'],
-                'actionobjectmanufactureraddafter'      => ['handler' => 'catalog', 'method' => 'onManufacturerAdd'],
-                'actionobjectmanufacturerupdateafter'   => ['handler' => 'catalog', 'method' => 'onManufacturerUpdate'],
-                'actionobjectmanufacturerdeleteafter'   => ['handler' => 'catalog', 'method' => 'onManufacturerDelete'],
-                'actionobjectstoreupdateafter'          => ['handler' => 'catalog', 'method' => 'onStoreUpdate'],
+                'actionobjectsupplieraddafter' => ['handler' => 'catalog', 'method' => 'onSupplierAdd'],
+                'actionobjectsupplierupdateafter' => ['handler' => 'catalog', 'method' => 'onSupplierUpdate'],
+                'actionobjectsupplierdeleteafter' => ['handler' => 'catalog', 'method' => 'onSupplierDelete'],
+                'actionobjectmanufactureraddafter' => ['handler' => 'catalog', 'method' => 'onManufacturerAdd'],
+                'actionobjectmanufacturerupdateafter' => ['handler' => 'catalog', 'method' => 'onManufacturerUpdate'],
+                'actionobjectmanufacturerdeleteafter' => ['handler' => 'catalog', 'method' => 'onManufacturerDelete'],
+                'actionobjectstoreupdateafter' => ['handler' => 'catalog', 'method' => 'onStoreUpdate'],
                 // Cache
-                'actionwatermark'               => ['handler' => 'cacheHook', 'method' => 'onWatermark'],
-                'addwebserviceresources'        => ['handler' => 'cacheHook', 'method' => 'onWebserviceResources'],
+                'actionwatermark' => ['handler' => 'cacheHook', 'method' => 'onWatermark'],
+                'addwebserviceresources' => ['handler' => 'cacheHook', 'method' => 'onWebserviceResources'],
             ];
         }
 
@@ -420,7 +456,7 @@ class LiteSpeedCache extends Module
             return null;
         }
 
-        $entry    = self::$hookMap[$event];
+        $entry = self::$hookMap[$event];
         $instance = $this->getHandlerInstance($entry['handler']);
 
         return ['instance' => $instance, 'method' => $entry['method']];
@@ -431,17 +467,18 @@ class LiteSpeedCache extends Module
         static $handlers = [];
         if (!isset($handlers[$key])) {
             $handlers[$key] = match ($key) {
-                'product'   => new ProductHookHandler($this->cache),
-                'category'  => new CategoryHookHandler($this->cache),
-                'cms'       => new CmsHookHandler($this->cache),
-                'pricing'   => new PricingHookHandler($this->cache),
-                'auth'      => new AuthHookHandler($this->cache),
-                'order'     => new OrderHookHandler($this->cache),
-                'catalog'   => new CatalogEntitiesHookHandler($this->cache),
+                'product' => new ProductHookHandler($this->cache),
+                'category' => new CategoryHookHandler($this->cache),
+                'cms' => new CmsHookHandler($this->cache),
+                'pricing' => new PricingHookHandler($this->cache),
+                'auth' => new AuthHookHandler($this->cache),
+                'order' => new OrderHookHandler($this->cache),
+                'catalog' => new CatalogEntitiesHookHandler($this->cache),
                 'cacheHook' => $this->cacheHook(),
-                default     => throw new \LogicException("Unknown handler key: $key"),
+                default => throw new LogicException("Unknown handler key: $key"),
             };
         }
+
         return $handlers[$key];
     }
 
@@ -469,7 +506,7 @@ class LiteSpeedCache extends Module
         return self::myInstance()->esiOutput()->processBuffer($buffer);
     }
 
-    public function addCacheControlByEsiModule(\LiteSpeed\Cache\Esi\EsiItem $item): void
+    public function addCacheControlByEsiModule(LiteSpeed\Cache\Esi\EsiItem $item): void
     {
         $this->esiResponse()->addCacheControlByEsiModule($item);
     }
@@ -492,6 +529,7 @@ class LiteSpeedCache extends Module
             }
             CacheState::set(CacheState::VARY_CHECKED);
         }
+
         return CacheState::has(CacheState::VARY_CHANGED);
     }
 
@@ -530,11 +568,11 @@ class LiteSpeedCache extends Module
         $defaults = $this->config->getDefaultConfData(Conf::ENTRY_ALL);
         CacheHelper::htAccessUpdate(
             (bool) $defaults[Conf::CFG_ENABLED],
-            ($defaults[Conf::CFG_GUESTMODE] == 1),
+            $defaults[Conf::CFG_GUESTMODE] == 1,
             (bool) $defaults[Conf::CFG_DIFFMOBILE]
         );
 
-        \PrestaShopLogger::addLog('LiteSpeed Cache module installed', 1, null, 'LiteSpeedCache', 0, true);
+        PrestaShopLogger::addLog('LiteSpeed Cache module installed', 1, null, 'LiteSpeedCache', 0, true);
 
         return $this->installHooks();
     }
@@ -542,6 +580,7 @@ class LiteSpeedCache extends Module
     public function disable($force_all = false)
     {
         $this->disablePsCache();
+
         return parent::disable($force_all);
     }
 
@@ -549,7 +588,7 @@ class LiteSpeedCache extends Module
     {
         $this->disablePsCache();
 
-        \PrestaShopLogger::addLog('LiteSpeed Cache module uninstalled', 2, null, 'LiteSpeedCache', 0, true);
+        PrestaShopLogger::addLog('LiteSpeed Cache module uninstalled', 2, null, 'LiteSpeedCache', 0, true);
         (new TabManager($this))->uninstall();
         CacheHelper::htAccessUpdate(false, false, false);
         Configuration::deleteByName(Conf::ENTRY_ALL);
@@ -572,28 +611,29 @@ class LiteSpeedCache extends Module
             ObjectCacheActivator::disableIfActive();
             $cdnCfg = CdnConfig::getAll();
             if (!empty($cdnCfg[CdnConfig::CF_ENABLE]) && !empty($cdnCfg[CdnConfig::CF_PURGE]) && !empty($cdnCfg[CdnConfig::CF_ZONE_ID])) {
-                (new \LiteSpeed\Cache\Integration\Cloudflare($cdnCfg[CdnConfig::CF_KEY], $cdnCfg[CdnConfig::CF_EMAIL]))->purgeAll($cdnCfg[CdnConfig::CF_ZONE_ID]);
+                (new LiteSpeed\Cache\Integration\Cloudflare($cdnCfg[CdnConfig::CF_KEY], $cdnCfg[CdnConfig::CF_EMAIL]))->purgeAll($cdnCfg[CdnConfig::CF_ZONE_ID]);
             }
-            \Tools::clearSf2Cache();
-            \PrestaShopLogger::addLog('All caches flushed and disabled (module disable/uninstall)', 2, null, 'LiteSpeedCache', 0, true);
-        } catch (\Throwable $e) {
+            Tools::clearSf2Cache();
+            PrestaShopLogger::addLog('All caches flushed and disabled (module disable/uninstall)', 2, null, 'LiteSpeedCache', 0, true);
+        } catch (Throwable $e) {
         }
     }
 
     // ---- Private helpers --------------------------------------------------------
 
     /** @var self|null */
-    private static $cachedInstance = null;
+    private static $cachedInstance;
 
     private static function myInstance(): self
     {
         if (self::$cachedInstance === null) {
             $instance = Module::getInstanceByName(self::MODULE_NAME);
             if (!$instance instanceof self) {
-                throw new \RuntimeException('LiteSpeedCache module instance not found');
+                throw new RuntimeException('LiteSpeedCache module instance not found');
             }
             self::$cachedInstance = $instance;
         }
+
         return self::$cachedInstance;
     }
 
@@ -604,6 +644,7 @@ class LiteSpeedCache extends Module
                 return false;
             }
         }
+
         return true;
     }
 }

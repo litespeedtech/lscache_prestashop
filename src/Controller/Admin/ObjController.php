@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -6,7 +7,6 @@
  * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Controller\Admin;
 
@@ -25,7 +25,6 @@ class ObjController extends AbstractController
 {
     use NavPillsTrait;
 
-
     public function indexAction(Request $request): Response
     {
         $cfg = ObjConfig::getAll();
@@ -33,6 +32,7 @@ class ObjController extends AbstractController
         if ($request->isMethod('POST')) {
             if ($request->request->has('submitObj')) {
                 $this->handleSave($request);
+
                 return $this->redirectToRoute('admin_litespeedcache_objectcache');
             }
 
@@ -41,6 +41,7 @@ class ObjController extends AbstractController
                 $result
                     ? $this->addFlash('success', $this->trans('Connection successful.', 'Modules.Litespeedcache.Admin'))
                     : $this->addFlash('error', $this->trans('Connection failed. Check your host, port and credentials.', 'Modules.Litespeedcache.Admin'));
+
                 return $this->redirectToRoute('admin_litespeedcache_objectcache');
             }
         }
@@ -49,15 +50,15 @@ class ObjController extends AbstractController
         $connStatus = $cfg[ObjConfig::OBJ_ENABLE] ? ObjectCache::testConnection($cfg) : null;
 
         // Reflect actual PrestaShop cache state (defined in bootstrap, not config)
-        $psDriver  = defined('_PS_CACHING_SYSTEM_') ? _PS_CACHING_SYSTEM_ : null;
-        $psEnabled = defined('_PS_CACHE_ENABLED_')  ? (bool) _PS_CACHE_ENABLED_ : false;
+        $psDriver = defined('_PS_CACHING_SYSTEM_') ? _PS_CACHING_SYSTEM_ : null;
+        $psEnabled = defined('_PS_CACHE_ENABLED_') ? (bool) _PS_CACHE_ENABLED_ : false;
 
         return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/obj.html.twig', [
-            'values'       => $cfg,
-            'extensions'   => $extensions,
-            'connStatus'   => $connStatus,
-            'psEnabled'    => $psEnabled,
-            'psDriver'     => $psDriver,
+            'values' => $cfg,
+            'extensions' => $extensions,
+            'connStatus' => $connStatus,
+            'psEnabled' => $psEnabled,
+            'psDriver' => $psDriver,
         ], $request);
     }
 
@@ -69,18 +70,18 @@ class ObjController extends AbstractController
         }
 
         $new = [
-            ObjConfig::OBJ_ENABLE         => (int)  $request->request->get('obj_enable', 0),
-            ObjConfig::OBJ_METHOD         => $method,
-            ObjConfig::OBJ_HOST           => trim((string) $request->request->get('obj_host', 'localhost')),
-            ObjConfig::OBJ_PORT           => max(1, (int) $request->request->get('obj_port', 6379)),
-            ObjConfig::OBJ_TTL            => max(1, (int) $request->request->get('obj_ttl', 360)),
-            ObjConfig::OBJ_USERNAME       => trim((string) $request->request->get('obj_username', '')),
-            ObjConfig::OBJ_PASSWORD       => trim((string) $request->request->get('obj_password', '')),
-            ObjConfig::OBJ_REDIS_DB       => max(0, (int) $request->request->get('obj_redis_db', 0)),
-            ObjConfig::OBJ_GLOBAL_GROUPS  => trim((string) $request->request->get('obj_global_groups', '')),
+            ObjConfig::OBJ_ENABLE => (int) $request->request->get('obj_enable', 0),
+            ObjConfig::OBJ_METHOD => $method,
+            ObjConfig::OBJ_HOST => trim((string) $request->request->get('obj_host', 'localhost')),
+            ObjConfig::OBJ_PORT => max(1, (int) $request->request->get('obj_port', 6379)),
+            ObjConfig::OBJ_TTL => max(1, (int) $request->request->get('obj_ttl', 360)),
+            ObjConfig::OBJ_USERNAME => trim((string) $request->request->get('obj_username', '')),
+            ObjConfig::OBJ_PASSWORD => trim((string) $request->request->get('obj_password', '')),
+            ObjConfig::OBJ_REDIS_DB => max(0, (int) $request->request->get('obj_redis_db', 0)),
+            ObjConfig::OBJ_GLOBAL_GROUPS => trim((string) $request->request->get('obj_global_groups', '')),
             ObjConfig::OBJ_NOCACHE_GROUPS => trim((string) $request->request->get('obj_nocache_groups', '')),
-            ObjConfig::OBJ_PERSISTENT     => (int)  $request->request->get('obj_persistent', 0),
-            ObjConfig::OBJ_ADMIN_CACHE    => (int)  $request->request->get('obj_admin_cache', 0),
+            ObjConfig::OBJ_PERSISTENT => (int) $request->request->get('obj_persistent', 0),
+            ObjConfig::OBJ_ADMIN_CACHE => (int) $request->request->get('obj_admin_cache', 0),
         ];
 
         ObjConfig::saveAll($new);

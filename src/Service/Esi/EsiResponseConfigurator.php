@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -8,7 +9,6 @@ declare(strict_types=1);
  * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license    https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Service\Esi;
 
@@ -20,7 +20,6 @@ use LiteSpeed\Cache\Config\CacheConfig;
 use LiteSpeed\Cache\Core\CacheManager;
 use LiteSpeed\Cache\Core\CacheState;
 use LiteSpeed\Cache\Esi\EsiItem;
-use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
 
 /**
  * EsiResponseConfigurator -- configures cache response behaviour for ESI blocks.
@@ -36,8 +35,8 @@ class EsiResponseConfigurator
 
     public function __construct(CacheConfig $config, CacheManager $cache, EsiMarkerManager $markerManager)
     {
-        $this->config        = $config;
-        $this->cache         = $cache;
+        $this->config = $config;
+        $this->cache = $cache;
         $this->markerManager = $markerManager;
     }
 
@@ -77,6 +76,7 @@ class EsiResponseConfigurator
     {
         if (!CacheState::isActive()) {
             $this->cache->purgeByTags('*', false, 'request esi while module is not active');
+
             return;
         }
         $ttl = $item->getTTL();

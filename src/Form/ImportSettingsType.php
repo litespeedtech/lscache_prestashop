@@ -1,6 +1,5 @@
 <?php
 
-
 namespace LiteSpeed\Cache\Form;
 
 if (!defined('_PS_VERSION_')) {

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop — backward-compatibility shim.
  * The real implementation is in LiteSpeed\Cache\Integration\Integration.
@@ -8,9 +9,8 @@
  * the old name to the new namespaced abstract class. PHP correctly resolves
  * `extends LscIntegration` to `extends LiteSpeed\Cache\Integration\Integration`.
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-class_alias(\LiteSpeed\Cache\Integration\Integration::class, 'LscIntegration');
+class_alias(LiteSpeed\Cache\Integration\Integration::class, 'LscIntegration');

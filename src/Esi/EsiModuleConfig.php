@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -7,7 +8,6 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-
 namespace LiteSpeed\Cache\Esi;
 
 if (!defined('_PS_VERSION_')) {
@@ -15,7 +15,6 @@ if (!defined('_PS_VERSION_')) {
 }
 
 use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
-use Tools;
 
 /**
  * EsiModuleConfig — configuration for an ESI module block.
@@ -26,24 +25,24 @@ use Tools;
 class EsiModuleConfig implements \JsonSerializable
 {
     // Module type constants
-    const TYPE_BUILTIN    = 0; // Built-in PS modules (cart, customer sign-in, …)
-    const TYPE_INTEGRATED = 1; // Pre-integrated third-party modules
-    const TYPE_CUSTOMIZED = 2; // User-customized via back-office
+    public const TYPE_BUILTIN = 0; // Built-in PS modules (cart, customer sign-in, …)
+    public const TYPE_INTEGRATED = 1; // Pre-integrated third-party modules
+    public const TYPE_CUSTOMIZED = 2; // User-customized via back-office
 
     // Field constants
-    const FLD_PRIV               = 'priv';
-    const FLD_DISABLED           = 'disableESI';
-    const FLD_TEMPLATE_ARGUMENT  = 'argument';
-    const FLD_TAG                = 'tag';
-    const FLD_TTL                = 'ttl';
-    const FLD_PURGE_EVENTS       = 'events';
-    const FLD_PURGE_CONTROLLERS  = 'ctrl';
-    const FLD_HOOK_METHODS       = 'methods';
-    const FLD_RENDER_WIDGETS     = 'render';
-    const FLD_ASVAR              = 'asvar';
-    const FLD_IGNORE_EMPTY       = 'ie';
-    const FLD_ONLY_CACHE_EMPTY   = 'ce';
-    const FLD_TIPURL             = 'tipurl';
+    public const FLD_PRIV = 'priv';
+    public const FLD_DISABLED = 'disableESI';
+    public const FLD_TEMPLATE_ARGUMENT = 'argument';
+    public const FLD_TAG = 'tag';
+    public const FLD_TTL = 'ttl';
+    public const FLD_PURGE_EVENTS = 'events';
+    public const FLD_PURGE_CONTROLLERS = 'ctrl';
+    public const FLD_HOOK_METHODS = 'methods';
+    public const FLD_RENDER_WIDGETS = 'render';
+    public const FLD_ASVAR = 'asvar';
+    public const FLD_IGNORE_EMPTY = 'ie';
+    public const FLD_ONLY_CACHE_EMPTY = 'ce';
+    public const FLD_TIPURL = 'tipurl';
 
     /** @var string */
     private $moduleName;
@@ -58,16 +57,16 @@ class EsiModuleConfig implements \JsonSerializable
     private $parsed = [];
 
     /** @var object|null */
-    private $customHandler = null;
+    private $customHandler;
 
     public function __construct(string $moduleName, int $type, array $data)
     {
         $this->moduleName = $moduleName;
-        $this->type       = $type;
-        $this->data       = [];
+        $this->type = $type;
+        $this->data = [];
 
         // Sanitize data
-        $this->data[self::FLD_PRIV]     = !empty($data[self::FLD_PRIV]) ? 1 : 0;
+        $this->data[self::FLD_PRIV] = !empty($data[self::FLD_PRIV]) ? 1 : 0;
         $this->data[self::FLD_DISABLED] = isset($data[self::FLD_DISABLED]) ? (int) $data[self::FLD_DISABLED] : 0;
 
         $copyFields = [
@@ -106,22 +105,22 @@ class EsiModuleConfig implements \JsonSerializable
     public function getCustConfArray(): array
     {
         $cdata = [
-            'id'        => $this->moduleName,
-            'name'      => $this->moduleName,
-            'disableESI'=> $this->isDisabled(),
-            'priv'      => $this->isPrivate(),
-            'ttl'       => $this->getTTL(),
-            'tag'       => implode(', ', $this->getTags()),
-            'type'      => $this->type,
-            'events'    => $this->getFieldValue(self::FLD_PURGE_EVENTS, false, true),
-            'ctrl'      => $this->getFieldValue(self::FLD_PURGE_CONTROLLERS, false, true),
-            'methods'   => $this->getFieldValue(self::FLD_HOOK_METHODS, false, true),
-            'render'    => $this->getFieldValue(self::FLD_RENDER_WIDGETS, false, true),
-            'asvar'     => $this->getFieldValue(self::FLD_ASVAR, true),
-            'ie'        => $this->getFieldValue(self::FLD_IGNORE_EMPTY, true),
-            'ce'        => $this->getFieldValue(self::FLD_ONLY_CACHE_EMPTY, true),
-            'tipurl'    => $this->getFieldValue(self::FLD_TIPURL),
-            'argument'  => $this->getFieldValue(self::FLD_TEMPLATE_ARGUMENT, false, true),
+            'id' => $this->moduleName,
+            'name' => $this->moduleName,
+            'disableESI' => $this->isDisabled(),
+            'priv' => $this->isPrivate(),
+            'ttl' => $this->getTTL(),
+            'tag' => implode(', ', $this->getTags()),
+            'type' => $this->type,
+            'events' => $this->getFieldValue(self::FLD_PURGE_EVENTS, false, true),
+            'ctrl' => $this->getFieldValue(self::FLD_PURGE_CONTROLLERS, false, true),
+            'methods' => $this->getFieldValue(self::FLD_HOOK_METHODS, false, true),
+            'render' => $this->getFieldValue(self::FLD_RENDER_WIDGETS, false, true),
+            'asvar' => $this->getFieldValue(self::FLD_ASVAR, true),
+            'ie' => $this->getFieldValue(self::FLD_IGNORE_EMPTY, true),
+            'ce' => $this->getFieldValue(self::FLD_ONLY_CACHE_EMPTY, true),
+            'tipurl' => $this->getFieldValue(self::FLD_TIPURL),
+            'argument' => $this->getFieldValue(self::FLD_TEMPLATE_ARGUMENT, false, true),
         ];
         if ($tmp = \Module::getInstanceByName($this->moduleName)) {
             $cdata['name'] = htmlspecialchars_decode($tmp->displayName);
@@ -133,7 +132,7 @@ class EsiModuleConfig implements \JsonSerializable
     #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
-        $sdata       = $this->data;
+        $sdata = $this->data;
         $sdata['id'] = $this->moduleName;
 
         return $sdata;
@@ -164,6 +163,7 @@ class EsiModuleConfig implements \JsonSerializable
 
     /**
      * @param array $params
+     *
      * @return string|int
      */
     public function getTTL(array $params = [])
@@ -295,8 +295,9 @@ class EsiModuleConfig implements \JsonSerializable
 
     /**
      * @param string $field
-     * @param bool   $isBool
-     * @param bool   $splitClean
+     * @param bool $isBool
+     * @param bool $splitClean
+     *
      * @return mixed
      */
     private function getFieldValue(string $field, bool $isBool = false, bool $splitClean = false)
@@ -315,12 +316,12 @@ class EsiModuleConfig implements \JsonSerializable
 
     private function checkInjection(string $field, string $value): bool
     {
-        $res  = $this->parsed[$field];
+        $res = $this->parsed[$field];
         $type = $res[0];
         if ($type === 9) {
             return true;
         }
-        $value = Tools::strtolower($value);
+        $value = \Tools::strtolower($value);
         if ($type === 1) {
             return in_array($value, $res[1]);
         }
@@ -342,16 +343,16 @@ class EsiModuleConfig implements \JsonSerializable
         } elseif ($this->data[$field] === '*') {
             $res[0] = 9;
         } else {
-            $list      = preg_split("/[\s,]+/", $this->data[$field], -1, PREG_SPLIT_NO_EMPTY);
+            $list = preg_split("/[\s,]+/", $this->data[$field], -1, PREG_SPLIT_NO_EMPTY);
             $isInclude = 0;
             foreach ($list as $d) {
-                $d = Tools::strtolower($d);
+                $d = \Tools::strtolower($d);
                 if ($d[0] === '!') {
                     $isInclude |= 2;
-                    $res[2][]   = ltrim($d, '!');
+                    $res[2][] = ltrim($d, '!');
                 } else {
                     $isInclude |= 1;
-                    $res[1][]   = $d;
+                    $res[1][] = $d;
                 }
             }
             $res[0] = ($isInclude & 1) === 1 ? 1 : (($isInclude & 2) === 2 ? 2 : -1);

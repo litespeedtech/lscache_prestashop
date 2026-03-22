@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -18,23 +19,23 @@ if (!defined('_PS_VERSION_')) {
  */
 class CdnConfig
 {
-    const ENTRY = 'LITESPEED_CACHE_CDN';
+    public const ENTRY = 'LITESPEED_CACHE_CDN';
 
-    const CF_ENABLE  = 'cf_enable';
-    const CF_KEY     = 'cf_key';
-    const CF_EMAIL   = 'cf_email';
-    const CF_DOMAIN  = 'cf_domain';
-    const CF_PURGE   = 'cf_purge';
-    const CF_ZONE_ID = 'cf_zone_id';
+    public const CF_ENABLE = 'cf_enable';
+    public const CF_KEY = 'cf_key';
+    public const CF_EMAIL = 'cf_email';
+    public const CF_DOMAIN = 'cf_domain';
+    public const CF_PURGE = 'cf_purge';
+    public const CF_ZONE_ID = 'cf_zone_id';
 
     /** @var array|null */
-    private static $data = null;
+    private static $data;
 
     public static function getAll(): array
     {
         if (self::$data === null) {
-            $raw       = \Configuration::getGlobalValue(self::ENTRY);
-            $decoded   = $raw ? json_decode($raw, true) : [];
+            $raw = \Configuration::getGlobalValue(self::ENTRY);
+            $decoded = $raw ? json_decode($raw, true) : [];
             self::$data = array_merge(self::getDefaults(), is_array($decoded) ? $decoded : []);
         }
 
@@ -55,11 +56,11 @@ class CdnConfig
     public static function getDefaults(): array
     {
         return [
-            self::CF_ENABLE  => 0,
-            self::CF_KEY     => '',
-            self::CF_EMAIL   => '',
-            self::CF_DOMAIN  => '',
-            self::CF_PURGE   => 0,
+            self::CF_ENABLE => 0,
+            self::CF_KEY => '',
+            self::CF_EMAIL => '',
+            self::CF_DOMAIN => '',
+            self::CF_PURGE => 0,
             self::CF_ZONE_ID => '',
         ];
     }

@@ -1,6 +1,5 @@
 <?php
 
-
 namespace LiteSpeed\Cache\Controller\Admin;
 
 if (!defined('_PS_VERSION_')) {

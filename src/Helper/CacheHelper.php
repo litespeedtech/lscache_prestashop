@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -7,7 +8,6 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-
 namespace LiteSpeed\Cache\Helper;
 
 if (!defined('_PS_VERSION_')) {
@@ -15,20 +15,19 @@ if (!defined('_PS_VERSION_')) {
 }
 
 use LiteSpeed\Cache\Config\CacheConfig as Conf;
-use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
 use LiteSpeed\Cache\Esi\EsiItem;
+use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
 
-/**
+/*
  * CacheHelper — static utility class for cache directory, ESI URL generation, .htaccess management.
  */
-use Context;
 class CacheHelper
 {
     private static $internal = [];
 
     private static function initInternals(): void
     {
-        $ctx    = Context::getContext();
+        $ctx = \Context::getContext();
         $cookie = $ctx->cookie;
         $config = Conf::getInstance();
 
@@ -46,23 +45,23 @@ class CacheHelper
             $defaultParam['mobi'] = $ctx->getMobileDevice() ? 1 : 0;
         }
 
-        self::$internal['pub_ttl']  = $config->get(Conf::CFG_PUBLIC_TTL);
+        self::$internal['pub_ttl'] = $config->get(Conf::CFG_PUBLIC_TTL);
         self::$internal['priv_ttl'] = $config->get(Conf::CFG_PRIVATE_TTL);
 
-        $unique                    = str_split(md5(_PS_ROOT_DIR_));
-        $prefix                    = 'PS' . implode('', array_slice($unique, 0, 5));
+        $unique = str_split(md5(_PS_ROOT_DIR_));
+        $prefix = 'PS' . implode('', array_slice($unique, 0, 5));
         self::$internal['tag_prefix'] = $prefix;
-        self::$internal['cache_dir']  = _PS_CACHE_DIR_ . \LiteSpeedCache::MODULE_NAME;
+        self::$internal['cache_dir'] = _PS_CACHE_DIR_ . \LiteSpeedCache::MODULE_NAME;
 
         $tag0 = $prefix;
         $tag1 = $prefix . '_' . Conf::TAG_PREFIX_SHOP . $defaultParam['s'];
-        self::$internal['tag_shared_pub']  = $tag0 . ',' . $tag1;
+        self::$internal['tag_shared_pub'] = $tag0 . ',' . $tag1;
         self::$internal['tag_shared_priv'] = 'public:' . $prefix . '_PRIV';
 
         if (\LiteSpeedCache::canInjectEsi() || \LiteSpeedCache::isCacheable() || \LiteSpeedCache::isEsiRequest()) {
             $esiurl = $ctx->link->getModuleLink(\LiteSpeedCache::MODULE_NAME, 'esi', $defaultParam);
             self::$internal['esi_base_url'] = self::getRelativeUri($esiurl);
-            self::$internal['cache_entry']  = $prefix . md5(self::$internal['esi_base_url']);
+            self::$internal['cache_entry'] = $prefix . md5(self::$internal['esi_base_url']);
         }
     }
 
@@ -74,12 +73,14 @@ class CacheHelper
                 return \Tools::substr($url, $pos1);
             }
         }
+
         return false;
     }
 
     public static function getCacheFilePath(string &$dir): string
     {
         $dir = self::getCacheDir();
+
         return $dir . '/' . self::$internal['cache_entry'] . '.data';
     }
 
@@ -92,13 +93,14 @@ class CacheHelper
         if (!is_dir($dir)) {
             mkdir($dir);
         }
+
         return $dir;
     }
 
     public static function clearInternalCache(): void
     {
         $count = 0;
-        $dir   = self::getCacheDir();
+        $dir = self::getCacheDir();
         foreach (scandir($dir) as $entry) {
             if (preg_match('/\.data$/', $entry)) {
                 @unlink($dir . '/' . $entry);
@@ -116,10 +118,10 @@ class CacheHelper
             self::initInternals();
         }
 
-        $url      = self::$internal['esi_base_url'] . '&pd=' . urlencode($item->getId());
-        $tagInline  = '';
+        $url = self::$internal['esi_base_url'] . '&pd=' . urlencode($item->getId());
+        $tagInline = '';
         $tagInclude = '';
-        $ttl        = $item->getTTL();
+        $ttl = $item->getTTL();
 
         if ($ttl === 0 || $ttl === '0') {
             $ccInclude = $ccInline = 'no-cache';
@@ -133,7 +135,7 @@ class CacheHelper
 
             if ($item->onlyCacheEmpty() && $item->getContent() !== '') {
                 $ccInline = 'no-cache';
-                $ttl      = 0;
+                $ttl = 0;
             } else {
                 $ccInline = $ccInclude . ',max-age=' . $ttl;
             }
@@ -151,7 +153,7 @@ class CacheHelper
             }
         }
 
-        $esiInclude  = sprintf('<esi:include src=\'%s\' cache-control=\'%s\'%s/>', $url, $ccInclude, $tagInclude);
+        $esiInclude = sprintf('<esi:include src=\'%s\' cache-control=\'%s\'%s/>', $url, $ccInclude, $tagInclude);
         $inlineStart = sprintf('<esi:inline name=\'%s\' cache-control=\'%s\'%s>', $url, $ccInline, $tagInline);
         $item->setIncludeInlineTag($esiInclude, $inlineStart, $url, $ttl);
     }
@@ -171,24 +173,26 @@ class CacheHelper
         if (!isset(self::$internal[$field])) {
             self::initInternals();
         }
+
         return self::$internal[$field];
     }
 
     protected static function getFileContent(string $filepath): string
     {
         $contents = '';
-        $len      = @filesize($filepath);
+        $len = @filesize($filepath);
         if ($len) {
-            $h        = @fopen($filepath, 'rb');
+            $h = @fopen($filepath, 'rb');
             $contents = @fread($h, $len);
             @fclose($h);
         }
+
         return $contents;
     }
 
     private static function genHtAccessContent(bool $guestMode, bool $mobileView): string
     {
-        $ls   = [];
+        $ls = [];
         $ls[] = '### LITESPEED_CACHE_START - Do not remove this line, LSCache plugin will automatically update it';
         $ls[] = '# automatically genereated by LiteSpeedCache plugin: https://docs.litespeedtech.com/lscache/lscps/';
         $ls[] = '<IfModule LiteSpeed>';
@@ -224,7 +228,7 @@ class CacheHelper
 
     public static function htAccessBackup(string $suffix): bool
     {
-        $path    = _PS_ROOT_DIR_ . '/.htaccess';
+        $path = _PS_ROOT_DIR_ . '/.htaccess';
         $newfile = $path . '.' . $suffix . time();
         if (!file_exists($newfile)) {
             $content = self::getFileContent($path);
@@ -232,24 +236,27 @@ class CacheHelper
                 $res = file_put_contents($newfile, $content);
                 if ($res) {
                     LSLog::log(__FUNCTION__ . ' backed up as ' . $newfile, LSLog::LEVEL_UPDCONFIG);
+
                     return true;
                 }
             }
         }
+
         return false;
     }
 
     public static function htAccessUpdate(bool $enableCache, bool $guestMode, bool $mobileView): bool
     {
-        $path     = _PS_ROOT_DIR_ . '/.htaccess';
+        $path = _PS_ROOT_DIR_ . '/.htaccess';
         $oldlines = file($path);
         if ($oldlines === false) {
             LSLog::log(__FUNCTION__ . ' please manually fix .htaccess, may due to permission', LSLog::LEVEL_FORCE);
+
             return false;
         }
 
         $newlines = [];
-        $ind      = false;
+        $ind = false;
         foreach ($oldlines as $line) {
             if (!$ind) {
                 if (strpos($line, 'LITESPEED_CACHE_START') !== false) {
@@ -273,20 +280,22 @@ class CacheHelper
         $res = file_put_contents($path, $newcontent);
         if ($res) {
             LSLog::log(__FUNCTION__ . ' updated', LSLog::LEVEL_UPDCONFIG);
+
             return true;
         }
 
         LSLog::log(__FUNCTION__ . ' cannot save! Please manually fix .htaccess file', LSLog::LEVEL_FORCE);
+
         return false;
     }
 
     public static function getRelatedItems($id): array
     {
-        $items    = [];
-        $dir      = '';
+        $items = [];
+        $dir = '';
         $cacheFile = self::getCacheFilePath($dir);
-        $snapshot  = self::getFileContent($cacheFile);
-        $saved     = json_decode($snapshot, true);
+        $snapshot = self::getFileContent($cacheFile);
+        $saved = json_decode($snapshot, true);
 
         if (!is_array($saved)
             || json_last_error() !== JSON_ERROR_NONE
@@ -295,7 +304,7 @@ class CacheHelper
         }
 
         $related = [];
-        $tag     = ($id) ? $saved['data'][$id]['tag'] : Conf::TAG_ENV;
+        $tag = ($id) ? $saved['data'][$id]['tag'] : Conf::TAG_ENV;
         if ($tag === Conf::TAG_ENV) {
             $related = array_keys($saved['data']);
         } elseif (isset($saved['tags'][$tag])) {
@@ -316,10 +325,10 @@ class CacheHelper
 
     public static function syncItemCache(array $itemList): void
     {
-        $dir       = '';
+        $dir = '';
         $cacheFile = self::getCacheFilePath($dir);
-        $snapshot  = self::getFileContent($cacheFile);
-        $saved     = json_decode($snapshot, true);
+        $snapshot = self::getFileContent($cacheFile);
+        $saved = json_decode($snapshot, true);
 
         if (!is_array($saved) || json_last_error() !== JSON_ERROR_NONE) {
             $saved = ['data' => [], 'tags' => []];
@@ -329,10 +338,10 @@ class CacheHelper
             if (!$item->isPrivate() || $item->noItemCache()) {
                 continue;
             }
-            $id                  = $item->getId();
-            $descr               = $item->getInfoLog(true);
-            $saved['data'][$id]  = $item->getSavedData();
-            $tags                = $item->getTags();
+            $id = $item->getId();
+            $descr = $item->getInfoLog(true);
+            $saved['data'][$id] = $item->getSavedData();
+            $tags = $item->getTags();
 
             if ($tags[0] === Conf::TAG_ENV) {
                 continue;

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -22,7 +23,6 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-
 namespace LiteSpeed\Cache;
 
 if (!defined('_PS_VERSION_')) {
@@ -36,7 +36,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-use Context;
 class Warmup extends Command
 {
     protected $output;
@@ -57,24 +56,27 @@ class Warmup extends Command
         $sitemap = $input->getArgument('sitemap');
         if ($sitemap === null) {
             $output->writeln('<error>Invalid or Missing Sitemap XML URL!</error>');
+
             return 1;
         }
 
         $xml = @simplexml_load_file($sitemap);
         if ($xml === false) {
             $output->writeln('<error>Could not load sitemap: ' . $sitemap . '</error>');
+
             return 1;
         }
 
         $sitemapUrls = $this->parseSitemap($xml);
         if (empty($sitemapUrls)) {
             $output->writeln('<error>No URLs found!</error>');
+
             return 1;
         }
 
-        $cookie    = $this->getDefaultCookies($sitemapUrls[0]);
+        $cookie = $this->getDefaultCookies($sitemapUrls[0]);
         $userAgent = $input->getArgument('useragent');
-        $ua        = $userAgent !== null ? 'lscache_runner;' . $userAgent : 'lscache_runner';
+        $ua = $userAgent !== null ? 'lscache_runner;' . $userAgent : 'lscache_runner';
 
         // Phase 1: LiteSpeed Cache
         $this->printHeader('LITESPEED CACHE — Full page cache (' . count($sitemapUrls) . ' URLs)');
@@ -115,6 +117,7 @@ class Warmup extends Command
         }
 
         $output->writeln("\n<info>Warm up completed!</info>");
+
         return 0;
     }
 
@@ -160,7 +163,7 @@ class Warmup extends Command
 
         $shopUrl = $input->getOption('shop-url');
         if (!$shopUrl) {
-            $ssl    = \Configuration::get('PS_SSL_ENABLED');
+            $ssl = \Configuration::get('PS_SSL_ENABLED');
             $domain = $ssl ? \Configuration::get('PS_SHOP_DOMAIN_SSL') : \Configuration::get('PS_SHOP_DOMAIN');
             $shopUrl = ($ssl ? 'https://' : 'http://') . $domain;
         }
@@ -178,12 +181,12 @@ class Warmup extends Command
             return [];
         }
 
-        $context = Context::getContext();
+        $context = \Context::getContext();
         if (!$context->link) {
             $context->link = new \Link();
         }
 
-        $urls    = [];
+        $urls = [];
         $shopUrl = rtrim($shopUrl, '/');
 
         foreach ($products as $product) {
@@ -207,20 +210,20 @@ class Warmup extends Command
     {
         set_time_limit(0);
         $acceptCode = [200, 201];
-        $total   = count($urls);
+        $total = count($urls);
         $current = 0;
 
         foreach ($urls as $url) {
-            $current++;
+            ++$current;
             $ch = $this->getCurlHandler($url, $cookie, true, $userAgent);
-            $response   = curl_exec($ch);
-            $httpcode   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $response = curl_exec($ch);
+            $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
             curl_close($ch);
 
-            $headers  = substr($response, 0, $headerSize);
-            $lscache  = $this->extractHeader($headers, 'X-LiteSpeed-Cache');
-            $cfCache  = $this->extractHeader($headers, 'CF-Cache-Status');
+            $headers = substr($response, 0, $headerSize);
+            $lscache = $this->extractHeader($headers, 'X-LiteSpeed-Cache');
+            $cfCache = $this->extractHeader($headers, 'CF-Cache-Status');
 
             $cacheInfo = '';
             $parts = [];
@@ -279,7 +282,7 @@ class Warmup extends Command
     private function getDefaultCookies($url)
     {
         $cookie = '_lscache_vary=' . uniqid('lscache');
-        $ch     = $this->getCurlHandler($url, $cookie, true);
+        $ch = $this->getCurlHandler($url, $cookie, true);
         $buffer = curl_exec($ch);
         curl_close($ch);
 

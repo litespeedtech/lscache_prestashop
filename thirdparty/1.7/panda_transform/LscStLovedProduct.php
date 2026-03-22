@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -21,7 +22,6 @@
  * @copyright  Copyright (c) 2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -31,7 +31,7 @@ use LiteSpeed\Cache\Esi\EsiModuleConfig as EsiConf;
 
 class LscStLovedProduct extends LscIntegration
 {
-    const NAME = 'stlovedproduct';
+    public const NAME = 'stlovedproduct';
 
     protected function init()
     {
@@ -48,6 +48,7 @@ class LscStLovedProduct extends LscIntegration
         Conf::getInstance()->enforceDiffCustomerGroup(2); // $diffCustomerGroup 0: No; 1: Yes; 2: login_out
 
         $this->addCheckPurgeControllerCustomHandler('StLovedProductMyLovedModuleFrontController', $this);
+
         return true;
     }
 
@@ -60,10 +61,11 @@ class LscStLovedProduct extends LscIntegration
                     $pid = Tools::getValue('id_product');
                     $params['id_product'] = $pid;
                 }
+
                 return true;
 
             case 'ch':
-                return ('hookdisplaySideBar' == $params['mt']);
+                return 'hookdisplaySideBar' == $params['mt'];
 
             default:
                 return false;
@@ -87,6 +89,7 @@ class LscStLovedProduct extends LscIntegration
                 $tags[] = 'stloved_' . $params['id_product'];
             }
         }
+
         return $tags;
     }
 
@@ -96,7 +99,7 @@ class LscStLovedProduct extends LscIntegration
         return $this->isLoggedIn();
     }
 
-    //id_product,StLovedProductMyLovedModuleFrontController?action'
+    // id_product,StLovedProductMyLovedModuleFrontController?action'
     protected function checkPurgeControllerCustomHandler($lowercase_controller_class, &$tags)
     {
         // * @param type $tags = ['pub' => [], 'priv' => []];
@@ -106,7 +109,7 @@ class LscStLovedProduct extends LscIntegration
         $pid = Tools::getValue('id_source');
         if ($pid) {
             $tags['pub'][] = "stloved_$pid"; // addCompareProduct, deleteCompareProduct
-        } 
+        }
         $tags['priv'][] = 'stloved'; // private loved ESI block
     }
 }

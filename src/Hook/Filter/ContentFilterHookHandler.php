@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for PrestaShop.
  *
@@ -21,7 +22,6 @@
  * @copyright Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license  https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Hook\Filter;
 
@@ -48,6 +48,7 @@ class ContentFilterHookHandler
         if (CacheState::isCacheable() && isset($params['object']['id'])) {
             $this->cache->addCacheTags(CacheConfig::TAG_PREFIX_CATEGORY . $params['object']['id']);
         }
+
         return $params;
     }
 
@@ -61,6 +62,7 @@ class ContentFilterHookHandler
                 $this->cache->checkSpecificPrices($params['object']['specific_prices']);
             }
         }
+
         return $params;
     }
 
@@ -69,6 +71,7 @@ class ContentFilterHookHandler
         if (CacheState::isCacheable()) {
             $this->cache->addCacheTags(CacheConfig::TAG_PREFIX_CMS);
         }
+
         return $params;
     }
 
@@ -77,6 +80,7 @@ class ContentFilterHookHandler
         if (CacheState::isCacheable() && isset($params['object']['id'])) {
             $this->cache->addCacheTags(CacheConfig::TAG_PREFIX_CMS . $params['object']['id']);
         }
+
         return $params;
     }
 }

@@ -6,8 +6,6 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-use LiteSpeed\Cache\Config\CacheConfig as Conf;
-use LiteSpeed\Cache\Helper\CacheHelper;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,6 +22,7 @@ class AdvancedController extends AbstractController
 
         if ($request->isMethod('POST') && $request->request->has('submitAdvanced')) {
             $this->handleSave($request, $config);
+
             return $this->redirectToRoute('admin_litespeedcache_advanced');
         }
 
@@ -37,9 +36,9 @@ class AdvancedController extends AbstractController
         $stored = json_decode(\Configuration::getGlobalValue(self::CFG_KEY) ?: '{}', true);
 
         return array_merge([
-            'login_cookie'   => '_lscache_vary',
-            'vary_cookies'   => '',
-            'instant_click'  => 0,
+            'login_cookie' => '_lscache_vary',
+            'vary_cookies' => '',
+            'instant_click' => 0,
         ], $stored ?: []);
     }
 
@@ -70,13 +69,14 @@ class AdvancedController extends AbstractController
             foreach ($errors as $e) {
                 $this->addFlash('error', $e);
             }
+
             return;
         }
 
         $newConfig = [
-            'login_cookie'   => $loginCookie ?: '_lscache_vary',
-            'vary_cookies'   => $varyCookies,
-            'instant_click'  => $instantClick,
+            'login_cookie' => $loginCookie ?: '_lscache_vary',
+            'vary_cookies' => $varyCookies,
+            'instant_click' => $instantClick,
         ];
 
         $oldConfig = $currentConfig;
@@ -96,6 +96,7 @@ class AdvancedController extends AbstractController
         $htaccessPath = _PS_ROOT_DIR_ . '/.htaccess';
         if (!is_file($htaccessPath) || !is_writable($htaccessPath)) {
             $this->addFlash('warning', $this->trans('Could not update .htaccess — file not writable.', 'Modules.Litespeedcache.Admin'));
+
             return;
         }
 

@@ -1,6 +1,5 @@
 <?php
 
-
 namespace LiteSpeed\Cache\Controller\Admin;
 
 if (!defined('_PS_VERSION_')) {
@@ -18,7 +17,6 @@ class EsiController extends AbstractController
 {
     use NavPillsTrait;
 
-
     private function init(): array
     {
         $config = Conf::getInstance();
@@ -27,20 +25,20 @@ class EsiController extends AbstractController
         include_once _PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php';
         \Hook::exec('actionLiteSpeedCacheInitThirdParty');
 
-        $data   = $config->get(Conf::ENTRY_MODULE);
-        $rows   = [];
+        $data = $config->get(Conf::ENTRY_MODULE);
+        $rows = [];
         $defaultIds = [];
 
         foreach ($data as $id => $ci) {
             $row = $ci->getCustConfArray();
-            $row['pubpriv']  = $row['priv'] ? 'Private' : 'Public';
-            $row['isPrivate'] = (bool)$row['priv'];
+            $row['pubpriv'] = $row['priv'] ? 'Private' : 'Public';
+            $row['isPrivate'] = (bool) $row['priv'];
 
             if ($row['type'] == EsiConf::TYPE_CUSTOMIZED) {
                 $row['typeLabel'] = 'Customized';
-                $row['editable']  = true;
+                $row['editable'] = true;
             } else {
-                $defaultIds[]    = $id;
+                $defaultIds[] = $id;
                 $row['editable'] = false;
                 $row['typeLabel'] = ($row['type'] == EsiConf::TYPE_BUILTIN) ? 'Built-in' : 'Integrated';
             }
@@ -80,17 +78,17 @@ class EsiController extends AbstractController
                     'desc' => 'Add ESI Block',
                 ],
             ],
-            'rows'       => $rows,
+            'rows' => $rows,
             'defaultIds' => $defaultIds,
-            'editUrl'    => $this->generateUrl('admin_litespeedcache_esi_edit', ['id' => '__ID__']),
-            'viewUrl'    => $this->generateUrl('admin_litespeedcache_esi_view', ['id' => '__ID__']),
-            'deleteUrl'  => $this->generateUrl('admin_litespeedcache_esi_delete', ['id' => '__ID__']),
+            'editUrl' => $this->generateUrl('admin_litespeedcache_esi_edit', ['id' => '__ID__']),
+            'viewUrl' => $this->generateUrl('admin_litespeedcache_esi_view', ['id' => '__ID__']),
+            'deleteUrl' => $this->generateUrl('admin_litespeedcache_esi_delete', ['id' => '__ID__']),
         ], $request);
     }
 
     public function addAction(Request $request): Response
     {
-        [$config, $rows,] = $this->init();
+        [$config, $rows] = $this->init();
 
         $values = [
             'id' => '', 'name' => '', 'priv' => 1, 'disableESI' => 0,
@@ -104,6 +102,7 @@ class EsiController extends AbstractController
                 $res = $config->saveModConfigValues($values, 'new');
                 if ($res) {
                     $this->addFlash('success', $this->trans('Settings saved. Please flush all cached pages.', 'Modules.Litespeedcache.Admin'));
+
                     return $this->redirectToRoute('admin_litespeedcache_esi');
                 }
                 $this->addFlash('error', $this->trans('Fail to update the settings.', 'Modules.Litespeedcache.Admin'));
@@ -124,21 +123,22 @@ class EsiController extends AbstractController
                     'desc' => 'Flush Pages',
                 ],
             ],
-            'values'        => $values,
-            'readonly'      => false,
+            'values' => $values,
+            'readonly' => false,
             'moduleOptions' => $moduleOptions,
-            'backUrl'       => $this->generateUrl('admin_litespeedcache_esi'),
-            'formAction'    => $this->generateUrl('admin_litespeedcache_esi_add'),
-            'mode'          => 'add',
+            'backUrl' => $this->generateUrl('admin_litespeedcache_esi'),
+            'formAction' => $this->generateUrl('admin_litespeedcache_esi_add'),
+            'mode' => 'add',
         ], $request);
     }
 
     public function editAction(Request $request, string $id): Response
     {
-        [$config, $rows,] = $this->init();
+        [$config, $rows] = $this->init();
 
         if (!isset($rows[$id])) {
             $this->addFlash('error', $this->trans('ESI module not found.', 'Modules.Litespeedcache.Admin'));
+
             return $this->redirectToRoute('admin_litespeedcache_esi');
         }
 
@@ -150,6 +150,7 @@ class EsiController extends AbstractController
                 $res = $config->saveModConfigValues($values, 'edit');
                 if ($res) {
                     $this->addFlash('success', $this->trans('Settings saved. Please flush all cached pages.', 'Modules.Litespeedcache.Admin'));
+
                     return $this->redirectToRoute('admin_litespeedcache_esi');
                 }
                 $this->addFlash('error', $this->trans('Fail to update the settings.', 'Modules.Litespeedcache.Admin'));
@@ -169,21 +170,22 @@ class EsiController extends AbstractController
                     'desc' => 'Flush Pages',
                 ],
             ],
-            'values'        => $values,
-            'readonly'      => false,
+            'values' => $values,
+            'readonly' => false,
             'moduleOptions' => $moduleOptions,
-            'backUrl'       => $this->generateUrl('admin_litespeedcache_esi'),
-            'formAction'    => $this->generateUrl('admin_litespeedcache_esi_edit', ['id' => $id]),
-            'mode'          => 'edit',
+            'backUrl' => $this->generateUrl('admin_litespeedcache_esi'),
+            'formAction' => $this->generateUrl('admin_litespeedcache_esi_edit', ['id' => $id]),
+            'mode' => 'edit',
         ], $request);
     }
 
     public function viewAction(Request $request, string $id): Response
     {
-        [, $rows,] = $this->init();
+        [, $rows] = $this->init();
 
         if (!isset($rows[$id])) {
             $this->addFlash('error', $this->trans('ESI module not found.', 'Modules.Litespeedcache.Admin'));
+
             return $this->redirectToRoute('admin_litespeedcache_esi');
         }
 
@@ -197,18 +199,18 @@ class EsiController extends AbstractController
                     'desc' => 'Flush Pages',
                 ],
             ],
-            'values'        => $values,
-            'readonly'      => true,
+            'values' => $values,
+            'readonly' => true,
             'moduleOptions' => $moduleOptions,
-            'backUrl'       => $this->generateUrl('admin_litespeedcache_esi'),
-            'formAction'    => '',
-            'mode'          => 'view',
+            'backUrl' => $this->generateUrl('admin_litespeedcache_esi'),
+            'formAction' => '',
+            'mode' => 'view',
         ], $request);
     }
 
     public function deleteAction(Request $request, string $id): Response
     {
-        [$config,,] = $this->init();
+        [$config] = $this->init();
 
         $res = $config->saveModConfigValues(['id' => $id], 'delete');
         if ($res) {
@@ -222,13 +224,13 @@ class EsiController extends AbstractController
 
     private function validateForm(Request $request, array $origValues): array
     {
-        $inputs  = ['id', 'priv', 'ttl', 'tag', 'events', 'ctrl', 'methods', 'render', 'asvar', 'ie', 'ce', 'disableESI', 'argument'];
+        $inputs = ['id', 'priv', 'ttl', 'tag', 'events', 'ctrl', 'methods', 'render', 'asvar', 'ie', 'ce', 'disableESI', 'argument'];
         $current = $origValues;
-        $errors  = [];
-        $split   = '/[\s,]+/';
+        $errors = [];
+        $split = '/[\s,]+/';
 
         foreach ($inputs as $name) {
-            $postVal = trim((string)$request->request->get($name, ''));
+            $postVal = trim((string) $request->request->get($name, ''));
 
             switch ($name) {
                 case 'id':
@@ -240,19 +242,19 @@ class EsiController extends AbstractController
                 case 'ie':
                 case 'ce':
                 case 'disableESI':
-                    $postVal = (int)$postVal;
+                    $postVal = (int) $postVal;
                     break;
 
                 case 'ttl':
                     if ($postVal !== '') {
                         if (!\Validate::isUnsignedInt($postVal)) {
                             $errors[] = 'Invalid value: TTL';
-                        } elseif ((int)$postVal < 60 && (int)$postVal !== 0) {
+                        } elseif ((int) $postVal < 60 && (int) $postVal !== 0) {
                             $errors[] = 'Invalid value: TTL — Must be greater than 60 seconds.';
-                        } elseif ($current['priv'] == 1 && (int)$postVal > 7200) {
+                        } elseif ($current['priv'] == 1 && (int) $postVal > 7200) {
                             $errors[] = 'Invalid value: TTL — Private TTL must be less than 7200 seconds.';
                         } else {
-                            $postVal = (int)$postVal;
+                            $postVal = (int) $postVal;
                         }
                     }
                     break;
@@ -332,7 +334,7 @@ class EsiController extends AbstractController
 
     private function getAddModuleOptions(array $existingRows): array
     {
-        $list    = [];
+        $list = [];
         $modules = \Module::getModulesInstalled();
         $existing = array_keys($existingRows);
 
@@ -350,6 +352,7 @@ class EsiController extends AbstractController
         foreach ($list as $id => $name) {
             $options[] = ['id' => $id, 'name' => "[$id] $name"];
         }
+
         return $options;
     }
 }

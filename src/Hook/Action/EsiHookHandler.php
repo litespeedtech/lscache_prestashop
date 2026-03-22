@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -6,7 +7,6 @@
  * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license    https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Hook\Action;
 
@@ -28,7 +28,7 @@ class EsiHookHandler
 
     public function __construct(CacheConfig $config, EsiMarkerManager $markerManager)
     {
-        $this->config        = $config;
+        $this->config = $config;
         $this->markerManager = $markerManager;
     }
 
@@ -38,14 +38,22 @@ class EsiHookHandler
             return '';
         }
 
-        $err    = 0;
+        $err = 0;
         $errFld = '';
-        $m      = $params['m']     ?? null;
-        $f      = $params['field'] ?? null;
+        $m = $params['m'] ?? null;
+        $f = $params['field'] ?? null;
 
-        if ($m === null) { $err |= 1; $errFld .= 'm '; }
-        if ($f === null) { $err |= 1; $errFld .= 'field '; }
-        if ($this->markerManager->hasActiveTracker()) { $err |= 2; }
+        if ($m === null) {
+            $err |= 1;
+            $errFld .= 'm ';
+        }
+        if ($f === null) {
+            $err |= 1;
+            $errFld .= 'field ';
+        }
+        if ($this->markerManager->hasActiveTracker()) {
+            $err |= 2;
+        }
 
         $esiParam = ['pt' => EsiItem::ESI_SMARTYFIELD, 'm' => $m, 'f' => $f];
         if ($f === 'widget' && isset($params['hook'])) {
@@ -60,18 +68,27 @@ class EsiHookHandler
         }
 
         $conf = $this->config->canInjectEsi($m, $esiParam);
-        if ($conf === false) { $err |= 4; }
+        if ($conf === false) {
+            $err |= 4;
+        }
 
         $this->markerManager->pushTracker($err);
 
         if ($err) {
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_CUST_SMARTY) {
                 $msg = '';
-                if ($err & 1) { $msg .= 'Missing param (' . $errFld . '). '; }
-                if ($err & 2) { $msg .= 'Nested hookLitespeedEsiBegin ignored. '; }
-                if ($err & 4) { $msg .= 'Cannot inject ESI for ' . $m; }
+                if ($err & 1) {
+                    $msg .= 'Missing param (' . $errFld . '). ';
+                }
+                if ($err & 2) {
+                    $msg .= 'Nested hookLitespeedEsiBegin ignored. ';
+                }
+                if ($err & 4) {
+                    $msg .= 'Cannot inject ESI for ' . $m;
+                }
                 LSLog::log(__METHOD__ . ' ' . $msg, LSLog::LEVEL_CUST_SMARTY);
             }
+
             return '';
         }
 

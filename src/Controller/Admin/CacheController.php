@@ -1,14 +1,13 @@
 <?php
 
-
 namespace LiteSpeed\Cache\Controller\Admin;
 
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Admin\ConfigValidator;
+use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Helper\CacheHelper;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -38,11 +37,12 @@ class CacheController extends AbstractController
 
         if ($request->isMethod('POST') && $request->request->has('submitCacheConfig')) {
             $this->handleSave($request, $config, $currentValues, $shopLevel);
+
             return $this->redirectToRoute('admin_litespeedcache_cache_settings');
         }
 
         return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/cache.html.twig', [
-            'values'   => $currentValues,
+            'values' => $currentValues,
             'disabled' => $disabled,
         ], $request);
     }
@@ -90,11 +90,13 @@ class CacheController extends AbstractController
             foreach ($errors as $e) {
                 $this->addFlash('error', $e);
             }
+
             return;
         }
 
         if ($changed === 0) {
             $this->addFlash('info', $this->trans('No changes detected.', $d));
+
             return;
         }
 

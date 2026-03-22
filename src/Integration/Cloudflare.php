@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -6,7 +7,6 @@
  * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Integration;
 
@@ -22,7 +22,7 @@ if (!defined('_PS_VERSION_')) {
  */
 class Cloudflare
 {
-    const API_BASE = 'https://api.cloudflare.com/client/v4/';
+    public const API_BASE = 'https://api.cloudflare.com/client/v4/';
 
     /** @var string */
     private $key;
@@ -32,7 +32,7 @@ class Cloudflare
 
     public function __construct(string $key, string $email = '')
     {
-        $this->key   = $key;
+        $this->key = $key;
         $this->email = $email;
     }
 
@@ -47,8 +47,8 @@ class Cloudflare
     public function findZone(string $domain): ?string
     {
         $domain = trim($domain, '/. ');
-        $parts  = explode('.', $domain);
-        $zone   = count($parts) >= 2 ? implode('.', array_slice($parts, -2)) : $domain;
+        $parts = explode('.', $domain);
+        $zone = count($parts) >= 2 ? implode('.', array_slice($parts, -2)) : $domain;
 
         $result = $this->request('GET', 'zones?name=' . urlencode($zone) . '&per_page=1&status=active');
 
@@ -70,10 +70,11 @@ class Cloudflare
 
         if (!empty($result['success']) && !empty($result['result'])) {
             $record = $result['result'][0];
+
             return [
                 'proxied' => (bool) ($record['proxied'] ?? false),
-                'ip'      => $record['content'] ?? '-',
-                'type'    => $record['type'] ?? 'A',
+                'ip' => $record['content'] ?? '-',
+                'type' => $record['type'] ?? 'A',
             ];
         }
 
@@ -81,10 +82,11 @@ class Cloudflare
         $result = $this->request('GET', 'zones/' . $zoneId . '/dns_records?type=AAAA&name=' . urlencode($domain));
         if (!empty($result['success']) && !empty($result['result'])) {
             $record = $result['result'][0];
+
             return [
                 'proxied' => (bool) ($record['proxied'] ?? false),
-                'ip'      => $record['content'] ?? '-',
-                'type'    => $record['type'] ?? 'AAAA',
+                'ip' => $record['content'] ?? '-',
+                'type' => $record['type'] ?? 'AAAA',
             ];
         }
 
@@ -109,11 +111,13 @@ class Cloudflare
                     return true;
                 }
                 $this->lastError = self::getErrors($update);
+
                 return false;
             }
         }
 
         $this->lastError = 'No A/AAAA record found for ' . $domain;
+
         return false;
     }
 
@@ -157,6 +161,7 @@ class Cloudflare
         }
 
         $this->lastError = self::getErrors($result);
+
         return false;
     }
 
@@ -176,6 +181,7 @@ class Cloudflare
         }
 
         $this->lastError = self::getErrors($result);
+
         return false;
     }
 
@@ -216,33 +222,35 @@ class Cloudflare
         // Surface GraphQL errors for debugging
         if (!empty($result['errors'])) {
             $this->lastError = implode(' | ', array_column($result['errors'], 'message'));
+
             return null;
         }
 
         if (empty($result['data']['viewer']['zones'][0]['httpRequests1hGroups'])) {
             $this->lastError = 'Empty response — no hourly groups returned. Raw: ' . json_encode($result['data'] ?? $result);
+
             return null;
         }
 
-        $reqTotal  = 0;
+        $reqTotal = 0;
         $reqCached = 0;
-        $bwTotal   = 0;
-        $bwCached  = 0;
+        $bwTotal = 0;
+        $bwCached = 0;
 
         foreach ($result['data']['viewer']['zones'][0]['httpRequests1hGroups'] as $group) {
-            $s          = $group['sum'];
-            $reqTotal  += (int) ($s['requests']       ?? 0);
+            $s = $group['sum'];
+            $reqTotal += (int) ($s['requests'] ?? 0);
             $reqCached += (int) ($s['cachedRequests'] ?? 0);
-            $bwTotal   += (int) ($s['bytes']          ?? 0);
-            $bwCached  += (int) ($s['cachedBytes']    ?? 0);
+            $bwTotal += (int) ($s['bytes'] ?? 0);
+            $bwCached += (int) ($s['cachedBytes'] ?? 0);
         }
 
         return [
             'period_hours' => $hoursBack,
-            'req_total'    => $reqTotal,
-            'req_cached'   => $reqCached,
-            'req_ratio'    => $reqTotal > 0 ? round($reqCached / $reqTotal * 100, 1) : 0.0,
-            'bw_total_mb'  => round($bwTotal  / 1048576, 2),
+            'req_total' => $reqTotal,
+            'req_cached' => $reqCached,
+            'req_ratio' => $reqTotal > 0 ? round($reqCached / $reqTotal * 100, 1) : 0.0,
+            'bw_total_mb' => round($bwTotal / 1048576, 2),
             'bw_cached_mb' => round($bwCached / 1048576, 2),
         ];
     }
@@ -256,6 +264,7 @@ class Cloudflare
         if (!empty($result['success'])) {
             return $result['result']['value'] ?? null;
         }
+
         return null;
     }
 
@@ -269,6 +278,7 @@ class Cloudflare
             return true;
         }
         $this->lastError = self::getErrors($result);
+
         return false;
     }
 
@@ -280,27 +290,27 @@ class Cloudflare
     {
         $settings = [
             // Performance
-            'ssl'                  => 'full',
-            'tls_1_3'             => 'on',
-            'http3'               => 'on',
-            'brotli'              => 'on',
-            'early_hints'         => 'on',
-            'always_use_https'    => 'on',
-            '0rtt'                => 'on',
+            'ssl' => 'full',
+            'tls_1_3' => 'on',
+            'http3' => 'on',
+            'brotli' => 'on',
+            'early_hints' => 'on',
+            'always_use_https' => 'on',
+            '0rtt' => 'on',
 
             // Cache — only static files, never PHP/HTML
-            'browser_cache_ttl'   => 0,        // Respect origin headers
-            'cache_level'         => 'basic',   // Only cache files with extensions (not query strings)
+            'browser_cache_ttl' => 0,        // Respect origin headers
+            'cache_level' => 'basic',   // Only cache files with extensions (not query strings)
 
             // Disable features that break PrestaShop
-            'rocket_loader'       => 'off',    // Breaks PS JS (cart, checkout, modules)
-            'email_obfuscation'   => 'off',    // Interferes with contact forms
-            'minify'              => ['css' => 'off', 'html' => 'off', 'js' => 'off'], // PS has its own minification
+            'rocket_loader' => 'off',    // Breaks PS JS (cart, checkout, modules)
+            'email_obfuscation' => 'off',    // Interferes with contact forms
+            'minify' => ['css' => 'off', 'html' => 'off', 'js' => 'off'], // PS has its own minification
 
             // Security — balanced
-            'security_level'      => 'medium',
-            'challenge_ttl'       => 3600,
-            'browser_check'       => 'on',
+            'security_level' => 'medium',
+            'challenge_ttl' => 3600,
+            'browser_check' => 'on',
         ];
 
         // Save current settings before applying (for revert)
@@ -318,8 +328,8 @@ class Cloudflare
             $ok = $this->setSetting($zoneId, $key, $value);
             $results[$key] = [
                 'success' => $ok,
-                'value'   => $value,
-                'error'   => $ok ? '' : $this->lastError,
+                'value' => $value,
+                'error' => $ok ? '' : $this->lastError,
             ];
             $this->lastError = '';
         }
@@ -350,21 +360,21 @@ class Cloudflare
         if (empty($backup)) {
             // Cloudflare free plan defaults
             $backup = [
-                'ssl'                => 'flexible',
-                'tls_1_3'            => 'on',
-                'http3'              => 'on',
-                'brotli'             => 'on',
-                'early_hints'        => 'off',
-                'always_use_https'   => 'off',
-                '0rtt'               => 'on',
-                'browser_cache_ttl'  => 14400,
-                'cache_level'        => 'aggressive',
-                'rocket_loader'      => 'off',
-                'email_obfuscation'  => 'on',
-                'minify'             => ['css' => 'off', 'html' => 'off', 'js' => 'off'],
-                'security_level'     => 'medium',
-                'challenge_ttl'      => 1800,
-                'browser_check'      => 'on',
+                'ssl' => 'flexible',
+                'tls_1_3' => 'on',
+                'http3' => 'on',
+                'brotli' => 'on',
+                'early_hints' => 'off',
+                'always_use_https' => 'off',
+                '0rtt' => 'on',
+                'browser_cache_ttl' => 14400,
+                'cache_level' => 'aggressive',
+                'rocket_loader' => 'off',
+                'email_obfuscation' => 'on',
+                'minify' => ['css' => 'off', 'html' => 'off', 'js' => 'off'],
+                'security_level' => 'medium',
+                'challenge_ttl' => 1800,
+                'browser_check' => 'on',
             ];
         }
 
@@ -393,6 +403,7 @@ class Cloudflare
         }
 
         $this->purgeAll($zoneId);
+
         return $results;
     }
 
@@ -433,20 +444,20 @@ class Cloudflare
         $rules = [
             // Rule 1: Bypass cache for PHP/dynamic content
             [
-                'expression'  => '(not http.request.uri.path.extension in {"jpg" "jpeg" "png" "gif" "webp" "avif" "svg" "ico" "bmp" "mp4" "webm" "ogg" "mp3" "wav" "woff" "woff2" "ttf" "eot" "otf" "css" "js" "pdf" "zip"})',
+                'expression' => '(not http.request.uri.path.extension in {"jpg" "jpeg" "png" "gif" "webp" "avif" "svg" "ico" "bmp" "mp4" "webm" "ogg" "mp3" "wav" "woff" "woff2" "ttf" "eot" "otf" "css" "js" "pdf" "zip"})',
                 'description' => 'PrestaShop — Bypass cache for dynamic content',
-                'action'      => 'set_cache_settings',
+                'action' => 'set_cache_settings',
                 'action_parameters' => [
                     'cache' => false,
                 ],
             ],
             // Rule 2: Cache static assets with long edge TTL
             [
-                'expression'  => '(http.request.uri.path.extension in {"jpg" "jpeg" "png" "gif" "webp" "avif" "svg" "ico" "bmp" "mp4" "webm" "ogg" "mp3" "wav" "woff" "woff2" "ttf" "eot" "otf" "pdf" "zip"})',
+                'expression' => '(http.request.uri.path.extension in {"jpg" "jpeg" "png" "gif" "webp" "avif" "svg" "ico" "bmp" "mp4" "webm" "ogg" "mp3" "wav" "woff" "woff2" "ttf" "eot" "otf" "pdf" "zip"})',
                 'description' => 'PrestaShop — Cache static assets (images, video, fonts)',
-                'action'      => 'set_cache_settings',
+                'action' => 'set_cache_settings',
                 'action_parameters' => [
-                    'cache'    => true,
+                    'cache' => true,
                     'edge_ttl' => ['mode' => 'override_origin', 'default' => 2592000], // 30 days
                     'browser_ttl' => ['mode' => 'override_origin', 'default' => 604800], // 7 days
                 ],
@@ -463,13 +474,14 @@ class Cloudflare
                     $success = false;
                 }
             }
+
             return ['success' => $success, 'value' => $success ? 'added' : 'partial', 'error' => $this->lastError];
         }
 
         // Create new ruleset with rules
         $createResult = $this->request('POST', 'zones/' . $zoneId . '/rulesets', [
-            'name'  => 'PrestaShop Cache Rules',
-            'kind'  => 'zone',
+            'name' => 'PrestaShop Cache Rules',
+            'kind' => 'zone',
             'phase' => 'http_request_cache_settings',
             'rules' => $rules,
         ]);
@@ -479,6 +491,7 @@ class Cloudflare
         }
 
         $this->lastError = self::getErrors($createResult);
+
         return ['success' => false, 'value' => null, 'error' => $this->lastError];
     }
 
@@ -501,9 +514,9 @@ class Cloudflare
         // First create the filter
         $filterResult = $this->request('POST', 'zones/' . $zoneId . '/filters', [
             [
-                'expression'  => $expression,
+                'expression' => $expression,
                 'description' => 'Redsys Payment Gateway',
-            ]
+            ],
         ]);
 
         if (empty($filterResult['success']) || empty($filterResult['result'][0]['id'])) {
@@ -516,11 +529,11 @@ class Cloudflare
         // Create the firewall rule with action "allow"
         $ruleResult = $this->request('POST', 'zones/' . $zoneId . '/firewall/rules', [
             [
-                'filter'      => ['id' => $filterId],
-                'action'      => 'allow',
+                'filter' => ['id' => $filterId],
+                'action' => 'allow',
                 'description' => 'Redsys Payment Gateway',
-                'priority'    => 1,
-            ]
+                'priority' => 1,
+            ],
         ]);
 
         if (!empty($ruleResult['success'])) {
@@ -528,6 +541,7 @@ class Cloudflare
         }
 
         $this->lastError = self::getErrors($ruleResult);
+
         return ['success' => false, 'value' => null, 'error' => $this->lastError];
     }
 
@@ -552,16 +566,16 @@ class Cloudflare
         if (!$rulesetId) {
             // Create a new ruleset
             $createResult = $this->request('POST', 'zones/' . $zoneId . '/rulesets', [
-                'name'        => 'LiteSpeed Cache Custom Rules',
-                'kind'        => 'zone',
-                'phase'       => 'http_request_firewall_custom',
-                'rules'       => [
+                'name' => 'LiteSpeed Cache Custom Rules',
+                'kind' => 'zone',
+                'phase' => 'http_request_firewall_custom',
+                'rules' => [
                     [
-                        'expression'  => $expression,
-                        'action'      => 'skip',
+                        'expression' => $expression,
+                        'action' => 'skip',
                         'action_parameters' => ['ruleset' => 'current'],
                         'description' => 'Redsys Payment Gateway — Allow',
-                    ]
+                    ],
                 ],
             ]);
 
@@ -570,13 +584,14 @@ class Cloudflare
             }
 
             $this->lastError = self::getErrors($createResult);
+
             return ['success' => false, 'value' => null, 'error' => $this->lastError];
         }
 
         // Add rule to existing ruleset
         $addResult = $this->request('POST', 'zones/' . $zoneId . '/rulesets/' . $rulesetId . '/rules', [
-            'expression'  => $expression,
-            'action'      => 'skip',
+            'expression' => $expression,
+            'action' => 'skip',
             'action_parameters' => ['ruleset' => 'current'],
             'description' => 'Redsys Payment Gateway — Allow',
         ]);
@@ -586,6 +601,7 @@ class Cloudflare
         }
 
         $this->lastError = self::getErrors($addResult);
+
         return ['success' => false, 'value' => null, 'error' => $this->lastError];
     }
 
@@ -610,9 +626,9 @@ class Cloudflare
         // Create filter
         $filterResult = $this->request('POST', 'zones/' . $zoneId . '/filters', [
             [
-                'expression'  => $expression,
+                'expression' => $expression,
                 'description' => $description,
-            ]
+            ],
         ]);
 
         if (empty($filterResult['success']) || empty($filterResult['result'][0]['id'])) {
@@ -624,11 +640,11 @@ class Cloudflare
 
         $ruleResult = $this->request('POST', 'zones/' . $zoneId . '/firewall/rules', [
             [
-                'filter'      => ['id' => $filterId],
-                'action'      => 'block',
+                'filter' => ['id' => $filterId],
+                'action' => 'block',
                 'description' => $description,
-                'priority'    => 10,
-            ]
+                'priority' => 10,
+            ],
         ]);
 
         if (!empty($ruleResult['success'])) {
@@ -636,6 +652,7 @@ class Cloudflare
         }
 
         $this->lastError = self::getErrors($ruleResult);
+
         return ['success' => false, 'value' => null, 'error' => $this->lastError];
     }
 
@@ -654,8 +671,8 @@ class Cloudflare
         }
 
         $rule = [
-            'expression'  => $expression,
-            'action'      => 'block',
+            'expression' => $expression,
+            'action' => 'block',
             'description' => $description,
         ];
 
@@ -663,8 +680,8 @@ class Cloudflare
             $result = $this->request('POST', 'zones/' . $zoneId . '/rulesets/' . $rulesetId . '/rules', $rule);
         } else {
             $result = $this->request('POST', 'zones/' . $zoneId . '/rulesets', [
-                'name'  => 'LiteSpeed Cache Security Rules',
-                'kind'  => 'zone',
+                'name' => 'LiteSpeed Cache Security Rules',
+                'kind' => 'zone',
                 'phase' => 'http_request_firewall_custom',
                 'rules' => [$rule],
             ]);
@@ -675,6 +692,7 @@ class Cloudflare
         }
 
         $this->lastError = self::getErrors($result);
+
         return ['success' => false, 'value' => null, 'error' => $this->lastError];
     }
 
@@ -695,9 +713,9 @@ class Cloudflare
 
         $filterResult = $this->request('POST', 'zones/' . $zoneId . '/filters', [
             [
-                'expression'  => $expression,
+                'expression' => $expression,
                 'description' => $description,
-            ]
+            ],
         ]);
 
         if (empty($filterResult['success']) || empty($filterResult['result'][0]['id'])) {
@@ -732,11 +750,11 @@ class Cloudflare
         $filterId = $filterResult['result'][0]['id'];
         $ruleResult = $this->request('POST', 'zones/' . $zoneId . '/firewall/rules', [
             [
-                'filter'      => ['id' => $filterId],
-                'action'      => 'block',
+                'filter' => ['id' => $filterId],
+                'action' => 'block',
                 'description' => $description,
-                'priority'    => 10,
-            ]
+                'priority' => 10,
+            ],
         ]);
 
         if (!empty($ruleResult['success'])) {
@@ -744,6 +762,7 @@ class Cloudflare
         }
 
         $this->lastError = self::getErrors($ruleResult);
+
         return ['success' => false, 'value' => null, 'error' => $this->lastError];
     }
 
@@ -753,6 +772,7 @@ class Cloudflare
     public function hasFirewallRule(string $zoneId, string $description): bool
     {
         $result = $this->request('GET', 'zones/' . $zoneId . '/firewall/rules?description=' . urlencode($description));
+
         return !empty($result['result']);
     }
 
@@ -790,9 +810,11 @@ class Cloudflare
             foreach ($result['result'] as $s) {
                 $settings[$s['id']] = $s['value'];
             }
+
             return $settings;
         }
         $this->lastError = self::getErrors($result);
+
         return [];
     }
 
@@ -823,7 +845,7 @@ class Cloudflare
      */
     private function graphql(string $query): array
     {
-        $url     = 'https://api.cloudflare.com/client/v4/graphql';
+        $url = 'https://api.cloudflare.com/client/v4/graphql';
         $headers = ['Content-Type: application/json'];
 
         if ($this->email !== '') {
@@ -842,7 +864,7 @@ class Cloudflare
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['query' => $query]));
 
         $response = curl_exec($ch);
-        $error    = curl_error($ch);
+        $error = curl_error($ch);
         curl_close($ch);
 
         if ($error) {
@@ -850,21 +872,22 @@ class Cloudflare
         }
 
         $decoded = json_decode($response, true);
+
         return is_array($decoded) ? $decoded : [];
     }
 
     /**
      * Executes a cURL request against the Cloudflare API.
      *
-     * @param string $method  HTTP verb: GET, POST, PATCH, DELETE
-     * @param string $endpoint  Path relative to API_BASE
-     * @param array  $body  JSON body for write requests
+     * @param string $method HTTP verb: GET, POST, PATCH, DELETE
+     * @param string $endpoint Path relative to API_BASE
+     * @param array $body JSON body for write requests
      *
      * @return array Decoded JSON response
      */
     private function request(string $method, string $endpoint, array $body = []): array
     {
-        $url     = self::API_BASE . $endpoint;
+        $url = self::API_BASE . $endpoint;
         $headers = ['Content-Type: application/json'];
 
         if ($this->email !== '') {
@@ -891,7 +914,7 @@ class Cloudflare
         }
 
         $response = curl_exec($ch);
-        $error    = curl_error($ch);
+        $error = curl_error($ch);
         curl_close($ch);
 
         if ($error) {

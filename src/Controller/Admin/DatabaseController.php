@@ -1,6 +1,5 @@
 <?php
 
-
 namespace LiteSpeed\Cache\Controller\Admin;
 
 if (!defined('_PS_VERSION_')) {
@@ -27,6 +26,7 @@ class DatabaseController extends AbstractController
             $result = $this->executeCleanup($action, $db, $prefix);
             $this->addFlash($result['success'] ? 'success' : 'error', $result['message']);
             \PrestaShopLogger::addLog('DB cleanup: ' . $action . ' — ' . $result['message'], 1, null, 'LiteSpeedCache', 0, true);
+
             return $this->redirectToRoute('admin_litespeedcache_database');
         }
 
@@ -43,6 +43,7 @@ class DatabaseController extends AbstractController
                     $this->addFlash('error', $this->trans('Failed to convert table %s: %s', $d, [$table, $e->getMessage()]));
                 }
             }
+
             return $this->redirectToRoute('admin_litespeedcache_database');
         }
 
@@ -51,6 +52,7 @@ class DatabaseController extends AbstractController
             $this->optimizeAllTables($db);
             $this->addFlash('success', $this->trans('All tables optimized.', $d));
             \PrestaShopLogger::addLog('All database tables optimized', 1, null, 'LiteSpeedCache', 0, true);
+
             return $this->redirectToRoute('admin_litespeedcache_database');
         }
 
@@ -59,16 +61,16 @@ class DatabaseController extends AbstractController
 
         // Table engine info
         $tables = $this->getTableEngines($db);
-        $nonInnodbCount = count(array_filter($tables, fn($t) => strtolower($t['engine']) !== 'innodb'));
+        $nonInnodbCount = count(array_filter($tables, fn ($t) => strtolower($t['engine']) !== 'innodb'));
 
         // Database summary
         $summary = $this->getDatabaseSummary($db);
 
         return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/database.html.twig', [
-            'cleanupItems'   => $cleanupItems,
-            'tables'         => $tables,
+            'cleanupItems' => $cleanupItems,
+            'tables' => $tables,
             'nonInnodbCount' => $nonInnodbCount,
-            'summary'        => $summary,
+            'summary' => $summary,
         ], $request);
     }
 
@@ -78,10 +80,10 @@ class DatabaseController extends AbstractController
 
         // Abandoned carts (no order, older than 48h)
         $items[] = [
-            'key'   => 'abandoned_carts',
+            'key' => 'abandoned_carts',
             'title' => 'Abandoned Carts',
-            'desc'  => 'Delete carts with no associated order, older than 48 hours.',
-            'icon'  => 'remove_shopping_cart',
+            'desc' => 'Delete carts with no associated order, older than 48 hours.',
+            'icon' => 'remove_shopping_cart',
             'count' => (int) $db->getValue(
                 "SELECT COUNT(*) FROM `{$prefix}cart` c
                  LEFT JOIN `{$prefix}orders` o ON o.id_cart = c.id_cart
@@ -91,10 +93,10 @@ class DatabaseController extends AbstractController
 
         // Old logs (older than 30 days)
         $items[] = [
-            'key'   => 'old_logs',
+            'key' => 'old_logs',
             'title' => 'Old Logs',
-            'desc'  => 'Delete PrestaShop log entries older than 30 days.',
-            'icon'  => 'delete_sweep',
+            'desc' => 'Delete PrestaShop log entries older than 30 days.',
+            'icon' => 'delete_sweep',
             'count' => (int) $db->getValue(
                 "SELECT COUNT(*) FROM `{$prefix}log`
                  WHERE date_add < DATE_SUB(NOW(), INTERVAL 30 DAY)"
@@ -103,10 +105,10 @@ class DatabaseController extends AbstractController
 
         // Expired connections
         $items[] = [
-            'key'   => 'expired_connections',
+            'key' => 'expired_connections',
             'title' => 'Expired Connections',
-            'desc'  => 'Delete expired guest connection records.',
-            'icon'  => 'link_off',
+            'desc' => 'Delete expired guest connection records.',
+            'icon' => 'link_off',
             'count' => (int) $db->getValue(
                 "SELECT COUNT(*) FROM `{$prefix}connections`
                  WHERE date_add < DATE_SUB(NOW(), INTERVAL 30 DAY)"
@@ -115,19 +117,19 @@ class DatabaseController extends AbstractController
 
         // Search statistics
         $items[] = [
-            'key'   => 'search_stats',
+            'key' => 'search_stats',
             'title' => 'Search Statistics',
-            'desc'  => 'Clear all internal search statistics.',
-            'icon'  => 'search_off',
+            'desc' => 'Clear all internal search statistics.',
+            'icon' => 'search_off',
             'count' => (int) $db->getValue("SELECT COUNT(*) FROM `{$prefix}statssearch`"),
         ];
 
         // Guest entries without customer
         $items[] = [
-            'key'   => 'old_guests',
+            'key' => 'old_guests',
             'title' => 'Old Guest Records',
-            'desc'  => 'Delete guest records older than 30 days.',
-            'icon'  => 'person_off',
+            'desc' => 'Delete guest records older than 30 days.',
+            'icon' => 'person_off',
             'count' => (int) $db->getValue(
                 "SELECT COUNT(*) FROM `{$prefix}guest`
                  WHERE id_customer = 0 AND id_guest NOT IN (
@@ -139,28 +141,28 @@ class DatabaseController extends AbstractController
 
         // Mail logs
         $items[] = [
-            'key'   => 'mail_logs',
+            'key' => 'mail_logs',
             'title' => 'Email Logs',
-            'desc'  => 'Clear all sent email log records.',
-            'icon'  => 'mark_email_read',
+            'desc' => 'Clear all sent email log records.',
+            'icon' => 'mark_email_read',
             'count' => (int) $db->getValue("SELECT COUNT(*) FROM `{$prefix}mail`"),
         ];
 
         // Page not found (404) logs
         $items[] = [
-            'key'   => 'page_not_found',
+            'key' => 'page_not_found',
             'title' => '404 Page Logs',
-            'desc'  => 'Delete all 404 error page log records.',
-            'icon'  => 'error_outline',
+            'desc' => 'Delete all 404 error page log records.',
+            'icon' => 'error_outline',
             'count' => (int) $db->getValue("SELECT COUNT(*) FROM `{$prefix}pagenotfound`"),
         ];
 
         // Expired specific prices
         $items[] = [
-            'key'   => 'expired_specific_prices',
+            'key' => 'expired_specific_prices',
             'title' => 'Expired Specific Prices',
-            'desc'  => 'Delete specific price rules that have already expired.',
-            'icon'  => 'sell',
+            'desc' => 'Delete specific price rules that have already expired.',
+            'icon' => 'sell',
             'count' => (int) $db->getValue(
                 "SELECT COUNT(*) FROM `{$prefix}specific_price`
                  WHERE `to` != '0000-00-00 00:00:00' AND `to` < NOW()"
@@ -170,10 +172,10 @@ class DatabaseController extends AbstractController
         // Total cleanup count
         $totalCount = array_sum(array_column($items, 'count'));
         array_unshift($items, [
-            'key'   => 'clean_all',
+            'key' => 'clean_all',
             'title' => 'Clean All',
-            'desc'  => 'Run all cleanup tasks at once.',
-            'icon'  => 'cleaning_services',
+            'desc' => 'Run all cleanup tasks at once.',
+            'icon' => 'cleaning_services',
             'count' => $totalCount,
         ]);
 
@@ -241,6 +243,7 @@ class DatabaseController extends AbstractController
         }
 
         $label = $action === 'clean_all' ? 'All cleanup tasks' : $action;
+
         return ['success' => true, 'message' => $label . ' completed.'];
     }
 
@@ -256,6 +259,7 @@ class DatabaseController extends AbstractController
              WHERE TABLE_SCHEMA = '" . pSQL($dbName) . "'
              ORDER BY ENGINE, TABLE_NAME"
         );
+
         return $rows ?: [];
     }
 
@@ -276,7 +280,7 @@ class DatabaseController extends AbstractController
         );
 
         $mysqlVersion = $db->getValue('SELECT VERSION()') ?: '-';
-        $defaultEngine = $db->getValue("SELECT @@default_storage_engine") ?: '-';
+        $defaultEngine = $db->getValue('SELECT @@default_storage_engine') ?: '-';
         $charset = $db->getValue("SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = '{$safeDb}'") ?: '-';
         $collation = $db->getValue("SELECT DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = '{$safeDb}'") ?: '-';
 
@@ -292,18 +296,18 @@ class DatabaseController extends AbstractController
         ) ?: [];
 
         return [
-            'db_name'       => $dbName,
+            'db_name' => $dbName,
             'mysql_version' => $mysqlVersion,
             'default_engine' => $defaultEngine,
-            'charset'       => $charset,
-            'collation'     => $collation,
-            'total_tables'  => (int) ($stats['total_tables'] ?? 0),
-            'total_rows'    => (int) ($stats['total_rows'] ?? 0),
-            'total_size'    => (float) ($stats['total_size_mb'] ?? 0),
-            'data_size'     => (float) ($stats['data_size_mb'] ?? 0),
-            'index_size'    => (float) ($stats['index_size_mb'] ?? 0),
-            'free_space'    => (float) ($stats['free_space_mb'] ?? 0),
-            'top_tables'    => $topTables,
+            'charset' => $charset,
+            'collation' => $collation,
+            'total_tables' => (int) ($stats['total_tables'] ?? 0),
+            'total_rows' => (int) ($stats['total_rows'] ?? 0),
+            'total_size' => (float) ($stats['total_size_mb'] ?? 0),
+            'data_size' => (float) ($stats['data_size_mb'] ?? 0),
+            'index_size' => (float) ($stats['index_size_mb'] ?? 0),
+            'free_space' => (float) ($stats['free_space_mb'] ?? 0),
+            'top_tables' => $topTables,
         ];
     }
 

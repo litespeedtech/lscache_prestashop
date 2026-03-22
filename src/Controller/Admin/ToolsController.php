@@ -10,7 +10,6 @@ use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Config\CdnConfig;
 use LiteSpeed\Cache\Config\ExclusionsConfig;
 use LiteSpeed\Cache\Config\ObjConfig;
-use LiteSpeed\Cache\Core\CacheState;
 use LiteSpeed\Cache\Helper\CacheHelper;
 use LiteSpeed\Cache\Helper\ObjectCacheActivator;
 use LiteSpeed\Cache\Module\TabManager;
@@ -35,14 +34,17 @@ class ToolsController extends AbstractController
         if ($request->isMethod('POST')) {
             if ($request->request->has('submitPurgeSelection')) {
                 $this->handlePurgeSelection($request);
+
                 return $this->redirectToRoute('admin_litespeedcache_tools_purge');
             }
             if ($request->request->has('submitPurgeId')) {
                 $this->handlePurgeIds($request);
+
                 return $this->redirectToRoute('admin_litespeedcache_tools_purge');
             }
             if ($request->request->has('submitSupport')) {
                 $this->handleSupportRequest($request);
+
                 return $this->redirectToRoute('admin_litespeedcache_tools_report');
             }
             if ($request->request->has('clear_access_log')) {
@@ -54,6 +56,7 @@ class ToolsController extends AbstractController
                 }
                 $this->addFlash('success', $this->trans('Access log cleared.', 'Modules.Litespeedcache.Admin'));
                 \PrestaShopLogger::addLog('Access log cleared by admin', 1, null, 'LiteSpeedCache', 0, true);
+
                 return $this->redirectToRoute('admin_litespeedcache_tools_logs');
             }
             if ($request->request->has('submitDebug')) {
@@ -81,6 +84,7 @@ class ToolsController extends AbstractController
 
                 $this->addFlash('success', $this->trans('Debug settings saved.', 'Modules.Litespeedcache.Admin'));
                 \PrestaShopLogger::addLog('Debug settings updated. Level: ' . $level . ', Bypass: ' . ($bypass ? 'on' : 'off'), 1, null, 'LiteSpeedCache', 0, true);
+
                 return $this->redirectToRoute('admin_litespeedcache_tools_debug');
             }
         }
@@ -89,6 +93,7 @@ class ToolsController extends AbstractController
         $purgeAction = $request->query->get('purge_action');
         if ($purgeAction) {
             $this->handlePurgeAction($purgeAction);
+
             return $this->redirectToRoute('admin_litespeedcache_tools_purge');
         }
 
@@ -99,6 +104,7 @@ class ToolsController extends AbstractController
         }
         if ($ieAction === 'reset') {
             $this->handleReset();
+
             return $this->redirectToRoute('admin_litespeedcache_tools_import_export');
         }
 
@@ -107,6 +113,7 @@ class ToolsController extends AbstractController
         $importForm->handleRequest($request);
         if ($importForm->isSubmitted() && $importForm->isValid()) {
             $this->handleImport($importForm->get('import_file')->getData());
+
             return $this->redirectToRoute('admin_litespeedcache_tools_import_export');
         }
 
@@ -116,6 +123,7 @@ class ToolsController extends AbstractController
             );
             $this->addFlash('success', $this->trans('Module events cleared.', 'Modules.Litespeedcache.Admin'));
             \PrestaShopLogger::addLog('Event log cleared by admin', 1, null, 'LiteSpeedCache', 0, true);
+
             return $this->redirectToRoute('admin_litespeedcache_tools_logs');
         }
 
@@ -128,6 +136,7 @@ class ToolsController extends AbstractController
                 \Tools::clearSf2Cache();
                 $this->addFlash('success', $this->trans('Tabs reinstalled successfully.', 'Modules.Litespeedcache.Admin'));
             }
+
             return $this->redirectToRoute('admin_litespeedcache_tools_updates');
         }
 
@@ -135,7 +144,7 @@ class ToolsController extends AbstractController
 
         // Common lightweight data
         $params = [
-            'activeTab'  => $activeTab,
+            'activeTab' => $activeTab,
             'accessLogUrl' => $this->generateUrl('admin_litespeedcache_tools_access_log'),
         ];
 
@@ -148,23 +157,23 @@ class ToolsController extends AbstractController
                     $shopLevel = -1;
                 }
                 $params += [
-                    'shopLevel'          => $shopLevel,
-                    'purgeUrl'           => $this->generateUrl('admin_litespeedcache_tools'),
+                    'shopLevel' => $shopLevel,
+                    'purgeUrl' => $this->generateUrl('admin_litespeedcache_tools'),
                     'purgeSelectionValues' => ['purgeby' => '', 'purgeids' => ''],
-                    'objEnabled'         => !empty(ObjConfig::getAll()[ObjConfig::OBJ_ENABLE]),
+                    'objEnabled' => !empty(ObjConfig::getAll()[ObjConfig::OBJ_ENABLE]),
                 ];
                 break;
 
             case 'logs':
-                $page    = max(1, (int) $request->query->get('page', 1));
+                $page = max(1, (int) $request->query->get('page', 1));
                 $perPage = 50;
                 $params += [
-                    'events'         => $this->getEvents($page, $perPage),
-                    'totalEvents'    => $this->countEvents(),
-                    'page'           => $page,
-                    'perPage'        => $perPage,
-                    'totalPages'     => max(1, (int) ceil($this->countEvents() / $perPage)),
-                    'accessLog'      => $this->getAccessLog(200),
+                    'events' => $this->getEvents($page, $perPage),
+                    'totalEvents' => $this->countEvents(),
+                    'page' => $page,
+                    'perPage' => $perPage,
+                    'totalPages' => max(1, (int) ceil($this->countEvents() / $perPage)),
+                    'accessLog' => $this->getAccessLog(200),
                     'clearEventsUrl' => $this->generateUrl('admin_litespeedcache_tools', ['clear_events' => 1]),
                 ];
                 break;
@@ -176,41 +185,41 @@ class ToolsController extends AbstractController
                 $employee = $this->getContext()->employee;
                 $params += [
                     'report' => [
-                        'Module version'    => \Module::getInstanceByName('litespeedcache')->version ?? '-',
+                        'Module version' => \Module::getInstanceByName('litespeedcache')->version ?? '-',
                         'LiteSpeed license' => CacheHelper::licenseEnabled() ? 'Active' : 'Not detected',
-                        'Cache enabled'     => $config->get(Conf::CFG_ENABLED) ? 'Yes' : 'No',
-                        'Guest mode'        => $config->get(Conf::CFG_GUESTMODE) ? 'Yes' : 'No',
-                        'Object cache'      => $objCfg[ObjConfig::OBJ_ENABLE] ? $objCfg[ObjConfig::OBJ_METHOD] . ' (' . $objCfg[ObjConfig::OBJ_HOST] . ':' . $objCfg[ObjConfig::OBJ_PORT] . ')' : 'Disabled',
-                        'Redis extension'   => extension_loaded('redis') ? 'Loaded' : 'Not loaded',
-                        'CDN (Cloudflare)'  => $cdnCfg[CdnConfig::CF_ENABLE] ? 'Enabled' : 'Disabled',
-                        'Multishop'         => \Shop::isFeatureActive() ? 'Yes' : 'No',
-                        'Debug mode'        => defined('_LITESPEED_DEBUG_') ? (string) _LITESPEED_DEBUG_ : '0',
+                        'Cache enabled' => $config->get(Conf::CFG_ENABLED) ? 'Yes' : 'No',
+                        'Guest mode' => $config->get(Conf::CFG_GUESTMODE) ? 'Yes' : 'No',
+                        'Object cache' => $objCfg[ObjConfig::OBJ_ENABLE] ? $objCfg[ObjConfig::OBJ_METHOD] . ' (' . $objCfg[ObjConfig::OBJ_HOST] . ':' . $objCfg[ObjConfig::OBJ_PORT] . ')' : 'Disabled',
+                        'Redis extension' => extension_loaded('redis') ? 'Loaded' : 'Not loaded',
+                        'CDN (Cloudflare)' => $cdnCfg[CdnConfig::CF_ENABLE] ? 'Enabled' : 'Disabled',
+                        'Multishop' => \Shop::isFeatureActive() ? 'Yes' : 'No',
+                        'Debug mode' => defined('_LITESPEED_DEBUG_') ? (string) _LITESPEED_DEBUG_ : '0',
                     ],
                     'installedModules' => $this->getInstalledModulesList(),
                     'adminData' => [
-                        'name'  => $employee->firstname . ' ' . $employee->lastname,
+                        'name' => $employee->firstname . ' ' . $employee->lastname,
                         'email' => $employee->email,
-                        'url'   => \Tools::getShopDomainSsl(true),
+                        'url' => \Tools::getShopDomainSsl(true),
                     ],
                     'phpInfo' => [
-                        'Web Server'          => $_SERVER['SERVER_SOFTWARE'] ?? php_sapi_name(),
-                        'Server OS'           => PHP_OS . ' ' . php_uname('r'),
+                        'Web Server' => $_SERVER['SERVER_SOFTWARE'] ?? php_sapi_name(),
+                        'Server OS' => PHP_OS . ' ' . php_uname('r'),
                         'Server Architecture' => php_uname('m'),
-                        'PHP Version'         => PHP_VERSION,
-                        'PHP SAPI'            => PHP_SAPI,
-                        'Memory Limit'        => ini_get('memory_limit'),
-                        'Max Execution Time'  => ini_get('max_execution_time') . 's',
-                        'Max Input Vars'      => ini_get('max_input_vars'),
-                        'Upload Max Size'     => ini_get('upload_max_filesize'),
-                        'Post Max Size'       => ini_get('post_max_size'),
-                        'OPcache'             => function_exists('opcache_get_status') && !empty(@opcache_get_status(false)) ? 'Enabled' : 'Disabled',
-                        'MySQL Version'       => \Db::getInstance()->getValue('SELECT VERSION()') ?: '-',
-                        'MySQL Engine'        => \Db::getInstance()->getValue("SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()") ?: '-',
-                        'SSL'                 => !empty($_SERVER['HTTPS']) || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'Yes' : 'No',
-                        'Document Root'       => $_SERVER['DOCUMENT_ROOT'] ?? '-',
-                        'Temp Directory'      => sys_get_temp_dir(),
-                        'Disk Free Space'     => function_exists('disk_free_space') ? round(@disk_free_space('/') / 1073741824, 2) . ' GB' : '-',
-                        'PHP Extensions'      => implode(', ', get_loaded_extensions()),
+                        'PHP Version' => PHP_VERSION,
+                        'PHP SAPI' => PHP_SAPI,
+                        'Memory Limit' => ini_get('memory_limit'),
+                        'Max Execution Time' => ini_get('max_execution_time') . 's',
+                        'Max Input Vars' => ini_get('max_input_vars'),
+                        'Upload Max Size' => ini_get('upload_max_filesize'),
+                        'Post Max Size' => ini_get('post_max_size'),
+                        'OPcache' => function_exists('opcache_get_status') && !empty(@opcache_get_status(false)) ? 'Enabled' : 'Disabled',
+                        'MySQL Version' => \Db::getInstance()->getValue('SELECT VERSION()') ?: '-',
+                        'MySQL Engine' => \Db::getInstance()->getValue('SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()') ?: '-',
+                        'SSL' => !empty($_SERVER['HTTPS']) || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'Yes' : 'No',
+                        'Document Root' => $_SERVER['DOCUMENT_ROOT'] ?? '-',
+                        'Temp Directory' => sys_get_temp_dir(),
+                        'Disk Free Space' => function_exists('disk_free_space') ? round(@disk_free_space('/') / 1073741824, 2) . ' GB' : '-',
+                        'PHP Extensions' => implode(', ', get_loaded_extensions()),
                     ],
                 ];
                 break;
@@ -219,9 +228,9 @@ class ToolsController extends AbstractController
                 $htaccessFrontPath = _PS_ROOT_DIR_ . '/.htaccess';
                 $htaccessAdminPath = _PS_ADMIN_DIR_ . '/.htaccess';
                 $params += [
-                    'htaccessFrontPath'    => $htaccessFrontPath,
+                    'htaccessFrontPath' => $htaccessFrontPath,
                     'htaccessFrontContent' => is_file($htaccessFrontPath) && is_readable($htaccessFrontPath) ? file_get_contents($htaccessFrontPath) : 'File not found.',
-                    'htaccessAdminPath'    => $htaccessAdminPath,
+                    'htaccessAdminPath' => $htaccessAdminPath,
                     'htaccessAdminContent' => is_file($htaccessAdminPath) && is_readable($htaccessAdminPath) ? file_get_contents($htaccessAdminPath) : 'File not found.',
                 ];
                 break;
@@ -230,14 +239,14 @@ class ToolsController extends AbstractController
                 $config = Conf::getInstance();
                 $params += [
                     'cacheBypassed' => Conf::isBypassed(),
-                    'debugHeader'   => (int) $config->get(Conf::CFG_DEBUG_HEADER),
-                    'debugLog'      => (int) $config->get(Conf::CFG_DEBUG),
-                    'debugLevel'    => (float) $config->get(Conf::CFG_DEBUG_LEVEL),
-                    'debugIps'      => $config->get(Conf::CFG_DEBUG_IPS) ?: '',
-                    'debugUriInc'   => $config->get(Conf::CFG_DEBUG_URI_INC) ?: '',
-                    'debugUriExc'   => $config->get(Conf::CFG_DEBUG_URI_EXC) ?: '',
-                    'debugStrExc'   => $config->get(Conf::CFG_DEBUG_STR_EXC) ?: '',
-                    'logPath'       => $this->getLogPath(),
+                    'debugHeader' => (int) $config->get(Conf::CFG_DEBUG_HEADER),
+                    'debugLog' => (int) $config->get(Conf::CFG_DEBUG),
+                    'debugLevel' => (float) $config->get(Conf::CFG_DEBUG_LEVEL),
+                    'debugIps' => $config->get(Conf::CFG_DEBUG_IPS) ?: '',
+                    'debugUriInc' => $config->get(Conf::CFG_DEBUG_URI_INC) ?: '',
+                    'debugUriExc' => $config->get(Conf::CFG_DEBUG_URI_EXC) ?: '',
+                    'debugStrExc' => $config->get(Conf::CFG_DEBUG_STR_EXC) ?: '',
+                    'logPath' => $this->getLogPath(),
                     'reinstallTabsUrl' => $this->generateUrl('admin_litespeedcache_tools', ['reinstall_tabs' => 1]),
                 ];
                 break;
@@ -252,9 +261,9 @@ class ToolsController extends AbstractController
 
             case 'updates':
                 $params += [
-                    'currentVersion'  => \Module::getInstanceByName('litespeedcache')->version ?? '-',
-                    'releases'        => $this->getReleasesData(),
-                    'backups'         => $this->getModuleUpdater()->getBackups(),
+                    'currentVersion' => \Module::getInstanceByName('litespeedcache')->version ?? '-',
+                    'releases' => $this->getReleasesData(),
+                    'backups' => $this->getModuleUpdater()->getBackups(),
                     'updateActionUrl' => $this->generateUrl('admin_litespeedcache_tools_update_apply'),
                     'rollbackActionUrl' => $this->generateUrl('admin_litespeedcache_tools_update_rollback'),
                     'deleteBackupUrl' => $this->generateUrl('admin_litespeedcache_tools_update_delete_backup'),
@@ -365,12 +374,13 @@ class ToolsController extends AbstractController
         $list = [];
         foreach ($installedModules as $mod) {
             $list[] = [
-                'name'    => $mod['name'],
+                'name' => $mod['name'],
                 'version' => $mod['version'] ?? '-',
-                'active'  => !empty($mod['active']),
+                'active' => !empty($mod['active']),
             ];
         }
-        usort($list, fn($a, $b) => strcasecmp($a['name'], $b['name']));
+        usort($list, fn ($a, $b) => strcasecmp($a['name'], $b['name']));
+
         return $list;
     }
 
@@ -378,13 +388,14 @@ class ToolsController extends AbstractController
 
     private function handleSupportRequest(Request $request): void
     {
-        $name     = trim($request->request->get('support_name', ''));
-        $email    = trim($request->request->get('support_email', ''));
-        $url      = trim($request->request->get('support_url', ''));
+        $name = trim($request->request->get('support_name', ''));
+        $email = trim($request->request->get('support_email', ''));
+        $url = trim($request->request->get('support_url', ''));
         $comments = trim($request->request->get('support_comments', ''));
 
         if (!$name || !$email || !$comments) {
             $this->addFlash('error', $this->trans('Please fill in all required fields (Name, Email, Comments).', 'Modules.Litespeedcache.Admin'));
+
             return;
         }
 
@@ -396,48 +407,48 @@ class ToolsController extends AbstractController
         $cdnCfg = CdnConfig::getAll();
 
         $report = [
-            'Module version'      => \Module::getInstanceByName('litespeedcache')->version ?? '-',
-            'LiteSpeed license'   => CacheHelper::licenseEnabled() ? 'Active' : 'Not detected',
-            'Cache enabled'       => $config->get(Conf::CFG_ENABLED) ? 'Yes' : 'No',
-            'Guest mode'          => $config->get(Conf::CFG_GUESTMODE) ? 'Yes' : 'No',
-            'Object cache'        => $objCfg[ObjConfig::OBJ_ENABLE] ? $objCfg[ObjConfig::OBJ_METHOD] . ' (' . $objCfg[ObjConfig::OBJ_HOST] . ':' . $objCfg[ObjConfig::OBJ_PORT] . ')' : 'Disabled',
-            'Redis extension'     => extension_loaded('redis') ? 'Loaded' : 'Not loaded',
-            'CDN (Cloudflare)'    => $cdnCfg[CdnConfig::CF_ENABLE] ? 'Enabled' : 'Disabled',
-            'Multishop'           => \Shop::isFeatureActive() ? 'Yes' : 'No',
-            'Debug mode'          => defined('_LITESPEED_DEBUG_') ? (string) _LITESPEED_DEBUG_ : '0',
+            'Module version' => \Module::getInstanceByName('litespeedcache')->version ?? '-',
+            'LiteSpeed license' => CacheHelper::licenseEnabled() ? 'Active' : 'Not detected',
+            'Cache enabled' => $config->get(Conf::CFG_ENABLED) ? 'Yes' : 'No',
+            'Guest mode' => $config->get(Conf::CFG_GUESTMODE) ? 'Yes' : 'No',
+            'Object cache' => $objCfg[ObjConfig::OBJ_ENABLE] ? $objCfg[ObjConfig::OBJ_METHOD] . ' (' . $objCfg[ObjConfig::OBJ_HOST] . ':' . $objCfg[ObjConfig::OBJ_PORT] . ')' : 'Disabled',
+            'Redis extension' => extension_loaded('redis') ? 'Loaded' : 'Not loaded',
+            'CDN (Cloudflare)' => $cdnCfg[CdnConfig::CF_ENABLE] ? 'Enabled' : 'Disabled',
+            'Multishop' => \Shop::isFeatureActive() ? 'Yes' : 'No',
+            'Debug mode' => defined('_LITESPEED_DEBUG_') ? (string) _LITESPEED_DEBUG_ : '0',
         ];
 
         $phpInfo = [
-            'Web Server'          => $_SERVER['SERVER_SOFTWARE'] ?? php_sapi_name(),
-            'Server OS'           => PHP_OS . ' ' . php_uname('r'),
+            'Web Server' => $_SERVER['SERVER_SOFTWARE'] ?? php_sapi_name(),
+            'Server OS' => PHP_OS . ' ' . php_uname('r'),
             'Server Architecture' => php_uname('m'),
-            'PHP Version'         => PHP_VERSION,
-            'PHP SAPI'            => PHP_SAPI,
-            'Memory Limit'        => ini_get('memory_limit'),
-            'Max Execution Time'  => ini_get('max_execution_time') . 's',
-            'Max Input Vars'      => ini_get('max_input_vars'),
-            'Upload Max Size'     => ini_get('upload_max_filesize'),
-            'Post Max Size'       => ini_get('post_max_size'),
-            'OPcache'             => function_exists('opcache_get_status') && !empty(@opcache_get_status(false)) ? 'Enabled' : 'Disabled',
-            'MySQL Version'       => \Db::getInstance()->getValue('SELECT VERSION()') ?: '-',
-            'MySQL Engine'        => \Db::getInstance()->getValue("SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()") ?: '-',
-            'SSL'                 => !empty($_SERVER['HTTPS']) || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'Yes' : 'No',
-            'Document Root'       => $_SERVER['DOCUMENT_ROOT'] ?? '-',
-            'Temp Directory'      => sys_get_temp_dir(),
-            'Disk Free Space'     => function_exists('disk_free_space') ? round(@disk_free_space('/') / 1073741824, 2) . ' GB' : '-',
-            'PHP Extensions'      => implode(', ', get_loaded_extensions()),
+            'PHP Version' => PHP_VERSION,
+            'PHP SAPI' => PHP_SAPI,
+            'Memory Limit' => ini_get('memory_limit'),
+            'Max Execution Time' => ini_get('max_execution_time') . 's',
+            'Max Input Vars' => ini_get('max_input_vars'),
+            'Upload Max Size' => ini_get('upload_max_filesize'),
+            'Post Max Size' => ini_get('post_max_size'),
+            'OPcache' => function_exists('opcache_get_status') && !empty(@opcache_get_status(false)) ? 'Enabled' : 'Disabled',
+            'MySQL Version' => \Db::getInstance()->getValue('SELECT VERSION()') ?: '-',
+            'MySQL Engine' => \Db::getInstance()->getValue('SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()') ?: '-',
+            'SSL' => !empty($_SERVER['HTTPS']) || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'Yes' : 'No',
+            'Document Root' => $_SERVER['DOCUMENT_ROOT'] ?? '-',
+            'Temp Directory' => sys_get_temp_dir(),
+            'Disk Free Space' => function_exists('disk_free_space') ? round(@disk_free_space('/') / 1073741824, 2) . ' GB' : '-',
+            'PHP Extensions' => implode(', ', get_loaded_extensions()),
         ];
 
         $installedModules = \Module::getModulesInstalled();
         $moduleList = [];
         foreach ($installedModules as $mod) {
             $moduleList[] = [
-                'name'    => $mod['name'],
+                'name' => $mod['name'],
                 'version' => $mod['version'] ?? '-',
-                'active'  => !empty($mod['active']),
+                'active' => !empty($mod['active']),
             ];
         }
-        usort($moduleList, fn($a, $b) => strcasecmp($a['name'], $b['name']));
+        usort($moduleList, fn ($a, $b) => strcasecmp($a['name'], $b['name']));
 
         // Build HTML body with tables
         $body = $this->buildSupportEmailHtml($name, $email, $url, $comments, $report, $phpInfo, $moduleList);
@@ -503,7 +514,7 @@ class ToolsController extends AbstractController
         string $comments,
         array $report,
         array $phpInfo,
-        array $moduleList
+        array $moduleList,
     ): string {
         $moduleVersion = \Module::getInstanceByName('litespeedcache')->version ?? '-';
         $date = date('d M Y, H:i');
@@ -614,6 +625,7 @@ class ToolsController extends AbstractController
     private function emailRow(string $label, string $value, int $index): string
     {
         $bg = ($index % 2 === 0) ? '#ffffff' : '#f8f9fa';
+
         return '<tr style="background:' . $bg . ';">'
             . '<td style="padding:10px 16px; font-size:13px; font-weight:600; color:#495057; width:200px; border-top:1px solid #f1f3f5;">' . htmlspecialchars($label) . '</td>'
             . '<td style="padding:10px 16px; font-size:13px; color:#343a40; border-top:1px solid #f1f3f5;">' . $value . '</td>'
@@ -625,17 +637,17 @@ class ToolsController extends AbstractController
     private function handleExport(): Response
     {
         $data = [
-            'module'     => 'litespeedcache',
-            'version'    => \Module::getInstanceByName('litespeedcache')->version ?? '0',
-            'date'       => date('Y-m-d H:i:s'),
-            'global'     => json_decode(\Configuration::getGlobalValue(Conf::ENTRY_ALL) ?: '{}', true),
-            'shop'       => json_decode(\Configuration::get(Conf::ENTRY_SHOP) ?: '{}', true),
+            'module' => 'litespeedcache',
+            'version' => \Module::getInstanceByName('litespeedcache')->version ?? '0',
+            'date' => date('Y-m-d H:i:s'),
+            'global' => json_decode(\Configuration::getGlobalValue(Conf::ENTRY_ALL) ?: '{}', true),
+            'shop' => json_decode(\Configuration::get(Conf::ENTRY_SHOP) ?: '{}', true),
             'module_cfg' => json_decode(\Configuration::get(Conf::ENTRY_MODULE) ?: '{}', true),
-            'cdn'        => json_decode(\Configuration::getGlobalValue(CdnConfig::ENTRY) ?: '{}', true),
-            'object'     => json_decode(\Configuration::getGlobalValue(ObjConfig::ENTRY) ?: '{}', true),
+            'cdn' => json_decode(\Configuration::getGlobalValue(CdnConfig::ENTRY) ?: '{}', true),
+            'object' => json_decode(\Configuration::getGlobalValue(ObjConfig::ENTRY) ?: '{}', true),
             'exclusions' => json_decode(\Configuration::getGlobalValue(ExclusionsConfig::ENTRY) ?: '{}', true),
-            'advanced'   => json_decode(\Configuration::getGlobalValue('LITESPEED_CACHE_ADVANCED') ?: '{}', true),
-            'bypass'     => (int) \Configuration::getGlobalValue('LITESPEED_CACHE_BYPASS'),
+            'advanced' => json_decode(\Configuration::getGlobalValue('LITESPEED_CACHE_ADVANCED') ?: '{}', true),
+            'bypass' => (int) \Configuration::getGlobalValue('LITESPEED_CACHE_BYPASS'),
         ];
 
         $domain = \Configuration::get('PS_SHOP_DOMAIN') ?: 'localhost';
@@ -661,6 +673,7 @@ class ToolsController extends AbstractController
 
         if (!$file || !$file->isValid()) {
             $this->addFlash('error', $this->trans('Invalid file.', $d));
+
             return;
         }
 
@@ -669,6 +682,7 @@ class ToolsController extends AbstractController
 
         if (!is_array($data) || empty($data['module']) || $data['module'] !== 'litespeedcache') {
             $this->addFlash('error', $this->trans('Invalid configuration file.', $d));
+
             return;
         }
 
@@ -707,7 +721,7 @@ class ToolsController extends AbstractController
             $global = $data['global'];
             CacheHelper::htAccessUpdate(
                 (bool) ($global[Conf::CFG_ENABLED] ?? false),
-                (($global[Conf::CFG_GUESTMODE] ?? 0) == 1),
+                ($global[Conf::CFG_GUESTMODE] ?? 0) == 1,
                 (bool) ($global[Conf::CFG_DIFFMOBILE] ?? false)
             );
         }
@@ -764,11 +778,11 @@ class ToolsController extends AbstractController
                 return $data;
             }
         }
+
         return null;
     }
 
     // ---- Purge helpers --------------------------------------------------------
-
 
     private function handlePurgeAction(string $action): void
     {
@@ -829,7 +843,7 @@ class ToolsController extends AbstractController
                             $this->addFlash('error', $this->trans('Could not connect to Redis.', $d));
                         }
                     } catch (\Throwable $e) {
-                        $this->addFlash('error', $this->trans('Object cache flush failed: %s', $d,[$e->getMessage()]));
+                        $this->addFlash('error', $this->trans('Object cache flush failed: %s', $d, [$e->getMessage()]));
                     }
                 } else {
                     $this->addFlash('warning', $this->trans('Object cache is not enabled.', $d));
@@ -857,14 +871,14 @@ class ToolsController extends AbstractController
         $tags = [];
         $info = [];
         $map = [
-            'cbPurge_home'     => ['H',    'Home Page'],
-            'cbPurge_404'      => ['D404', 'All 404 Pages'],
-            'cbPurge_brand'    => ['M',    'All Brands Pages'],
+            'cbPurge_home' => ['H',    'Home Page'],
+            'cbPurge_404' => ['D404', 'All 404 Pages'],
+            'cbPurge_brand' => ['M',    'All Brands Pages'],
             'cbPurge_supplier' => ['L',    'All Suppliers Pages'],
-            'cbPurge_sitemap'  => ['SP',   'Site Map'],
-            'cbPurge_cms'      => ['G',    'All CMS Pages'],
-            'cbPurge_pc'       => ['N',    'All Product Comments'],
-            'cbPurge_priv'     => ['PRIV', 'All Private ESI Blocks'],
+            'cbPurge_sitemap' => ['SP',   'Site Map'],
+            'cbPurge_cms' => ['G',    'All CMS Pages'],
+            'cbPurge_pc' => ['N',    'All Product Comments'],
+            'cbPurge_priv' => ['PRIV', 'All Private ESI Blocks'],
         ];
         foreach ($map as $cb => [$tag, $label]) {
             if ($request->request->get($cb)) {
@@ -876,7 +890,9 @@ class ToolsController extends AbstractController
             }
         }
         if ($request->request->get('cbPurge_search')) {
-            $tags[] = 'SR'; $tags[] = 'C'; $tags[] = 'P';
+            $tags[] = 'SR';
+            $tags[] = 'C';
+            $tags[] = 'P';
             $info[] = 'All Categories and Products Pages';
         }
         if ($cid = $request->request->get('rcats')) {
@@ -902,14 +918,15 @@ class ToolsController extends AbstractController
         ];
         if (!isset($preMap[$by])) {
             $this->addFlash('error', $this->trans('Illegal entrance', 'Modules.Litespeedcache.Admin'));
+
             return;
         }
-        $pre  = $preMap[$by];
-        $ids  = preg_split('/[\s,]+/', $id, -1, PREG_SPLIT_NO_EMPTY);
+        $pre = $preMap[$by];
+        $ids = preg_split('/[\s,]+/', $id, -1, PREG_SPLIT_NO_EMPTY);
         $tags = [];
-        $ok   = !empty($ids);
+        $ok = !empty($ids);
         foreach ($ids as $i) {
-            if (((string)((int)$i) === (string)$i) && ((int)$i > 0)) {
+            if (((string) ((int) $i) === (string) $i) && ((int) $i > 0)) {
                 $tags[] = $pre . $i;
             } else {
                 $ok = false;
@@ -918,6 +935,7 @@ class ToolsController extends AbstractController
         }
         if (!$ok) {
             $this->addFlash('error', $this->trans('Please enter valid IDs', 'Modules.Litespeedcache.Admin'));
+
             return;
         }
         if ($this->doPurge($tags)) {
@@ -933,9 +951,11 @@ class ToolsController extends AbstractController
             if (!headers_sent() && ($tags === '*' || $tags === 1)) {
                 header('X-LiteSpeed-Purge: *');
             }
+
             return true;
         }
         $this->addFlash('warning', $this->trans('No action taken. This Module is not enabled.', 'Modules.Litespeedcache.Admin'));
+
         return false;
     }
 
@@ -951,6 +971,7 @@ class ToolsController extends AbstractController
         $sql->where('l.object_type = \'LiteSpeedCache\'');
         $sql->orderBy('l.date_add DESC');
         $sql->limit($perPage, $offset);
+
         return \Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql) ?: [];
     }
 
@@ -969,6 +990,7 @@ class ToolsController extends AbstractController
                 return $this->tailFile($path, $lines);
             }
         }
+
         return 'No access log found (lscache.log).';
     }
 
@@ -983,6 +1005,7 @@ class ToolsController extends AbstractController
             $output .= $file->current();
             $file->next();
         }
+
         return $output;
     }
 
@@ -994,6 +1017,7 @@ class ToolsController extends AbstractController
                 return $path;
             }
         }
+
         return _PS_ROOT_DIR_ . '/var/logs/lscache.log';
     }
 }

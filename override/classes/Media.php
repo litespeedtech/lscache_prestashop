@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -21,7 +22,6 @@
  * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -32,7 +32,6 @@ if (!defined('_PS_VERSION_')) {
  * This should not affect any existing functionalities of your Prestashop installation
  * and it is safe to use.
  */
-
 class Media extends MediaCore
 {
     public static function addJsDef($jsDef)

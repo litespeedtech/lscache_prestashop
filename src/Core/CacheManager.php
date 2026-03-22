@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -6,7 +7,6 @@
  * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Core;
 
@@ -18,31 +18,29 @@ use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Config\ExclusionsConfig;
 use LiteSpeed\Cache\Helper\CacheHelper;
 use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
-use LiteSpeed\Cache\Core\CacheState;
 
-/**
+/*
  * CacheManager — cache tag management, purge logic and HTTP header generation.
  */
-use Context;
 class CacheManager
 {
-    const LSHEADER_PURGE        = 'X-Litespeed-Purge2';
-    const LSHEADER_CACHE_CONTROL = 'X-Litespeed-Cache-Control';
-    const LSHEADER_CACHE_TAG    = 'X-Litespeed-Tag';
-    const LSHEADER_DEBUG_TAG    = 'X-LSCACHE-Debug-Tag';
-    const LSHEADER_DEBUG_CC     = 'X-LSCACHE-Debug-CC';
-    const LSHEADER_DEBUG_PURGE  = 'X-LSCACHE-Debug-Purge';
-    const LSHEADER_DEBUG_INFO   = 'X-LSCACHE-Debug-Info';
+    public const LSHEADER_PURGE = 'X-Litespeed-Purge2';
+    public const LSHEADER_CACHE_CONTROL = 'X-Litespeed-Cache-Control';
+    public const LSHEADER_CACHE_TAG = 'X-Litespeed-Tag';
+    public const LSHEADER_DEBUG_TAG = 'X-LSCACHE-Debug-Tag';
+    public const LSHEADER_DEBUG_CC = 'X-LSCACHE-Debug-CC';
+    public const LSHEADER_DEBUG_PURGE = 'X-LSCACHE-Debug-Purge';
+    public const LSHEADER_DEBUG_INFO = 'X-LSCACHE-Debug-Info';
 
-    private $cacheTags     = [];
+    private $cacheTags = [];
     private $purgeTags;
     private $config;
-    private $currentTtl    = -1;
+    private $currentTtl = -1;
     private $specificPrices = [];
 
     public function __construct(Conf $config)
     {
-        $this->config    = $config;
+        $this->config = $config;
         $this->purgeTags = ['pub' => [], 'priv' => []];
     }
 
@@ -96,7 +94,7 @@ class CacheManager
     public function inDoNotCacheRules(string &$reason): bool
     {
         $nocache = $this->config->getNoCacheConf();
-        $requrl  = $_SERVER['REQUEST_URI'];
+        $requrl = $_SERVER['REQUEST_URI'];
 
         foreach ($nocache[Conf::CFG_NOCACHE_URL] as $url) {
             if ($url[0] !== '/') {
@@ -105,19 +103,21 @@ class CacheManager
                 }
                 if (preg_match('/' . $url . '/is', $requrl)) {
                     $reason = 'disabled url (regex match) ' . $url;
+
                     return true;
-                } else {
-                    continue;
                 }
+                continue;
             }
             $url1 = rtrim($url, '*');
             if ($url1 !== $url) {
                 if (strpos($requrl, $url1) !== false) {
                     $reason = 'disabled url (partial match) ' . $url;
+
                     return true;
                 }
             } elseif ($url === $requrl) {
                 $reason = 'disabled url (exact match) ' . $url;
+
                 return true;
             }
         }
@@ -125,6 +125,7 @@ class CacheManager
         foreach ($nocache[Conf::CFG_NOCACHE_VAR] as $var) {
             if (isset($_REQUEST[$var])) {
                 $reason = 'contains param ' . $var;
+
                 return true;
             }
         }
@@ -133,6 +134,7 @@ class CacheManager
         foreach (ExclusionsConfig::getNoCacheCookies() as $cookieName) {
             if (isset($_COOKIE[$cookieName])) {
                 $reason = 'excluded cookie ' . $cookieName;
+
                 return true;
             }
         }
@@ -143,6 +145,7 @@ class CacheManager
             foreach (ExclusionsConfig::getNoCacheUAs() as $pattern) {
                 if (stripos($ua, $pattern) !== false) {
                     $reason = 'excluded user agent ' . $pattern;
+
                     return true;
                 }
             }
@@ -151,12 +154,13 @@ class CacheManager
         // Customer group (role) exclusion
         $noRoles = ExclusionsConfig::getNoCacheRoles();
         if (!empty($noRoles)) {
-            $ctx = Context::getContext();
+            $ctx = \Context::getContext();
             if ($ctx->customer && $ctx->customer->id) {
                 $customerGroups = \Customer::getGroupsStatic((int) $ctx->customer->id);
                 foreach ($noRoles as $roleId) {
                     if (in_array($roleId, $customerGroups, true)) {
                         $reason = 'excluded customer group ' . $roleId;
+
                         return true;
                     }
                 }
@@ -166,7 +170,7 @@ class CacheManager
         // Category exclusion
         $noCats = ExclusionsConfig::getNoCacheCatIds();
         if (!empty($noCats)) {
-            $ctx = Context::getContext();
+            $ctx = \Context::getContext();
             $catId = null;
             if (!empty($ctx->controller)) {
                 $ctrl = $ctx->controller;
@@ -178,6 +182,7 @@ class CacheManager
             }
             if ($catId !== null && in_array($catId, $noCats, true)) {
                 $reason = 'excluded category ' . $catId;
+
                 return true;
             }
         }
@@ -187,7 +192,7 @@ class CacheManager
 
     public function hasNotification(): bool
     {
-        if (($smarty = Context::getContext()->smarty) !== null) {
+        if (($smarty = \Context::getContext()->smarty) !== null) {
             $notification = $smarty->getTemplateVars('notifications');
             if (is_array($notification)) {
                 if (!empty($notification['error'])
@@ -198,6 +203,7 @@ class CacheManager
                 }
             }
         }
+
         return false;
     }
 
@@ -210,11 +216,12 @@ class CacheManager
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED) {
                 LSLog::log('initCacheTagsByController - no controller in param', LSLog::LEVEL_UNEXPECTED);
             }
+
             return;
         }
         $controller = $params['controller'];
-        $tag        = null;
-        $entity     = isset($params['entity']) ? $params['entity'] : $controller->php_self;
+        $tag = null;
+        $entity = isset($params['entity']) ? $params['entity'] : $controller->php_self;
 
         switch ($entity) {
             case 'product':
@@ -275,10 +282,11 @@ class CacheManager
         } else {
             $added = $this->addCacheTag($tags);
         }
+
         return $added;
     }
 
-    private static $tagGroupSet = null;
+    private static $tagGroupSet;
 
     private function addCacheTag(string $tag): bool
     {
@@ -299,13 +307,14 @@ class CacheManager
                 $this->cacheTags[$t] = true;
             }
         }
+
         return true;
     }
 
     public function addPurgeTags($tag, bool $isPrivate): int
     {
         $returnCode = 0;
-        $type       = $isPrivate ? 'priv' : 'pub';
+        $type = $isPrivate ? 'priv' : 'pub';
 
         if (in_array('*', $this->purgeTags[$type])) {
             return 2;
@@ -319,7 +328,7 @@ class CacheManager
             }
         } elseif (!in_array($tag, $this->purgeTags[$type])) {
             $this->purgeTags[$type][] = $tag;
-            $returnCode               = 1;
+            $returnCode = 1;
         }
 
         if (in_array('*', $this->purgeTags[$type])) {
@@ -337,6 +346,7 @@ class CacheManager
             || ($isPrivate && in_array('*', $this->purgeTags[$type]))) {
             return false;
         }
+
         return true;
     }
 
@@ -351,12 +361,12 @@ class CacheManager
     private function getPurgeTagsByProduct(int $id_product, $product, bool $isupdate): array
     {
         $tags = [];
-        $pid  = Conf::TAG_PREFIX_PRODUCT . $id_product;
+        $pid = Conf::TAG_PREFIX_PRODUCT . $id_product;
         if (!$this->isNewPurgeTag($pid, false)) {
             return $tags;
         }
 
-        $tags['pub']   = $this->config->getDefaultPurgeTagsByProduct();
+        $tags['pub'] = $this->config->getDefaultPurgeTagsByProduct();
         $tags['pub'][] = $pid;
 
         if ($product === null) {
@@ -389,7 +399,7 @@ class CacheManager
     private function getPurgeTagsByProductOrder(int $id_product, bool $includeCategory): array
     {
         $tags = [];
-        $pid  = Conf::TAG_PREFIX_PRODUCT . $id_product;
+        $pid = Conf::TAG_PREFIX_PRODUCT . $id_product;
         if (!$this->isNewPurgeTag($pid, false)) {
             return $tags;
         }
@@ -400,8 +410,8 @@ class CacheManager
         }
 
         $product = new \Product((int) $id_product);
-        $tags[]  = Conf::TAG_PREFIX_MANUFACTURER . $product->id_manufacturer;
-        $tags[]  = Conf::TAG_PREFIX_SUPPLIER . $product->id_supplier;
+        $tags[] = Conf::TAG_PREFIX_MANUFACTURER . $product->id_manufacturer;
+        $tags[] = Conf::TAG_PREFIX_SUPPLIER . $product->id_supplier;
 
         $cats = $product->getCategories();
         if (!empty($cats)) {
@@ -426,12 +436,13 @@ class CacheManager
             if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_WEBSERVICE_DETAIL) {
                 LSLog::log("WebService Purge - Ignored $method " . print_r($resources, true), LSLog::LEVEL_WEBSERVICE_DETAIL);
             }
+
             return null;
         }
 
         $pubtags = [];
         $restype = $resources[0];
-        $resid   = $resources[1];
+        $resid = $resources[1];
 
         switch ($restype) {
             case 'categories':
@@ -443,7 +454,7 @@ class CacheManager
                 }
                 break;
             case 'specific_prices':
-                LSLog::log("WebService found specific_prices", LSLog::LEVEL_WEBSERVICE_DETAIL);
+                LSLog::log('WebService found specific_prices', LSLog::LEVEL_WEBSERVICE_DETAIL);
                 break;
             default:
                 return null;
@@ -471,19 +482,19 @@ class CacheManager
             return null;
         }
 
-        $tags                  = [];
-        $pubtags               = [];
-        $hasStockStatusChange  = false;
-        $hasHome               = false;
+        $tags = [];
+        $pubtags = [];
+        $hasStockStatusChange = false;
+        $hasHome = false;
 
-        $flushOption  = $this->config->get(Conf::CFG_FLUSH_PRODCAT);
-        $flushHome    = $this->config->get(Conf::CFG_FLUSH_HOME);
+        $flushOption = $this->config->get(Conf::CFG_FLUSH_PRODCAT);
+        $flushHome = $this->config->get(Conf::CFG_FLUSH_HOME);
         $flushHomePids = $this->config->getArray(Conf::CFG_FLUSH_HOME_INPUT);
-        $list         = $order->getOrderDetailList();
+        $list = $order->getOrderDetailList();
 
         foreach ($list as $product) {
             $includeProd = $includeCats = false;
-            $outstock    = ((int) $product['product_quantity_in_stock'] <= 0);
+            $outstock = ((int) $product['product_quantity_in_stock'] <= 0);
             if ($outstock) {
                 $hasStockStatusChange = true;
             }
@@ -551,7 +562,7 @@ class CacheManager
             return $tags;
         }
 
-        $tags['pub']   = $this->config->getDefaultPurgeTagsByCategory();
+        $tags['pub'] = $this->config->getDefaultPurgeTagsByCategory();
         $tags['pub'][] = $cid;
 
         if (!$category->is_root_category) {
@@ -575,6 +586,7 @@ class CacheManager
                 && (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED)) {
                 LSLog::log('Unexpected hook function called' . $method, LSLog::LEVEL_UNEXPECTED);
             }
+
             return;
         }
 
@@ -601,7 +613,7 @@ class CacheManager
             return null;
         }
         $event = \Tools::strtolower(\Tools::substr($method, 4));
-        $tags  = [];
+        $tags = [];
 
         switch ($event) {
             case 'actioncustomerlogoutafter':
@@ -721,14 +733,14 @@ class CacheManager
 
     private function getPurgeHeader(): string
     {
-        $hasPub  = !empty($this->purgeTags['pub']);
+        $hasPub = !empty($this->purgeTags['pub']);
         $hasPriv = !empty($this->purgeTags['priv']);
         if (!$hasPub && !$hasPriv) {
             return '';
         }
 
         $purgeHeader = '';
-        $pre         = 'tag=' . CacheHelper::getTagPrefix();
+        $pre = 'tag=' . CacheHelper::getTagPrefix();
 
         if (in_array('*', $this->purgeTags['pub'])) {
             $purgeHeader .= $pre . ',' . $pre . '_PRIV';
@@ -782,7 +794,7 @@ class CacheManager
             return $ttl;
         }
         $ttl0 = $ttl;
-        $now  = time();
+        $now = time();
 
         foreach ($this->specificPrices as $sp) {
             if ($sp['from'] !== '0000-00-00 00:00:00') {
@@ -821,6 +833,7 @@ class CacheManager
         $ttl = (($ccflag & CacheState::PRIV) === 0)
             ? $this->config->get(Conf::CFG_PUBLIC_TTL)
             : $this->config->get(Conf::CFG_PRIVATE_TTL);
+
         return $this->adjustTtlBySpecificPrices($ttl);
     }
 
@@ -830,26 +843,26 @@ class CacheManager
             return;
         }
 
-        $headers       = [];
+        $headers = [];
         $debug_headers = [];
 
         if (($purgeHeader = $this->getPurgeHeader()) !== '') {
-            $headers[]       = $purgeHeader;
+            $headers[] = $purgeHeader;
             $debug_headers[] = self::LSHEADER_DEBUG_PURGE . ': ' . $purgeHeader;
         }
 
         $cacheControlHeader = '';
-        $ccflag             = CacheState::flag();
+        $ccflag = CacheState::flag();
 
         if (CacheState::isCacheable()) {
             $prefix = CacheHelper::getTagPrefix();
-            $tags   = [];
-            $ttl    = $this->getCurrentTtl($ccflag);
+            $tags = [];
+            $ttl = $this->getCurrentTtl($ccflag);
 
             if (($ccflag & CacheState::PRIV) === 0) {
                 $cacheControlHeader .= 'public,max-age=' . $ttl;
                 $tags[] = $prefix;
-                $shopId = Context::getContext()->shop->id;
+                $shopId = \Context::getContext()->shop->id;
                 $tags[] = $prefix . '_' . Conf::TAG_PREFIX_SHOP . $shopId;
             } else {
                 $cacheControlHeader .= 'private,no-vary,max-age=' . $ttl;
@@ -860,7 +873,7 @@ class CacheManager
                 $tags[] = $prefix . '_' . $tag;
             }
 
-            $headers[]       = self::LSHEADER_CACHE_TAG . ': ' . implode(',', $tags);
+            $headers[] = self::LSHEADER_CACHE_TAG . ': ' . implode(',', $tags);
             $debug_headers[] = self::LSHEADER_DEBUG_TAG . ': ' . implode(',', $tags);
 
             if (($ccflag & CacheState::GUEST) !== 0) {
@@ -891,7 +904,7 @@ class CacheManager
         }
         if ($this->config->get(Conf::CFG_DEBUG_HEADER)) {
             $debug_headers[] = self::LSHEADER_DEBUG_CC . ': ' . $cacheControlHeader;
-            $info            = htmlspecialchars(str_replace("\n", ' ', CacheState::debugInfo()));
+            $info = htmlspecialchars(str_replace("\n", ' ', CacheState::debugInfo()));
             $debug_headers[] = self::LSHEADER_DEBUG_INFO . ': ' . substr($info, 0, 256);
             foreach ($debug_headers as $header) {
                 header($header);

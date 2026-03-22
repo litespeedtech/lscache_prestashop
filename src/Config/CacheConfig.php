@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -6,16 +7,17 @@
  * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
+
 namespace LiteSpeed\Cache\Config;
 
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+use LiteSpeed\Cache\Core\CacheState;
 use LiteSpeed\Cache\Esi\EsiModuleConfig as EsiConf;
 use LiteSpeed\Cache\Helper\CacheHelper;
 use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
-use LiteSpeed\Cache\Core\CacheState;
 
 /**
  * CacheConfig — singleton that stores all LiteSpeedCache configuration.
@@ -24,77 +26,78 @@ use LiteSpeed\Cache\Core\CacheState;
 class CacheConfig
 {
     // public tag prefix
-    const TAG_PREFIX_CMS          = 'G';
-    const TAG_PREFIX_CATEGORY     = 'C';
-    const TAG_PREFIX_PRODUCT      = 'P';
-    const TAG_PREFIX_ESIBLOCK     = 'E';
-    const TAG_PREFIX_MANUFACTURER = 'M';
-    const TAG_PREFIX_SUPPLIER     = 'L';
-    const TAG_PREFIX_SHOP         = 'S';
-    const TAG_PREFIX_PCOMMENTS    = 'N';
-    const TAG_PREFIX_PRIVATE      = 'PRIV';
+    public const TAG_PREFIX_CMS = 'G';
+    public const TAG_PREFIX_CATEGORY = 'C';
+    public const TAG_PREFIX_PRODUCT = 'P';
+    public const TAG_PREFIX_ESIBLOCK = 'E';
+    public const TAG_PREFIX_MANUFACTURER = 'M';
+    public const TAG_PREFIX_SUPPLIER = 'L';
+    public const TAG_PREFIX_SHOP = 'S';
+    public const TAG_PREFIX_PCOMMENTS = 'N';
+    public const TAG_PREFIX_PRIVATE = 'PRIV';
 
     // public tags
-    const TAG_SEARCH  = 'SR';
-    const TAG_HOME    = 'H';
-    const TAG_SITEMAP = 'SP';
-    const TAG_STORES  = 'ST';
-    const TAG_404     = 'D404';
+    public const TAG_SEARCH = 'SR';
+    public const TAG_HOME = 'H';
+    public const TAG_SITEMAP = 'SP';
+    public const TAG_STORES = 'ST';
+    public const TAG_404 = 'D404';
 
     // common private tags
-    const TAG_CART   = 'cart';
-    const TAG_SIGNIN = 'signin';
-    const TAG_ENV    = 'env';
+    public const TAG_CART = 'cart';
+    public const TAG_SIGNIN = 'signin';
+    public const TAG_ENV = 'env';
 
     // config entry
-    const ENTRY_ALL    = 'LITESPEED_CACHE_GLOBAL';
-    const ENTRY_SHOP   = 'LITESPEED_CACHE_SHOP';
-    const ENTRY_MODULE = 'LITESPEED_CACHE_MODULE';
+    public const ENTRY_ALL = 'LITESPEED_CACHE_GLOBAL';
+    public const ENTRY_SHOP = 'LITESPEED_CACHE_SHOP';
+    public const ENTRY_MODULE = 'LITESPEED_CACHE_MODULE';
 
     // config fields
-    const CFG_ENABLED          = 'enable';
-    const CFG_PUBLIC_TTL       = 'ttl';
-    const CFG_PRIVATE_TTL      = 'privttl';
-    const CFG_404_TTL          = '404ttl';
-    const CFG_HOME_TTL         = 'homettl';
-    const CFG_PCOMMENTS_TTL    = 'pcommentsttl';
-    const CFG_DIFFMOBILE       = 'diff_mobile';
-    const CFG_DIFFCUSTGRP      = 'diff_customergroup';
-    const CFG_FLUSH_PRODCAT    = 'flush_prodcat';
-    const CFG_FLUSH_ALL        = 'flush_all';
-    const CFG_FLUSH_HOME       = 'flush_home';
-    const CFG_FLUSH_HOME_INPUT = 'flush_homeinput';
-    const CFG_GUESTMODE        = 'guestmode';
-    const CFG_NOCACHE_VAR      = 'nocache_vars';
-    const CFG_NOCACHE_URL      = 'nocache_urls';
-    const CFG_VARY_BYPASS      = 'vary_bypass';
-    const CFG_DEBUG            = 'debug';
-    const CFG_DEBUG_HEADER     = 'debug_header';
-    const CFG_DEBUG_LEVEL      = 'debug_level';
-    const CFG_ALLOW_IPS        = 'allow_ips';
-    const CFG_DEBUG_IPS        = 'debug_ips';
-    const CFG_DEBUG_URI_INC    = 'debug_uri_inc';
-    const CFG_DEBUG_URI_EXC    = 'debug_uri_exc';
-    const CFG_DEBUG_STR_EXC    = 'debug_str_exc';
+    public const CFG_ENABLED = 'enable';
+    public const CFG_PUBLIC_TTL = 'ttl';
+    public const CFG_PRIVATE_TTL = 'privttl';
+    public const CFG_404_TTL = '404ttl';
+    public const CFG_HOME_TTL = 'homettl';
+    public const CFG_PCOMMENTS_TTL = 'pcommentsttl';
+    public const CFG_DIFFMOBILE = 'diff_mobile';
+    public const CFG_DIFFCUSTGRP = 'diff_customergroup';
+    public const CFG_FLUSH_PRODCAT = 'flush_prodcat';
+    public const CFG_FLUSH_ALL = 'flush_all';
+    public const CFG_FLUSH_HOME = 'flush_home';
+    public const CFG_FLUSH_HOME_INPUT = 'flush_homeinput';
+    public const CFG_GUESTMODE = 'guestmode';
+    public const CFG_NOCACHE_VAR = 'nocache_vars';
+    public const CFG_NOCACHE_URL = 'nocache_urls';
+    public const CFG_VARY_BYPASS = 'vary_bypass';
+    public const CFG_DEBUG = 'debug';
+    public const CFG_DEBUG_HEADER = 'debug_header';
+    public const CFG_DEBUG_LEVEL = 'debug_level';
+    public const CFG_ALLOW_IPS = 'allow_ips';
+    public const CFG_DEBUG_IPS = 'debug_ips';
+    public const CFG_DEBUG_URI_INC = 'debug_uri_inc';
+    public const CFG_DEBUG_URI_EXC = 'debug_uri_exc';
+    public const CFG_DEBUG_STR_EXC = 'debug_str_exc';
 
     private $esiModConf;
-    private $pubController  = [];
+    private $pubController = [];
     private $purgeController = [];
     private $all;
     private $shop;
     private $custMod;
     private $enforceDiffGroup = 0;
-    private $isDebug          = 0;
-    private $flushHomePids    = null;
+    private $isDebug = 0;
+    private $flushHomePids;
 
     /** @var self|null */
-    private static $instance = null;
+    private static $instance;
 
     public static function getInstance(): self
     {
         if (self::$instance === null) {
             self::$instance = new self();
         }
+
         return self::$instance;
     }
 
@@ -132,6 +135,7 @@ class CacheConfig
                 if (!isset($this->all[$configField])) {
                     $this->all = array_replace($this->getDefaultConfData(self::ENTRY_ALL), $this->all);
                 }
+
                 return $this->all[$configField];
             case self::ENTRY_SHOP:
                 return array_replace($this->getDefaultConfData(self::ENTRY_SHOP), $this->shop);
@@ -144,6 +148,7 @@ class CacheConfig
                 if (!isset($this->shop[$configField])) {
                     $this->shop = array_replace($this->getDefaultConfData(self::ENTRY_SHOP), $this->shop);
                 }
+
                 return $this->shop[$configField];
             case self::ENTRY_MODULE:
                 return $this->esiModConf['mods'];
@@ -164,6 +169,7 @@ class CacheConfig
         if (($value = $this->get($configField)) != '') {
             return preg_split("/[\s,]+/", $value, -1, PREG_SPLIT_NO_EMPTY);
         }
+
         return [];
     }
 
@@ -171,35 +177,36 @@ class CacheConfig
     {
         if ($key === self::ENTRY_ALL) {
             return [
-                self::CFG_ENABLED          => 0,
-                self::CFG_DIFFMOBILE       => 0,
-                self::CFG_GUESTMODE        => 1,
-                self::CFG_NOCACHE_VAR      => '',
-                self::CFG_NOCACHE_URL      => '',
-                self::CFG_VARY_BYPASS      => '',
-                self::CFG_FLUSH_PRODCAT    => 0,
-                self::CFG_FLUSH_ALL        => 0,
-                self::CFG_FLUSH_HOME       => 0,
+                self::CFG_ENABLED => 0,
+                self::CFG_DIFFMOBILE => 0,
+                self::CFG_GUESTMODE => 1,
+                self::CFG_NOCACHE_VAR => '',
+                self::CFG_NOCACHE_URL => '',
+                self::CFG_VARY_BYPASS => '',
+                self::CFG_FLUSH_PRODCAT => 0,
+                self::CFG_FLUSH_ALL => 0,
+                self::CFG_FLUSH_HOME => 0,
                 self::CFG_FLUSH_HOME_INPUT => '',
-                self::CFG_DEBUG            => 0,
-                self::CFG_DEBUG_HEADER     => 0,
-                self::CFG_DEBUG_LEVEL      => 9,
-                self::CFG_ALLOW_IPS        => '',
-                self::CFG_DEBUG_IPS        => '',
-                self::CFG_DEBUG_URI_INC    => '',
-                self::CFG_DEBUG_URI_EXC    => '',
-                self::CFG_DEBUG_STR_EXC    => '',
+                self::CFG_DEBUG => 0,
+                self::CFG_DEBUG_HEADER => 0,
+                self::CFG_DEBUG_LEVEL => 9,
+                self::CFG_ALLOW_IPS => '',
+                self::CFG_DEBUG_IPS => '',
+                self::CFG_DEBUG_URI_INC => '',
+                self::CFG_DEBUG_URI_EXC => '',
+                self::CFG_DEBUG_STR_EXC => '',
             ];
         } elseif ($key === self::ENTRY_SHOP) {
             return [
-                self::CFG_PUBLIC_TTL    => 86400,
-                self::CFG_PRIVATE_TTL   => 1800,
-                self::CFG_HOME_TTL      => 86400,
-                self::CFG_404_TTL       => 86400,
+                self::CFG_PUBLIC_TTL => 86400,
+                self::CFG_PRIVATE_TTL => 1800,
+                self::CFG_HOME_TTL => 86400,
+                self::CFG_404_TTL => 86400,
                 self::CFG_PCOMMENTS_TTL => 7200,
-                self::CFG_DIFFCUSTGRP   => 2,
+                self::CFG_DIFFCUSTGRP => 2,
             ];
         }
+
         return [];
     }
 
@@ -213,7 +220,7 @@ class CacheConfig
         if (empty($currentEntry['id'])) {
             return false;
         }
-        $id   = $currentEntry['id'];
+        $id = $currentEntry['id'];
         $item = $this->getEsiModuleConf($id);
         if ($item !== null && !$item->isCustomized()) {
             return false;
@@ -230,7 +237,7 @@ class CacheConfig
             return false;
         }
 
-        $newMod    = [];
+        $newMod = [];
         $newevents = [];
         foreach ($this->esiModConf['mods'] as $mi) {
             if (($events = $mi->getPurgeEvents()) !== null) {
@@ -251,7 +258,7 @@ class CacheConfig
         }
 
         $builtin = $this->getReservedHooks();
-        $added   = array_diff($newevents, $oldevents, $builtin);
+        $added = array_diff($newevents, $oldevents, $builtin);
         $removed = array_diff($oldevents, $newevents, $builtin);
 
         if (!empty($added) || !empty($removed)) {
@@ -268,6 +275,7 @@ class CacheConfig
                     LSLog::log('in unregisterHook ' . $r . '=' . $res, LSLog::LEVEL_UPDCONFIG);
                 }
             }
+
             return 2;
         }
 
@@ -283,35 +291,35 @@ class CacheConfig
         switch ($key) {
             case self::ENTRY_ALL:
                 $this->all = [
-                    self::CFG_ENABLED          => $values[self::CFG_ENABLED],
-                    self::CFG_DIFFMOBILE       => $values[self::CFG_DIFFMOBILE],
-                    self::CFG_GUESTMODE        => $values[self::CFG_GUESTMODE],
-                    self::CFG_NOCACHE_VAR      => $values[self::CFG_NOCACHE_VAR],
-                    self::CFG_NOCACHE_URL      => $values[self::CFG_NOCACHE_URL],
-                    self::CFG_VARY_BYPASS      => $values[self::CFG_VARY_BYPASS],
-                    self::CFG_FLUSH_PRODCAT    => $values[self::CFG_FLUSH_PRODCAT],
-                    self::CFG_FLUSH_ALL        => $values[self::CFG_FLUSH_ALL],
-                    self::CFG_FLUSH_HOME       => $values[self::CFG_FLUSH_HOME],
+                    self::CFG_ENABLED => $values[self::CFG_ENABLED],
+                    self::CFG_DIFFMOBILE => $values[self::CFG_DIFFMOBILE],
+                    self::CFG_GUESTMODE => $values[self::CFG_GUESTMODE],
+                    self::CFG_NOCACHE_VAR => $values[self::CFG_NOCACHE_VAR],
+                    self::CFG_NOCACHE_URL => $values[self::CFG_NOCACHE_URL],
+                    self::CFG_VARY_BYPASS => $values[self::CFG_VARY_BYPASS],
+                    self::CFG_FLUSH_PRODCAT => $values[self::CFG_FLUSH_PRODCAT],
+                    self::CFG_FLUSH_ALL => $values[self::CFG_FLUSH_ALL],
+                    self::CFG_FLUSH_HOME => $values[self::CFG_FLUSH_HOME],
                     self::CFG_FLUSH_HOME_INPUT => $values[self::CFG_FLUSH_HOME_INPUT],
-                    self::CFG_DEBUG            => $values[self::CFG_DEBUG],
-                    self::CFG_DEBUG_HEADER     => $values[self::CFG_DEBUG_HEADER],
-                    self::CFG_DEBUG_LEVEL      => $values[self::CFG_DEBUG_LEVEL],
-                    self::CFG_ALLOW_IPS        => $values[self::CFG_ALLOW_IPS],
-                    self::CFG_DEBUG_IPS        => $values[self::CFG_DEBUG_IPS],
-                    self::CFG_DEBUG_URI_INC    => $values[self::CFG_DEBUG_URI_INC] ?? '',
-                    self::CFG_DEBUG_URI_EXC    => $values[self::CFG_DEBUG_URI_EXC] ?? '',
-                    self::CFG_DEBUG_STR_EXC    => $values[self::CFG_DEBUG_STR_EXC] ?? '',
+                    self::CFG_DEBUG => $values[self::CFG_DEBUG],
+                    self::CFG_DEBUG_HEADER => $values[self::CFG_DEBUG_HEADER],
+                    self::CFG_DEBUG_LEVEL => $values[self::CFG_DEBUG_LEVEL],
+                    self::CFG_ALLOW_IPS => $values[self::CFG_ALLOW_IPS],
+                    self::CFG_DEBUG_IPS => $values[self::CFG_DEBUG_IPS],
+                    self::CFG_DEBUG_URI_INC => $values[self::CFG_DEBUG_URI_INC] ?? '',
+                    self::CFG_DEBUG_URI_EXC => $values[self::CFG_DEBUG_URI_EXC] ?? '',
+                    self::CFG_DEBUG_STR_EXC => $values[self::CFG_DEBUG_STR_EXC] ?? '',
                 ];
                 \Configuration::updateGlobalValue(self::ENTRY_ALL, json_encode($this->all));
                 break;
             case self::ENTRY_SHOP:
                 $this->shop = [
-                    self::CFG_PUBLIC_TTL    => $values[self::CFG_PUBLIC_TTL],
-                    self::CFG_PRIVATE_TTL   => $values[self::CFG_PRIVATE_TTL],
-                    self::CFG_HOME_TTL      => $values[self::CFG_HOME_TTL],
-                    self::CFG_404_TTL       => $values[self::CFG_404_TTL],
+                    self::CFG_PUBLIC_TTL => $values[self::CFG_PUBLIC_TTL],
+                    self::CFG_PRIVATE_TTL => $values[self::CFG_PRIVATE_TTL],
+                    self::CFG_HOME_TTL => $values[self::CFG_HOME_TTL],
+                    self::CFG_404_TTL => $values[self::CFG_404_TTL],
                     self::CFG_PCOMMENTS_TTL => $values[self::CFG_PCOMMENTS_TTL],
-                    self::CFG_DIFFCUSTGRP   => $values[self::CFG_DIFFCUSTGRP],
+                    self::CFG_DIFFCUSTGRP => $values[self::CFG_DIFFCUSTGRP],
                 ];
                 \Configuration::updateValue(self::ENTRY_SHOP, json_encode($this->shop));
                 break;
@@ -322,12 +330,14 @@ class CacheConfig
             default:
                 return false;
         }
+
         return true;
     }
 
     public function isDebug($requiredLevel = 0)
     {
         $this->get(self::CFG_DEBUG);
+
         return ($this->isDebug < $requiredLevel) ? 0 : $this->isDebug;
     }
 
@@ -353,7 +363,7 @@ class CacheConfig
 
         $this->addDefaultPurgeControllers();
 
-        $this->custMod    = \Configuration::get(self::ENTRY_MODULE);
+        $this->custMod = \Configuration::get(self::ENTRY_MODULE);
         $this->esiModConf = ['mods' => [], 'purge_events' => []];
         $custdata = json_decode($this->custMod, true);
         if ($custdata) {
@@ -364,22 +374,22 @@ class CacheConfig
         }
 
         $this->addExtraPubControllers([
-            'IndexController'                                       => self::TAG_HOME,
-            'ProductController'                                     => '',
-            'CategoryController'                                    => '',
-            'prestablogblogModuleFrontController'                   => '',
-            'CmsController'                                         => '',
-            'ManufacturerController'                                => '',
-            'SupplierController'                                    => '',
-            'SearchController'                                      => self::TAG_SEARCH,
-            'BestSalesController'                                   => self::TAG_SEARCH,
-            'NewProductsController'                                 => self::TAG_SEARCH,
-            'PricesDropController'                                  => self::TAG_SEARCH,
-            'SitemapController'                                     => self::TAG_SITEMAP,
-            'StoresController'                                      => self::TAG_STORES,
-            'PageNotFoundController'                                => self::TAG_404,
-            'productcommentsListCommentsModuleFrontController'      => self::TAG_PREFIX_PCOMMENTS,
-            'productcommentsCommentGradeModuleFrontController'      => self::TAG_PREFIX_PCOMMENTS,
+            'IndexController' => self::TAG_HOME,
+            'ProductController' => '',
+            'CategoryController' => '',
+            'prestablogblogModuleFrontController' => '',
+            'CmsController' => '',
+            'ManufacturerController' => '',
+            'SupplierController' => '',
+            'SearchController' => self::TAG_SEARCH,
+            'BestSalesController' => self::TAG_SEARCH,
+            'NewProductsController' => self::TAG_SEARCH,
+            'PricesDropController' => self::TAG_SEARCH,
+            'SitemapController' => self::TAG_SITEMAP,
+            'StoresController' => self::TAG_STORES,
+            'PageNotFoundController' => self::TAG_404,
+            'productcommentsListCommentsModuleFrontController' => self::TAG_PREFIX_PCOMMENTS,
+            'productcommentsCommentGradeModuleFrontController' => self::TAG_PREFIX_PCOMMENTS,
         ]);
 
         LSLog::setDebugLevel($this->isDebug);
@@ -442,6 +452,7 @@ class CacheConfig
                 $this->flushHomePids = false;
             }
         }
+
         return $this->flushHomePids;
     }
 
@@ -453,6 +464,7 @@ class CacheConfig
         } elseif ($this->enforceDiffGroup === 2 && $diffGroup === 0) {
             return 2;
         }
+
         return $diffGroup;
     }
 
@@ -471,6 +483,7 @@ class CacheConfig
         if (isset($m[$name]) && $m[$name]->canInject($params)) {
             return $m[$name];
         }
+
         return false;
     }
 
@@ -620,6 +633,7 @@ class CacheConfig
                 $flag = CacheState::MOD_ACTIVE;
             }
         }
+
         return $flag;
     }
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -7,7 +8,6 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-
 namespace LiteSpeed\Cache\Integration;
 
 if (!defined('_PS_VERSION_')) {
@@ -15,15 +15,14 @@ if (!defined('_PS_VERSION_')) {
 }
 
 use LiteSpeed\Cache\Config\CacheConfig;
-use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
 use LiteSpeed\Cache\Esi\EsiItem;
 use LiteSpeed\Cache\Esi\EsiModuleConfig;
+use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
 
-/**
+/*
  * Integration — abstract base class for third-party module ESI integrations.
  * Subclasses extend LscIntegration (global alias) which maps to this class.
  */
-use Context;
 abstract class Integration
 {
     /** @var array Static registry of integrated modules and shared state */
@@ -46,7 +45,7 @@ abstract class Integration
     public static function register(): void
     {
         $className = get_called_class();
-        $name      = $className::NAME;
+        $name = $className::NAME;
         if ($className::isUsed($name)) {
             $instance = new $className();
             if ($instance->init()) {
@@ -63,11 +62,11 @@ abstract class Integration
         }
         self::$integrated['jsdef'][$jsk] = ['proc' => $proc];
         $locator = explode(':', $jsk);
-        $cur     = &self::$integrated['jsloc'];
+        $cur = &self::$integrated['jsloc'];
         while ($key = array_shift($locator)) {
             if (!empty($locator)) {
                 $cur[$key] = [];
-                $cur       = &$cur[$key];
+                $cur = &$cur[$key];
             } else {
                 $cur[$key] = $jsk;
             }
@@ -83,11 +82,13 @@ abstract class Integration
     {
         if ($this->esiConf instanceof EsiModuleConfig) {
             CacheConfig::getInstance()->registerEsiModule($this->esiConf);
+
             return true;
         }
         if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_NOTICE) {
             LSLog::log(__FUNCTION__ . 'something wrong', LSLog::LEVEL_NOTICE);
         }
+
         return false;
     }
 
@@ -98,21 +99,22 @@ abstract class Integration
             return false;
         }
         if (!isset($def[$key]['replace'])) {
-            $proc     = $def[$key]['proc'];
+            $proc = $def[$key]['proc'];
             $esiParam = [
-                'pt'  => EsiItem::ESI_JSDEF,
-                'm'   => $proc::NAME,
+                'pt' => EsiItem::ESI_JSDEF,
+                'm' => $proc::NAME,
                 'jsk' => $key,
             ];
             $log .= $proc::NAME . ':' . $key . ' ';
 
-            $item             = new EsiItem($esiParam, $proc->esiConf);
-            $id               = $item->getId();
-            $injected[$id]    = $item;
+            $item = new EsiItem($esiParam, $proc->esiConf);
+            $id = $item->getId();
+            $injected[$id] = $item;
             $def[$key]['replace'] = '_LSCESIJS-' . $id . '-START__LSCESIEND_';
-            $def[$key]['value']   = json_encode($val);
+            $def[$key]['value'] = json_encode($val);
         }
         $val = $def[$key]['replace'];
+
         return true;
     }
 
@@ -139,7 +141,7 @@ abstract class Integration
         }
 
         $injected = [];
-        $log      = '';
+        $log = '';
 
         foreach ($jsDef as $key => &$js) {
             $loc = &self::$integrated['jsloc'];
@@ -160,11 +162,13 @@ abstract class Integration
             $key = $item->getParam('jsk');
             if (isset(self::$integrated['jsdef'][$key]['value'])) {
                 $item->setContent(self::$integrated['jsdef'][$key]['value']);
+
                 return;
             }
             $proc = self::$integrated[$name]['class'];
             if (method_exists($proc, 'jsKeyProcess')) {
                 $item->setContent($proc->jsKeyProcess($key));
+
                 return;
             }
         }
@@ -179,6 +183,7 @@ abstract class Integration
             if (method_exists($proc, 'moduleFieldProcess')) {
                 $content = $proc->moduleFieldProcess($item->getParam());
                 $item->setContent($content);
+
                 return;
             }
         }
@@ -242,12 +247,14 @@ abstract class Integration
                 }
             }
         }
+
         return null;
     }
 
     protected function isLoggedIn(): bool
     {
-        $context = Context::getContext();
+        $context = \Context::getContext();
+
         return ($context->customer !== null) && $context->customer->isLogged();
     }
 

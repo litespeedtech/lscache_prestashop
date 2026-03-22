@@ -1,6 +1,5 @@
 <?php
 
-
 namespace LiteSpeed\Cache\Controller\Admin;
 
 if (!defined('_PS_VERSION_')) {
@@ -31,6 +30,7 @@ class PresetsController extends AbstractController
         if ($request->isMethod('POST') && $request->request->has('apply_preset')) {
             $preset = $request->request->get('apply_preset');
             $this->applyPreset($preset);
+
             return $this->redirectToRoute('admin_litespeedcache_presets');
         }
 
@@ -38,6 +38,7 @@ class PresetsController extends AbstractController
         if ($request->isMethod('POST') && $request->request->has('restore_backup')) {
             $index = (int) $request->request->get('restore_backup');
             $this->restoreBackup($index);
+
             return $this->redirectToRoute('admin_litespeedcache_presets');
         }
 
@@ -46,8 +47,8 @@ class PresetsController extends AbstractController
         $currentPreset = \Configuration::getGlobalValue('LITESPEED_ACTIVE_PRESET') ?: null;
 
         return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/presets.html.twig', [
-            'presets'       => $presets,
-            'history'       => $history,
+            'presets' => $presets,
+            'history' => $history,
             'currentPreset' => $currentPreset,
         ], $request);
     }
@@ -56,32 +57,32 @@ class PresetsController extends AbstractController
     {
         return [
             'essentials' => [
-                'name'        => 'Essentials',
+                'name' => 'Essentials',
                 'recommended' => false,
-                'features'    => [
+                'features' => [
                     'Default cache enabled',
                     'Higher TTL (1 week)',
                     'Guest mode enabled',
                 ],
                 'description' => 'This risk-free preset is appropriate for all sites. Good for new users, simple sites, or cache-oriented development.',
-                'note'        => 'Only basic caching features are enabled. No additional server requirements.',
+                'note' => 'Only basic caching features are enabled. No additional server requirements.',
             ],
             'basic' => [
-                'name'        => 'Basic',
+                'name' => 'Basic',
                 'recommended' => false,
-                'features'    => [
+                'features' => [
                     'Everything in Essentials, plus',
                     'Separate mobile cache',
                     'Cache per customer group (2 views)',
                     '404 page caching',
                 ],
                 'description' => 'This low-risk preset introduces basic speed optimizations and better user segmentation. Suitable for enthusiastic beginners.',
-                'note'        => 'Includes optimizations known to improve page speed scores.',
+                'note' => 'Includes optimizations known to improve page speed scores.',
             ],
             'advanced' => [
-                'name'        => 'Advanced (Recommended)',
+                'name' => 'Advanced (Recommended)',
                 'recommended' => true,
-                'features'    => [
+                'features' => [
                     'Everything in Basic, plus',
                     'Guest mode optimized',
                     'Product & category flush on order',
@@ -90,12 +91,12 @@ class PresetsController extends AbstractController
                     'Object cache (if Redis available)',
                 ],
                 'description' => 'This preset is good for most sites, and rarely causes conflicts. Any caching issues can be resolved with the Exclusions settings.',
-                'note'        => 'Includes many optimizations known to improve page speed. Redis recommended for object cache.',
+                'note' => 'Includes many optimizations known to improve page speed. Redis recommended for object cache.',
             ],
             'aggressive' => [
-                'name'        => 'Aggressive',
+                'name' => 'Aggressive',
                 'recommended' => false,
-                'features'    => [
+                'features' => [
                     'Everything in Advanced, plus',
                     'Shorter private TTL (15 min)',
                     'Instant Click enabled',
@@ -103,12 +104,12 @@ class PresetsController extends AbstractController
                     'Maximum flush on order',
                 ],
                 'description' => 'This preset may work out of the box on some sites, but make sure to test! Some exclusions may be needed.',
-                'note'        => 'Enables maximum caching aggressiveness. Monitor your site closely after applying.',
+                'note' => 'Enables maximum caching aggressiveness. Monitor your site closely after applying.',
             ],
             'extreme' => [
-                'name'        => 'Extreme',
+                'name' => 'Extreme',
                 'recommended' => false,
-                'features'    => [
+                'features' => [
                     'Everything in Aggressive, plus',
                     'Very high TTL (2 weeks)',
                     'Minimal private TTL (10 min)',
@@ -116,7 +117,7 @@ class PresetsController extends AbstractController
                     'Home page flush on any order',
                 ],
                 'description' => 'This preset will almost certainly require testing and exclusions. Pay special attention to dynamic content like cart widgets and user-specific blocks.',
-                'note'        => 'Enables the maximum level of optimizations. For expert users only.',
+                'note' => 'Enables the maximum level of optimizations. For expert users only.',
             ],
         ];
     }
@@ -126,6 +127,7 @@ class PresetsController extends AbstractController
         $presets = $this->getPresetDefinitions();
         if (!isset($presets[$presetKey])) {
             $this->addFlash('error', 'Unknown preset.');
+
             return;
         }
 
@@ -267,12 +269,12 @@ class PresetsController extends AbstractController
     private function createBackup(string $presetName): void
     {
         $backup = [
-            'date'     => date('Y-m-d H:i:s'),
-            'preset'   => $presetName,
-            'global'   => json_decode(\Configuration::getGlobalValue(Conf::ENTRY_ALL) ?: '{}', true),
-            'shop'     => json_decode(\Configuration::get(Conf::ENTRY_SHOP) ?: '{}', true),
-            'cdn'      => json_decode(\Configuration::getGlobalValue(CdnConfig::ENTRY) ?: '{}', true),
-            'object'   => json_decode(\Configuration::getGlobalValue(ObjConfig::ENTRY) ?: '{}', true),
+            'date' => date('Y-m-d H:i:s'),
+            'preset' => $presetName,
+            'global' => json_decode(\Configuration::getGlobalValue(Conf::ENTRY_ALL) ?: '{}', true),
+            'shop' => json_decode(\Configuration::get(Conf::ENTRY_SHOP) ?: '{}', true),
+            'cdn' => json_decode(\Configuration::getGlobalValue(CdnConfig::ENTRY) ?: '{}', true),
+            'object' => json_decode(\Configuration::getGlobalValue(ObjConfig::ENTRY) ?: '{}', true),
             'exclusions' => json_decode(\Configuration::getGlobalValue(ExclusionsConfig::ENTRY) ?: '{}', true),
             'advanced' => json_decode(\Configuration::getGlobalValue('LITESPEED_CACHE_ADVANCED') ?: '{}', true),
         ];
@@ -288,6 +290,7 @@ class PresetsController extends AbstractController
         $history = $this->getHistory();
         if (!isset($history[$index])) {
             $this->addFlash('error', 'Backup not found.');
+
             return;
         }
 
@@ -334,6 +337,7 @@ class PresetsController extends AbstractController
                 return $data;
             }
         }
+
         return [];
     }
 }

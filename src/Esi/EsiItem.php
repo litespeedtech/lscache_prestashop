@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -6,7 +7,6 @@
  * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Esi;
 
@@ -22,13 +22,13 @@ use LiteSpeed\Cache\Helper\CacheHelper as LSHelper;
  */
 class EsiItem
 {
-    const ESI_RENDERWIDGET = 'rw';
-    const ESI_CALLHOOK     = 'ch';
-    const ESI_JSDEF        = 'js';
-    const ESI_SMARTYFIELD  = 'mf';
-    const ESI_TOKEN        = 'tk';
-    const ESI_ENV          = 'env';
-    const RES_FAILED       = '__LSC_RES_FAILED__';
+    public const ESI_RENDERWIDGET = 'rw';
+    public const ESI_CALLHOOK = 'ch';
+    public const ESI_JSDEF = 'js';
+    public const ESI_SMARTYFIELD = 'mf';
+    public const ESI_TOKEN = 'tk';
+    public const ESI_ENV = 'env';
+    public const RES_FAILED = '__LSC_RES_FAILED__';
 
     private $sdata;
     private $cdata;
@@ -44,13 +44,13 @@ class EsiItem
             $param['pub'] = 1;
         }
         $this->sdata = [
-            'id'       => json_encode($param),
-            'param'    => $param,
-            'url'      => '',
-            'inc'      => false,
+            'id' => json_encode($param),
+            'param' => $param,
+            'url' => '',
+            'inc' => false,
             'inlStart' => false,
-            'shared'   => null,
-            'tag'      => implode(',', $conf->getTags()),
+            'shared' => null,
+            'tag' => implode(',', $conf->getTags()),
         ];
         $this->cdata = [
             'inlStart' => false,
@@ -63,6 +63,7 @@ class EsiItem
         if ($simple) {
             return $params;
         }
+
         return $this->sdata['id'] . ': ' . $params . ' ' . $this->err;
     }
 
@@ -72,8 +73,8 @@ class EsiItem
         if ($conf === null) {
             return null;
         }
-        $item           = new self($sdata['param'], $conf);
-        $item->sdata    = $sdata;
+        $item = new self($sdata['param'], $conf);
+        $item->sdata = $sdata;
         $item->cdata['inlStart'] = $sdata['inlStart'];
 
         return $item;
@@ -125,6 +126,7 @@ class EsiItem
                 $s .= $prefix . $tag . ',';
             }
         }
+
         return rtrim($s, ',');
     }
 
@@ -168,6 +170,7 @@ class EsiItem
         if ($key === '') {
             return $this->sdata['param'];
         }
+
         return isset($this->sdata['param'][$key]) ? $this->sdata['param'][$key] : null;
     }
 
@@ -183,6 +186,7 @@ class EsiItem
         if ($this->sdata['inlStart'] == false || $this->onlyCacheEmpty()) {
             if ($this->content === '' && $this->ignoreEmptyContent()) {
                 $this->sdata['inc'] = '';
+
                 return;
             }
             LSHelper::genEsiElements($this);
@@ -193,7 +197,7 @@ class EsiItem
     public function setFailed(string $err = ''): void
     {
         $this->content = self::RES_FAILED;
-        $this->err     = $err;
+        $this->err = $err;
     }
 
     public function preRenderWidget(): void
@@ -206,7 +210,7 @@ class EsiItem
     }
 
     /**
-     * @return self|string  EsiItem on success, error string on failure
+     * @return self|string EsiItem on success, error string on failure
      */
     public static function decodeEsiUrl()
     {

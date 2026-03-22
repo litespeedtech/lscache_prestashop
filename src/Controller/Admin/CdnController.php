@@ -1,6 +1,5 @@
 <?php
 
-
 namespace LiteSpeed\Cache\Controller\Admin;
 
 if (!defined('_PS_VERSION_')) {
@@ -17,18 +16,18 @@ class CdnController extends AbstractController
 {
     use NavPillsTrait;
 
-
     public function indexAction(Request $request): Response
     {
-        $cfg       = CdnConfig::getAll();
+        $cfg = CdnConfig::getAll();
         $cfEnabled = (bool) $cfg[CdnConfig::CF_ENABLE];
-        $zoneId    = $cfg[CdnConfig::CF_ZONE_ID];
+        $zoneId = $cfg[CdnConfig::CF_ZONE_ID];
 
         $cfReady = $cfEnabled && $zoneId !== '';
 
         if ($request->isMethod('POST')) {
             if ($request->request->has('submitCdn')) {
                 $this->handleSave($request, $cfg);
+
                 return $this->redirectToRoute('admin_litespeedcache_cdn');
             }
 
@@ -90,8 +89,8 @@ class CdnController extends AbstractController
                     \PrestaShopLogger::addLog('Block problematic bots rule: ' . ($result['value'] ?? 'error'), 1, null, 'LiteSpeedCache', 0, true);
                 } elseif ($request->request->has('cf_optimize')) {
                     $results = $cf->optimizeForPrestaShop($zoneId);
-                    $success = array_filter($results, fn($r) => $r['success']);
-                    $failed  = array_filter($results, fn($r) => !$r['success']);
+                    $success = array_filter($results, fn ($r) => $r['success']);
+                    $failed = array_filter($results, fn ($r) => !$r['success']);
 
                     if (count($success) > 0) {
                         $this->addFlash('success', $this->trans('%d settings optimized for PrestaShop.', 'Modules.Litespeedcache.Admin', [count($success)]));
@@ -112,8 +111,8 @@ class CdnController extends AbstractController
         }
 
         $cfInfo = [
-            'domain'   => $cfg[CdnConfig::CF_DOMAIN] ?: '-',
-            'zone'     => $zoneId ?: '-',
+            'domain' => $cfg[CdnConfig::CF_DOMAIN] ?: '-',
+            'zone' => $zoneId ?: '-',
             'dev_mode' => null,
         ];
 
@@ -124,51 +123,51 @@ class CdnController extends AbstractController
         $cfBotsBlocked = false;
         $cfCountriesBlocked = false;
         if ($cfReady) {
-            $cf               = $this->buildApi($cfg);
-            $cfInfo['zone']   = $cf->getZoneName($zoneId);
+            $cf = $this->buildApi($cfg);
+            $cfInfo['zone'] = $cf->getZoneName($zoneId);
             $cfInfo['dev_mode'] = $cf->getDevModeStatus($zoneId);
-            $cfSettings       = $cf->getAllSettings($zoneId);
-            $cfProxy          = $cf->getProxyStatus($zoneId, $cfg[CdnConfig::CF_DOMAIN]);
+            $cfSettings = $cf->getAllSettings($zoneId);
+            $cfProxy = $cf->getProxyStatus($zoneId, $cfg[CdnConfig::CF_DOMAIN]);
             $cfPendingSettings = $this->getPendingOptimizations($cfSettings);
-            $cfOptimized      = empty($cfPendingSettings);
-            $cfBotsBlocked    = $cf->hasFirewallRule($zoneId, 'Block Problematic Bots');
+            $cfOptimized = empty($cfPendingSettings);
+            $cfBotsBlocked = $cf->hasFirewallRule($zoneId, 'Block Problematic Bots');
             $cfCountriesBlocked = $cf->hasFirewallRule($zoneId, 'Block Problematic Countries');
         }
 
         return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/cdn.html.twig', [
-            'values'            => $cfg,
-            'cfInfo'            => $cfInfo,
-            'cfEnabled'         => $cfEnabled,
-            'cfReady'           => $cfReady,
-            'cfProxy'           => $cfProxy,
-            'cfSettings'        => $cfSettings,
-            'cfOptimized'       => $cfOptimized,
+            'values' => $cfg,
+            'cfInfo' => $cfInfo,
+            'cfEnabled' => $cfEnabled,
+            'cfReady' => $cfReady,
+            'cfProxy' => $cfProxy,
+            'cfSettings' => $cfSettings,
+            'cfOptimized' => $cfOptimized,
             'cfPendingSettings' => $cfPendingSettings,
-            'cfBotsBlocked'     => $cfBotsBlocked,
+            'cfBotsBlocked' => $cfBotsBlocked,
             'cfCountriesBlocked' => $cfCountriesBlocked,
-            'cfCanRevert'       => (bool) \Configuration::getGlobalValue('LITESPEED_CF_OPTIMIZE_BACKUP'),
+            'cfCanRevert' => (bool) \Configuration::getGlobalValue('LITESPEED_CF_OPTIMIZE_BACKUP'),
         ], $request);
     }
 
     private function handleSave(Request $request, array $oldCfg): void
     {
         $new = [
-            CdnConfig::CF_ENABLE  => (int) $request->request->get('cf_enable', 0),
-            CdnConfig::CF_KEY     => trim((string) $request->request->get('cf_key', '')),
-            CdnConfig::CF_EMAIL   => trim((string) $request->request->get('cf_email', '')),
-            CdnConfig::CF_DOMAIN  => trim((string) $request->request->get('cf_domain', '')),
-            CdnConfig::CF_PURGE   => (int) $request->request->get('cf_purge', 0),
+            CdnConfig::CF_ENABLE => (int) $request->request->get('cf_enable', 0),
+            CdnConfig::CF_KEY => trim((string) $request->request->get('cf_key', '')),
+            CdnConfig::CF_EMAIL => trim((string) $request->request->get('cf_email', '')),
+            CdnConfig::CF_DOMAIN => trim((string) $request->request->get('cf_domain', '')),
+            CdnConfig::CF_PURGE => (int) $request->request->get('cf_purge', 0),
             CdnConfig::CF_ZONE_ID => $oldCfg[CdnConfig::CF_ZONE_ID] ?? '',
         ];
 
         $domainChanged = $new[CdnConfig::CF_DOMAIN] !== $oldCfg[CdnConfig::CF_DOMAIN];
-        $keyChanged    = $new[CdnConfig::CF_KEY] !== $oldCfg[CdnConfig::CF_KEY];
-        $noZone        = $new[CdnConfig::CF_ZONE_ID] === '';
+        $keyChanged = $new[CdnConfig::CF_KEY] !== $oldCfg[CdnConfig::CF_KEY];
+        $noZone = $new[CdnConfig::CF_ZONE_ID] === '';
 
         if ($new[CdnConfig::CF_ENABLE] && $new[CdnConfig::CF_KEY] && $new[CdnConfig::CF_DOMAIN]
             && ($domainChanged || $keyChanged || $noZone)
         ) {
-            $cf     = new Cloudflare($new[CdnConfig::CF_KEY], $new[CdnConfig::CF_EMAIL]);
+            $cf = new Cloudflare($new[CdnConfig::CF_KEY], $new[CdnConfig::CF_EMAIL]);
             $zoneId = $cf->findZone($new[CdnConfig::CF_DOMAIN]);
 
             if ($zoneId) {
@@ -187,20 +186,20 @@ class CdnController extends AbstractController
     private function getPendingOptimizations(array $cfSettings): array
     {
         $expected = [
-            'ssl'                => ['target' => 'full',     'label' => 'SSL/TLS Mode',                'good' => ['full', 'strict']],
-            'tls_1_3'            => ['target' => 'on',       'label' => 'TLS 1.3',                     'good' => ['on', 'zrt']],
-            'http3'              => ['target' => 'on',       'label' => 'HTTP/3 (QUIC)',                'good' => ['on']],
-            'brotli'             => ['target' => 'on',       'label' => 'Brotli Compression',           'good' => ['on']],
-            'early_hints'        => ['target' => 'on',       'label' => 'Early Hints (103)',             'good' => ['on']],
-            'always_use_https'   => ['target' => 'on',       'label' => 'Always Use HTTPS',              'good' => ['on']],
-            '0rtt'               => ['target' => 'on',       'label' => '0-RTT Connection Resumption',   'good' => ['on']],
-            'rocket_loader'      => ['target' => 'off',      'label' => 'Rocket Loader',                 'good' => ['off']],
-            'email_obfuscation'  => ['target' => 'off',      'label' => 'Email Obfuscation',             'good' => ['off']],
-            'cache_level'        => ['target' => 'basic',    'label' => 'Cache Level',                   'good' => ['basic']],
-            'browser_cache_ttl'  => ['target' => '0',        'label' => 'Browser Cache TTL',             'good' => ['0', 0]],
-            'security_level'     => ['target' => 'medium',   'label' => 'Security Level',                'good' => ['medium']],
-            'challenge_ttl'      => ['target' => '3600',     'label' => 'Challenge TTL',                 'good' => ['3600', 3600]],
-            'browser_check'      => ['target' => 'on',       'label' => 'Browser Integrity Check',       'good' => ['on']],
+            'ssl' => ['target' => 'full',     'label' => 'SSL/TLS Mode',                'good' => ['full', 'strict']],
+            'tls_1_3' => ['target' => 'on',       'label' => 'TLS 1.3',                     'good' => ['on', 'zrt']],
+            'http3' => ['target' => 'on',       'label' => 'HTTP/3 (QUIC)',                'good' => ['on']],
+            'brotli' => ['target' => 'on',       'label' => 'Brotli Compression',           'good' => ['on']],
+            'early_hints' => ['target' => 'on',       'label' => 'Early Hints (103)',             'good' => ['on']],
+            'always_use_https' => ['target' => 'on',       'label' => 'Always Use HTTPS',              'good' => ['on']],
+            '0rtt' => ['target' => 'on',       'label' => '0-RTT Connection Resumption',   'good' => ['on']],
+            'rocket_loader' => ['target' => 'off',      'label' => 'Rocket Loader',                 'good' => ['off']],
+            'email_obfuscation' => ['target' => 'off',      'label' => 'Email Obfuscation',             'good' => ['off']],
+            'cache_level' => ['target' => 'basic',    'label' => 'Cache Level',                   'good' => ['basic']],
+            'browser_cache_ttl' => ['target' => '0',        'label' => 'Browser Cache TTL',             'good' => ['0', 0]],
+            'security_level' => ['target' => 'medium',   'label' => 'Security Level',                'good' => ['medium']],
+            'challenge_ttl' => ['target' => '3600',     'label' => 'Challenge TTL',                 'good' => ['3600', 3600]],
+            'browser_check' => ['target' => 'on',       'label' => 'Browser Integrity Check',       'good' => ['on']],
         ];
 
         $pending = [];
@@ -208,9 +207,9 @@ class CdnController extends AbstractController
             $current = $cfSettings[$key] ?? null;
             if ($current === null || !in_array($current, $def['good'], false)) {
                 $pending[$key] = [
-                    'label'   => $def['label'],
+                    'label' => $def['label'],
                     'current' => $current ?? '—',
-                    'target'  => $def['target'],
+                    'target' => $def['target'],
                 ];
             }
         }
@@ -219,9 +218,9 @@ class CdnController extends AbstractController
         $minify = $cfSettings['minify'] ?? [];
         if (!is_array($minify) || ($minify['css'] ?? '') !== 'off' || ($minify['js'] ?? '') !== 'off' || ($minify['html'] ?? '') !== 'off') {
             $pending['minify'] = [
-                'label'   => 'Auto Minify (CSS/JS/HTML)',
+                'label' => 'Auto Minify (CSS/JS/HTML)',
                 'current' => 'on',
-                'target'  => 'off',
+                'target' => 'off',
             ];
         }
 

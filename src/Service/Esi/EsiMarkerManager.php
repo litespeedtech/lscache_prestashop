@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -44,10 +45,11 @@ class EsiMarkerManager
     public function registerMarker(array $params, $conf): string
     {
         $item = new EsiItem($params, $conf);
-        $id   = $item->getId();
+        $id = $item->getId();
         if (!isset($this->esiInjection['marker'][$id])) {
             $this->esiInjection['marker'][$id] = $item;
         }
+
         return '_LSCESI-' . $id . '-START_';
     }
 
@@ -74,6 +76,7 @@ class EsiMarkerManager
                         if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_UNEXPECTED) {
                             LSLog::log('Lost Injection ' . $id, LSLog::LEVEL_UNEXPECTED);
                         }
+
                         return '';
                     }
                     $item = $this->esiInjection['marker'][$id];
@@ -86,6 +89,7 @@ class EsiMarkerManager
                         }
                         $esiInclude = $item->getInclude();
                     }
+
                     return $esiInclude;
                 },
                 $buf

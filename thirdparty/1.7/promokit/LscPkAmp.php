@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -21,7 +22,6 @@
  * @copyright  Copyright (c) 2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -32,16 +32,17 @@ use LiteSpeed\Cache\Vary\VaryCookie;
 
 class LscPkAmp extends LscIntegration
 {
-    const NAME = 'pk_amp';
+    public const NAME = 'pk_amp';
 
     protected function init()
     {
         $this->addPreDispatchAction($this);
         $this->addCacheableControllers($this->getPubControllers());
         $this->addInitCacheTagAction($this);
+
         return true;
     }
-    
+
     protected function getPubControllers()
     {
         return [
@@ -61,14 +62,14 @@ class LscPkAmp extends LscIntegration
             'pk_amp404ModuleFrontController' => Conf::TAG_404,
         ];
     }
-    
+
     protected function actionPreDispatch()
     {
         $mtb = '';
         $context = Context::getContext();
         $mtb .= $context->isMobile() ? '1' : '0';
         $mtb .= $context->isTablet() ? '1' : '0';
-        //$isbot = Module::getInstanceByName(self::NAME)->is_bot();
+        // $isbot = Module::getInstanceByName(self::NAME)->is_bot();
         $isbot = $this->is_bot();
         $mtb .= $isbot ? '1' : '0';
 
@@ -77,35 +78,38 @@ class LscPkAmp extends LscIntegration
         }
         VaryCookie::setAmpVary($mtb);
     }
-    
-    /* Please make sure this function is exactly same as Pk_Amp->is_bot(). 
+
+    /* Please make sure this function is exactly same as Pk_Amp->is_bot().
      * If mismatch, it will cache wrong copy */
     public function is_bot()
     {
-        $bots = array(
-            'Googlebot', 
-            'Baiduspider', 
+        $bots = [
+            'Googlebot',
+            'Baiduspider',
             'ia_archiver',
-            'R6_FeedFetcher', 
-            'NetcraftSurveyAgent', 
+            'R6_FeedFetcher',
+            'NetcraftSurveyAgent',
             'Sogou web spider',
-            'bingbot', 
-            'Yahoo! Slurp', 
-            'facebookexternalhit', 
+            'bingbot',
+            'Yahoo! Slurp',
+            'facebookexternalhit',
             'PrintfulBot',
-            'msnbot', 
-            'Twitterbot', 
+            'msnbot',
+            'Twitterbot',
             'UnwindFetchor',
             'urlresolver',
-            'Butterfly', 
-            'TweetmemeBot');
-     
-       foreach($bots as $b){
-          if( stripos( $_SERVER['HTTP_USER_AGENT'], $b ) !== false ) return true;
-       }
-       return false;
-    }    
-    
+            'Butterfly',
+            'TweetmemeBot'];
+
+        foreach ($bots as $b) {
+            if (stripos($_SERVER['HTTP_USER_AGENT'], $b) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     protected function initCacheTagsByController($params)
     {
         $controller = $params['controller'];
@@ -143,8 +147,6 @@ class LscPkAmp extends LscIntegration
 
         return null;
     }
-    
-    
 }
 
 LscPkAmp::register();

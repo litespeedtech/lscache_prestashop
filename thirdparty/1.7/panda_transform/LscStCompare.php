@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -21,17 +22,15 @@
  * @copyright  Copyright (c) 2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Esi\EsiModuleConfig as EsiConf;
 
 class LscStCompare extends LscIntegration
 {
-    const NAME = 'stcompare';
+    public const NAME = 'stcompare';
 
     protected function init()
     {
@@ -45,6 +44,7 @@ class LscStCompare extends LscIntegration
 
         $this->registerEsiModule();
         $this->addCheckPurgeControllerCustomHandler('StCompareCompareModuleFrontController', $this);
+
         return true;
     }
 
@@ -58,8 +58,8 @@ class LscStCompare extends LscIntegration
             $pid = Tools::getValue('id_product');
             $params['id_product'] = $pid;
             // item cache is for related esi block, do not save at product id level
-        } 
-        
+        }
+
         return true;
     }
 
@@ -69,6 +69,7 @@ class LscStCompare extends LscIntegration
         if (isset($params['id_product'])) {
             $tags[] = 'compare_' . $params['id_product'];
         }
+
         return $tags;
     }
 
@@ -77,7 +78,7 @@ class LscStCompare extends LscIntegration
         return isset($params['id_product']);
     }
 
-    //id_product,StCompareCompareModuleFrontController?action'
+    // id_product,StCompareCompareModuleFrontController?action'
     protected function checkPurgeControllerCustomHandler($lowercase_controller_class, &$tags)
     {
         // * @param type $tags = ['pub' => [], 'priv' => []];

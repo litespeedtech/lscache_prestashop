@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -8,7 +9,6 @@ declare(strict_types=1);
  * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license    https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Service\Esi;
 
@@ -34,7 +34,7 @@ class EsiOutputProcessor
 
     public function __construct(CacheManager $cache, EsiMarkerManager $markerManager)
     {
-        $this->cache         = $cache;
+        $this->cache = $cache;
         $this->markerManager = $markerManager;
     }
 

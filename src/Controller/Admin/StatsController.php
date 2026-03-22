@@ -1,6 +1,5 @@
 <?php
 
-
 namespace LiteSpeed\Cache\Controller\Admin;
 
 if (!defined('_PS_VERSION_')) {
@@ -21,29 +20,28 @@ class StatsController extends AbstractController
 {
     use NavPillsTrait;
 
-
     public function indexAction(Request $request): Response
     {
         $config = Conf::getInstance();
 
         // LiteSpeed Cache
         $lsEnabled = (bool) $config->get(Conf::CFG_ENABLED);
-        $lsActive  = CacheHelper::licenseEnabled();
-        $lsStats   = $lsEnabled ? $this->getLsStats() : null;
+        $lsActive = CacheHelper::licenseEnabled();
+        $lsStats = $lsEnabled ? $this->getLsStats() : null;
 
         // Redis / Object Cache
-        $objCfg     = ObjConfig::getAll();
+        $objCfg = ObjConfig::getAll();
         $objEnabled = (bool) $objCfg[ObjConfig::OBJ_ENABLE];
         $redisStats = $objEnabled ? ObjectCache::getStats($objCfg) : null;
 
         // Cloudflare CDN
-        $cdnCfg    = CdnConfig::getAll();
+        $cdnCfg = CdnConfig::getAll();
         $cfEnabled = (bool) $cdnCfg[CdnConfig::CF_ENABLE] && !empty($cdnCfg[CdnConfig::CF_ZONE_ID]);
         $cfStats = null;
         $cfError = '';
         if ($cfEnabled) {
             try {
-                $cf      = new Cloudflare($cdnCfg[CdnConfig::CF_KEY], $cdnCfg[CdnConfig::CF_EMAIL]);
+                $cf = new Cloudflare($cdnCfg[CdnConfig::CF_KEY], $cdnCfg[CdnConfig::CF_EMAIL]);
                 $cfStats = $cf->getAnalytics($cdnCfg[CdnConfig::CF_ZONE_ID]);
                 $cfError = $cf->lastError;
             } catch (\Exception $e) {
@@ -52,14 +50,14 @@ class StatsController extends AbstractController
         }
 
         return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/stats.html.twig', [
-            'lsEnabled'   => $lsEnabled,
-            'lsActive'    => $lsActive,
-            'lsStats'     => $lsStats,
-            'objEnabled'  => $objEnabled,
-            'redisStats'  => $redisStats,
-            'cfEnabled'   => $cfEnabled,
-            'cfStats'     => $cfStats,
-            'cfError'     => $cfError,
+            'lsEnabled' => $lsEnabled,
+            'lsActive' => $lsActive,
+            'lsStats' => $lsStats,
+            'objEnabled' => $objEnabled,
+            'redisStats' => $redisStats,
+            'cfEnabled' => $cfEnabled,
+            'cfStats' => $cfStats,
+            'cfError' => $cfError,
         ], $request);
     }
 
@@ -68,9 +66,9 @@ class StatsController extends AbstractController
         $lastPurge = (int) \Configuration::getGlobalValue('LITESPEED_STAT_LAST_PURGE');
 
         return [
-            'purge_count'  => (int) \Configuration::getGlobalValue('LITESPEED_STAT_PURGE_COUNT'),
-            'cached_resp'  => (int) \Configuration::getGlobalValue('LITESPEED_STAT_CACHED_RESP'),
-            'last_purge'   => $lastPurge > 0 ? date('Y-m-d H:i:s', $lastPurge) : null,
+            'purge_count' => (int) \Configuration::getGlobalValue('LITESPEED_STAT_PURGE_COUNT'),
+            'cached_resp' => (int) \Configuration::getGlobalValue('LITESPEED_STAT_CACHED_RESP'),
+            'last_purge' => $lastPurge > 0 ? date('Y-m-d H:i:s', $lastPurge) : null,
         ];
     }
 }

@@ -29,6 +29,7 @@ class WarmupLscacheCommand extends Command
         $xml = @simplexml_load_file($sitemap);
         if (!$xml) {
             $output->writeln('<error>Cannot load sitemap: ' . $sitemap . '</error>');
+
             return Command::FAILURE;
         }
 
@@ -39,6 +40,7 @@ class WarmupLscacheCommand extends Command
 
         if (empty($urls)) {
             $output->writeln('<error>No URLs found in sitemap</error>');
+
             return Command::FAILURE;
         }
 
@@ -70,7 +72,7 @@ class WarmupLscacheCommand extends Command
     private function crawlUrls(array $urls, OutputInterface $output, string $cookie = '', string $userAgent = 'lscache_runner'): void
     {
         set_time_limit(0);
-        $total   = count($urls);
+        $total = count($urls);
         $current = 0;
 
         foreach ($urls as $url) {
@@ -115,7 +117,7 @@ class WarmupLscacheCommand extends Command
     private function getDefaultCookies(string $url): string
     {
         $cookie = '_lscache_vary=' . uniqid('lscache');
-        $ch     = $this->getCurlHandler($url, $cookie, true);
+        $ch = $this->getCurlHandler($url, $cookie, true);
         $buffer = curl_exec($ch);
         curl_close($ch);
 

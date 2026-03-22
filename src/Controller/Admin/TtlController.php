@@ -1,14 +1,13 @@
 <?php
 
-
 namespace LiteSpeed\Cache\Controller\Admin;
 
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Admin\ConfigValidator;
+use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,6 +30,7 @@ class TtlController extends AbstractController
 
         if ($request->isMethod('POST') && $request->request->has('submitTtl')) {
             $this->handleSave($request, $config, $currentValues, $shopLevel);
+
             return $this->redirectToRoute('admin_litespeedcache_ttl');
         }
 
@@ -78,11 +78,13 @@ class TtlController extends AbstractController
             foreach ($errors as $e) {
                 $this->addFlash('error', $e);
             }
+
             return;
         }
 
         if ($changed === 0) {
             $this->addFlash('info', $this->trans('No changes detected.', $d));
+
             return;
         }
 
@@ -96,11 +98,22 @@ class TtlController extends AbstractController
 
     public static function humanDuration(int $seconds): string
     {
-        if ($seconds <= 0) return 'disabled';
-        if ($seconds < 60) return $seconds . 's';
-        if ($seconds < 3600) return round($seconds / 60) . ' minutes';
-        if ($seconds < 86400) return round($seconds / 3600, 1) . ' hours';
-        if ($seconds < 604800) return round($seconds / 86400, 1) . ' days';
+        if ($seconds <= 0) {
+            return 'disabled';
+        }
+        if ($seconds < 60) {
+            return $seconds . 's';
+        }
+        if ($seconds < 3600) {
+            return round($seconds / 60) . ' minutes';
+        }
+        if ($seconds < 86400) {
+            return round($seconds / 3600, 1) . ' hours';
+        }
+        if ($seconds < 604800) {
+            return round($seconds / 86400, 1) . ' days';
+        }
+
         return round($seconds / 604800, 1) . ' weeks';
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for PrestaShop.
  *
@@ -22,27 +23,26 @@
  * @license  https://opensource.org/licenses/GPL-3.0
  */
 
-
 namespace LiteSpeed\Cache\Hook\Display;
 
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+use Context;
 use LiteSpeed\Cache\Config\CacheConfig;
 use LiteSpeed\Cache\Config\CdnConfig;
 use LiteSpeed\Cache\Core\CacheManager;
 use LiteSpeed\Cache\Core\CacheState;
 use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
 
-use Context;
 class FrontDisplayHookHandler
 {
     /** @var CacheConfig */
     private $config;
 
     /** @var bool|null */
-    private static $instantClick = null;
+    private static $instantClick;
 
     public function __construct(CacheConfig $config)
     {
@@ -77,6 +77,7 @@ class FrontDisplayHookHandler
         if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_FOOTER_COMMENT) {
             LSLog::log('Add html comments in footer ' . $comment, LSLog::LEVEL_FOOTER_COMMENT);
         }
+
         return $output . $comment;
     }
 
@@ -195,42 +196,42 @@ class FrontDisplayHookHandler
             . '<script>'
             . 'var x=new XMLHttpRequest();x.open("HEAD",location.href,true);'
             . 'x.onload=function(){'
-            .   'var el=document.getElementById("lsc-debug-lsheaders");if(!el)return;'
-            .   'var hn=["x-litespeed-cache","x-lscache-debug-cc","x-lscache-debug-info","x-lscache-debug-tag","x-lscache-debug-vary"];'
-            .   'var o="";'
-            .   'function fmtV(v){'
-            .     'try{'
-            .       'var p=v.indexOf("{");if(p<0)return v;'
-            .       'var s=v.substring(0,p).trim();var j=JSON.parse(v.substring(p));'
-            .       'var b="margin:2px 0;padding:3px 5px;background:rgba(255,255,255,.07);border-radius:3px;font-size:10px";'
-            .       'var r="<span style=\"color:#70b580;font-weight:bold\">"+s+"</span>";'
-            .       'var cv=j.cv||{};'
-            .       'r+="<div style=\""+b+"\"><div style=\"color:#25b9d7\">Cookie Vary</div>";'
-            .       'r+="<div><span style=\"color:#adb5bd\">name:</span> "+(cv.name||"-")+"</div>";'
-            .       'r+="<div><span style=\"color:#adb5bd\">value:</span> "+(cv.nv||cv.ov||"-")+"</div>";'
-            .       'if(cv.data){var dk=Object.keys(cv.data);for(var k=0;k<dk.length;k++){r+="<span style=\"display:inline-block;background:#25b9d7;color:#000;padding:0 3px;border-radius:2px;margin:1px;font-size:9px\">"+dk[k]+"="+cv.data[dk[k]]+"</span>";}}'
-            .       'r+="</div>";'
-            .       'var vv=j.vv||{};r+="<div style=\""+b+"\"><div style=\"color:#25b9d7\">Vary Value</div>";'
-            .       'r+="<div><span style=\"color:#adb5bd\">original:</span> "+(vv.ov||"null")+"</div>";'
-            .       'r+="<div><span style=\"color:#adb5bd\">new:</span> "+(vv.nv||"null")+"</div></div>";'
-            .       'var ps=j.ps||{};r+="<div style=\""+b+"\"><div style=\"color:#25b9d7\">PS Session</div>";'
-            .       'r+="<div><span style=\"color:#adb5bd\">original:</span> <span style=\"word-break:break-all\">"+(ps.ov||"null")+"</span></div>";'
-            .       'r+="<div><span style=\"color:#adb5bd\">new:</span> <span style=\"word-break:break-all\">"+(ps.nv||"null")+"</span></div></div>";'
-            .       'return r;'
-            .     '}catch(e){return v;}'
-            .   '}'
-            .   'function fmtT(v){var t=v.split(",");var r="";for(var i=0;i<t.length;i++){r+="<span style=\"display:inline-block;background:#25b9d7;color:#000;padding:0 4px;border-radius:3px;margin:1px;font-size:10px\">"+t[i].trim()+"</span>";}return r;}'
-            .   'function fmtC(v){var c=v.toLowerCase()==="hit"?"#70b580":v.toLowerCase()==="miss"?"#f0ad4e":"#e84e6a";return "<span style=\"color:"+c+";font-weight:bold\">"+v.toUpperCase()+"</span>";}'
-            .   'for(var i=0;i<hn.length;i++){'
-            .     'var v=x.getResponseHeader(hn[i]);'
-            .     'if(!v)continue;'
-            .     'var fv=v;'
-            .     'if(hn[i].indexOf("vary")>-1)fv=fmtV(v);'
-            .     'else if(hn[i].indexOf("tag")>-1)fv=fmtT(v);'
-            .     'else if(hn[i]==="x-litespeed-cache")fv=fmtC(v);'
-            .     'o+="<div style=\"margin-bottom:3px\"><span style=\"color:#6c757d\">"+hn[i]+"</span><br>"+fv+"</div>";'
-            .   '}'
-            .   'if(o)el.innerHTML="<div style=\"border-top:1px solid #444;margin-top:4px;padding-top:4px\"><span style=\"color:#25b9d7;font-weight:bold;font-size:10px\">LiteSpeed Headers</span></div>"+o;'
+            . 'var el=document.getElementById("lsc-debug-lsheaders");if(!el)return;'
+            . 'var hn=["x-litespeed-cache","x-lscache-debug-cc","x-lscache-debug-info","x-lscache-debug-tag","x-lscache-debug-vary"];'
+            . 'var o="";'
+            . 'function fmtV(v){'
+            . 'try{'
+            . 'var p=v.indexOf("{");if(p<0)return v;'
+            . 'var s=v.substring(0,p).trim();var j=JSON.parse(v.substring(p));'
+            . 'var b="margin:2px 0;padding:3px 5px;background:rgba(255,255,255,.07);border-radius:3px;font-size:10px";'
+            . 'var r="<span style=\"color:#70b580;font-weight:bold\">"+s+"</span>";'
+            . 'var cv=j.cv||{};'
+            . 'r+="<div style=\""+b+"\"><div style=\"color:#25b9d7\">Cookie Vary</div>";'
+            . 'r+="<div><span style=\"color:#adb5bd\">name:</span> "+(cv.name||"-")+"</div>";'
+            . 'r+="<div><span style=\"color:#adb5bd\">value:</span> "+(cv.nv||cv.ov||"-")+"</div>";'
+            . 'if(cv.data){var dk=Object.keys(cv.data);for(var k=0;k<dk.length;k++){r+="<span style=\"display:inline-block;background:#25b9d7;color:#000;padding:0 3px;border-radius:2px;margin:1px;font-size:9px\">"+dk[k]+"="+cv.data[dk[k]]+"</span>";}}'
+            . 'r+="</div>";'
+            . 'var vv=j.vv||{};r+="<div style=\""+b+"\"><div style=\"color:#25b9d7\">Vary Value</div>";'
+            . 'r+="<div><span style=\"color:#adb5bd\">original:</span> "+(vv.ov||"null")+"</div>";'
+            . 'r+="<div><span style=\"color:#adb5bd\">new:</span> "+(vv.nv||"null")+"</div></div>";'
+            . 'var ps=j.ps||{};r+="<div style=\""+b+"\"><div style=\"color:#25b9d7\">PS Session</div>";'
+            . 'r+="<div><span style=\"color:#adb5bd\">original:</span> <span style=\"word-break:break-all\">"+(ps.ov||"null")+"</span></div>";'
+            . 'r+="<div><span style=\"color:#adb5bd\">new:</span> <span style=\"word-break:break-all\">"+(ps.nv||"null")+"</span></div></div>";'
+            . 'return r;'
+            . '}catch(e){return v;}'
+            . '}'
+            . 'function fmtT(v){var t=v.split(",");var r="";for(var i=0;i<t.length;i++){r+="<span style=\"display:inline-block;background:#25b9d7;color:#000;padding:0 4px;border-radius:3px;margin:1px;font-size:10px\">"+t[i].trim()+"</span>";}return r;}'
+            . 'function fmtC(v){var c=v.toLowerCase()==="hit"?"#70b580":v.toLowerCase()==="miss"?"#f0ad4e":"#e84e6a";return "<span style=\"color:"+c+";font-weight:bold\">"+v.toUpperCase()+"</span>";}'
+            . 'for(var i=0;i<hn.length;i++){'
+            . 'var v=x.getResponseHeader(hn[i]);'
+            . 'if(!v)continue;'
+            . 'var fv=v;'
+            . 'if(hn[i].indexOf("vary")>-1)fv=fmtV(v);'
+            . 'else if(hn[i].indexOf("tag")>-1)fv=fmtT(v);'
+            . 'else if(hn[i]==="x-litespeed-cache")fv=fmtC(v);'
+            . 'o+="<div style=\"margin-bottom:3px\"><span style=\"color:#6c757d\">"+hn[i]+"</span><br>"+fv+"</div>";'
+            . '}'
+            . 'if(o)el.innerHTML="<div style=\"border-top:1px solid #444;margin-top:4px;padding-top:4px\"><span style=\"color:#25b9d7;font-weight:bold;font-size:10px\">LiteSpeed Headers</span></div>"+o;'
             . '};x.send();'
             . '</script>';
 
@@ -245,7 +246,7 @@ class FrontDisplayHookHandler
         $result = ['type' => '', 'id' => 0];
 
         try {
-            $context = Context::getContext();
+            $context = \Context::getContext();
             $controller = $context->controller ?? null;
             if (!$controller) {
                 return $result;
@@ -333,9 +334,16 @@ class FrontDisplayHookHandler
 
     private function formatTtl(int $seconds): string
     {
-        if ($seconds < 60) return $seconds . 's';
-        if ($seconds < 3600) return round($seconds / 60) . 'm';
-        if ($seconds < 86400) return round($seconds / 3600, 1) . 'h';
+        if ($seconds < 60) {
+            return $seconds . 's';
+        }
+        if ($seconds < 3600) {
+            return round($seconds / 60) . 'm';
+        }
+        if ($seconds < 86400) {
+            return round($seconds / 3600, 1) . 'h';
+        }
+
         return round($seconds / 86400, 1) . 'd';
     }
 
@@ -349,6 +357,7 @@ class FrontDisplayHookHandler
                 $pills .= '<span style="display:inline-block;background:#25b9d7;color:#000;padding:0 4px;border-radius:3px;margin:1px;font-size:10px">'
                     . htmlspecialchars(trim($t)) . '</span>';
             }
+
             return $pills;
         }
 
@@ -407,9 +416,14 @@ class FrontDisplayHookHandler
         // Cache status — colored
         if (str_contains($name, 'cache') && strlen($value) < 10) {
             $v = strtoupper($value);
-            if ($v === 'HIT') $color = '#70b580';
-            elseif ($v === 'MISS') $color = '#f0ad4e';
-            else $color = '#e84e6a';
+            if ($v === 'HIT') {
+                $color = '#70b580';
+            } elseif ($v === 'MISS') {
+                $color = '#f0ad4e';
+            } else {
+                $color = '#e84e6a';
+            }
+
             return '<span style="color:' . $color . ';font-weight:bold">' . htmlspecialchars($v) . '</span>';
         }
 

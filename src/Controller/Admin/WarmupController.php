@@ -1,6 +1,5 @@
 <?php
 
-
 namespace LiteSpeed\Cache\Controller\Admin;
 
 if (!defined('_PS_VERSION_')) {
@@ -18,7 +17,6 @@ class WarmupController extends AbstractController
 {
     use NavPillsTrait;
 
-
     private const STATE_KEY = 'LITESPEED_WARMUP_STATE';
     private const BLACKLIST_KEY = 'LITESPEED_WARMUP_BLACKLIST';
 
@@ -35,17 +33,20 @@ class WarmupController extends AbstractController
                     $this->addToBlacklist($url);
                     $this->addFlash('success', 'URL added to blacklist.');
                 }
+
                 return $this->redirectToRoute('admin_litespeedcache_warmup');
             }
             if ($request->request->has('blacklist_remove')) {
                 $url = $request->request->get('blacklist_remove');
                 $this->removeFromBlacklist($url);
                 $this->addFlash('success', 'URL removed from blacklist.');
+
                 return $this->redirectToRoute('admin_litespeedcache_warmup');
             }
             if ($request->request->has('blacklist_clear')) {
                 \Configuration::updateGlobalValue(self::BLACKLIST_KEY, '[]');
                 $this->addFlash('success', 'Blacklist cleared.');
+
                 return $this->redirectToRoute('admin_litespeedcache_warmup');
             }
             if ($request->request->has('save_settings')) {
@@ -56,11 +57,13 @@ class WarmupController extends AbstractController
                 \Configuration::updateGlobalValue('LITESPEED_WARMUP_SHOP_URL', $shopUrl);
                 \Configuration::updateGlobalValue('LITESPEED_WARMUP_USERAGENT', $userAgent);
                 $this->addFlash('success', 'Crawler settings saved.');
+
                 return $this->redirectToRoute('admin_litespeedcache_warmup');
             }
             if ($request->request->has('reset_state')) {
                 \Configuration::updateGlobalValue(self::STATE_KEY, '{}');
                 $this->addFlash('success', 'Crawler state reset.');
+
                 return $this->redirectToRoute('admin_litespeedcache_warmup');
             }
         }
@@ -69,17 +72,17 @@ class WarmupController extends AbstractController
         $blacklist = json_decode(\Configuration::getGlobalValue(self::BLACKLIST_KEY) ?: '[]', true) ?: [];
 
         return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/warmup.html.twig', [
-            'urlsAction'      => $this->generateUrl('admin_litespeedcache_warmup_urls'),
-            'crawlAction'     => $this->generateUrl('admin_litespeedcache_warmup_crawl'),
+            'urlsAction' => $this->generateUrl('admin_litespeedcache_warmup_urls'),
+            'crawlAction' => $this->generateUrl('admin_litespeedcache_warmup_crawl'),
             'saveStateAction' => $this->generateUrl('admin_litespeedcache_warmup_save_state'),
             'redisEnabled' => !empty($objCfg[ObjConfig::OBJ_ENABLE]),
-            'cdnEnabled'   => !empty($cdnCfg[CdnConfig::CF_ENABLE]),
-            'lastState'    => $lastState,
-            'blacklist'    => $blacklist,
-            'sitemapUrl'   => \Configuration::getGlobalValue('LITESPEED_WARMUP_SITEMAP') ?: '',
-            'shopUrl'      => \Configuration::getGlobalValue('LITESPEED_WARMUP_SHOP_URL') ?: '',
-            'userAgent'    => \Configuration::getGlobalValue('LITESPEED_WARMUP_USERAGENT') ?: '',
-            'cliCommand'   => 'php bin/console litespeedcache:warmup',
+            'cdnEnabled' => !empty($cdnCfg[CdnConfig::CF_ENABLE]),
+            'lastState' => $lastState,
+            'blacklist' => $blacklist,
+            'sitemapUrl' => \Configuration::getGlobalValue('LITESPEED_WARMUP_SITEMAP') ?: '',
+            'shopUrl' => \Configuration::getGlobalValue('LITESPEED_WARMUP_SHOP_URL') ?: '',
+            'userAgent' => \Configuration::getGlobalValue('LITESPEED_WARMUP_USERAGENT') ?: '',
+            'cliCommand' => 'php bin/console litespeedcache:warmup',
         ], $request);
     }
 
@@ -102,10 +105,10 @@ class WarmupController extends AbstractController
         $cookie = $this->getDefaultCookies($sitemapUrls[0]);
 
         return new JsonResponse([
-            'success'     => true,
+            'success' => true,
             'sitemapUrls' => $sitemapUrls,
             'productUrls' => $productUrls,
-            'cookie'      => $cookie,
+            'cookie' => $cookie,
         ]);
     }
 
@@ -114,9 +117,9 @@ class WarmupController extends AbstractController
      */
     public function crawlAction(Request $request): JsonResponse
     {
-        $url       = $request->request->get('url', '');
+        $url = $request->request->get('url', '');
         $userAgent = $request->request->get('useragent', 'lscache_runner');
-        $cookie    = $request->request->get('cookie', '');
+        $cookie = $request->request->get('cookie', '');
 
         if (empty($url)) {
             return new JsonResponse(['success' => false, 'error' => 'No URL provided'], 400);
@@ -139,16 +142,16 @@ class WarmupController extends AbstractController
             curl_setopt($ch, CURLOPT_COOKIE, $cookie);
         }
 
-        $response   = curl_exec($ch);
-        $httpCode   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-        $error      = curl_error($ch);
+        $error = curl_error($ch);
         curl_close($ch);
 
-        $headers    = substr($response, 0, $headerSize);
-        $lscache    = $this->extractHeader($headers, 'X-LiteSpeed-Cache');
-        $cfCache    = $this->extractHeader($headers, 'CF-Cache-Status');
-        $crawlOk    = in_array($httpCode, [200, 201]);
+        $headers = substr($response, 0, $headerSize);
+        $lscache = $this->extractHeader($headers, 'X-LiteSpeed-Cache');
+        $cfCache = $this->extractHeader($headers, 'CF-Cache-Status');
+        $crawlOk = in_array($httpCode, [200, 201]);
 
         // Verify: second GET with only _lscache_vary cookie (guest mode).
         // PrestaShop requires cookies, but LiteSpeed only caches public pages
@@ -196,13 +199,13 @@ class WarmupController extends AbstractController
         }
 
         return new JsonResponse([
-            'success'  => $crawlOk,
-            'cached'   => $cached,
-            'url'      => $url,
+            'success' => $crawlOk,
+            'cached' => $cached,
+            'url' => $url,
             'httpCode' => $httpCode,
-            'lscache'  => $lscache,
-            'cfCache'  => $cfCache,
-            'error'    => $error,
+            'lscache' => $lscache,
+            'cfCache' => $cfCache,
+            'error' => $error,
         ]);
     }
 
@@ -212,13 +215,13 @@ class WarmupController extends AbstractController
     public function saveStateAction(Request $request): JsonResponse
     {
         $state = [
-            'date'       => date('Y-m-d H:i:s'),
-            'total'      => (int) $request->request->get('total', 0),
-            'success'    => (int) $request->request->get('success', 0),
-            'fail'       => (int) $request->request->get('fail', 0),
-            'stopped'    => (bool) $request->request->get('stopped', false),
-            'duration'   => (int) $request->request->get('duration', 0),
-            'urls'       => json_decode($request->request->get('urls', '[]'), true) ?: [],
+            'date' => date('Y-m-d H:i:s'),
+            'total' => (int) $request->request->get('total', 0),
+            'success' => (int) $request->request->get('success', 0),
+            'fail' => (int) $request->request->get('fail', 0),
+            'stopped' => (bool) $request->request->get('stopped', false),
+            'duration' => (int) $request->request->get('duration', 0),
+            'urls' => json_decode($request->request->get('urls', '[]'), true) ?: [],
         ];
 
         // Keep only last 200 URLs in state
@@ -227,6 +230,7 @@ class WarmupController extends AbstractController
         }
 
         \Configuration::updateGlobalValue(self::STATE_KEY, json_encode($state));
+
         return new JsonResponse(['success' => true]);
     }
 
@@ -242,7 +246,7 @@ class WarmupController extends AbstractController
     private function removeFromBlacklist(string $url): void
     {
         $list = json_decode(\Configuration::getGlobalValue(self::BLACKLIST_KEY) ?: '[]', true) ?: [];
-        $list = array_values(array_filter($list, fn($u) => $u !== $url));
+        $list = array_values(array_filter($list, fn ($u) => $u !== $url));
         \Configuration::updateGlobalValue(self::BLACKLIST_KEY, json_encode($list));
     }
 
@@ -258,11 +262,11 @@ class WarmupController extends AbstractController
     private function getProductUrls(Request $request): array
     {
         $shopUrl = trim($request->request->get('shop_url', ''));
-        $idLang  = (int) \Configuration::get('PS_LANG_DEFAULT');
-        $idShop  = (int) \Configuration::get('PS_SHOP_DEFAULT');
+        $idLang = (int) \Configuration::get('PS_LANG_DEFAULT');
+        $idShop = (int) \Configuration::get('PS_SHOP_DEFAULT');
 
         if (!$shopUrl) {
-            $ssl    = \Configuration::get('PS_SSL_ENABLED');
+            $ssl = \Configuration::get('PS_SSL_ENABLED');
             $domain = $ssl ? \Configuration::get('PS_SHOP_DOMAIN_SSL') : \Configuration::get('PS_SHOP_DOMAIN');
             $shopUrl = ($ssl ? 'https://' : 'http://') . $domain;
         }
@@ -282,7 +286,7 @@ class WarmupController extends AbstractController
 
         $link = new \Link();
 
-        $urls    = [];
+        $urls = [];
         $shopUrl = rtrim($shopUrl, '/');
 
         foreach ($products as $product) {

@@ -35,7 +35,24 @@ jobs:
           echo "All PHP files valid"
 
   # ================================================================
-  # 2. Composer Validate
+  # 2. PHP CS Fixer — Coding Standards
+  # ================================================================
+  cs-fixer:
+    runs-on: ubuntu-latest
+    name: "PHP CS Fixer"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+      - name: Install dependencies
+        run: composer install --dev --no-interaction --no-progress
+      - name: Run PHP CS Fixer (dry-run)
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff --using-cache=no
+
+  # ================================================================
+  # 3. Composer Validate
   # ================================================================
   composer-validate:
     runs-on: ubuntu-latest

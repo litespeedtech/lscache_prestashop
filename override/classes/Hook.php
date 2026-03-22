@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -21,7 +22,6 @@
  * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -37,19 +37,21 @@ class Hook extends HookCore
     {
         if (defined('_LITESPEED_DEBUG_') && _LITESPEED_DEBUG_
             && class_exists('\LiteSpeed\Cache\Logger\CacheLogger', false)
-            && _LITESPEED_DEBUG_ >= \LiteSpeed\Cache\Logger\CacheLogger::LEVEL_HOOK_DETAIL) {
+            && _LITESPEED_DEBUG_ >= LiteSpeed\Cache\Logger\CacheLogger::LEVEL_HOOK_DETAIL) {
             // No logic added here. This is to print out all hook events, for module customization,
             // to add purge or tagging event hook
             $mesg = '  in hook coreCallHook ' . get_class($module) . ' - ' . $method;
             if ($method == 'hooklitespeedEsiBegin') {
                 $mesg .= ' params m=' . $params['m'] . ' field=' . $params['field'];
-                if (isset($params['hook']))
+                if (isset($params['hook'])) {
                     $mesg .= ' hook=' . $params['hook'];
-                if (isset($params['tpl']))
+                }
+                if (isset($params['tpl'])) {
                     $mesg .= ' tpl=' . $params['tpl'];
+                }
             }
 
-            \LiteSpeed\Cache\Logger\CacheLogger::log($mesg, \LiteSpeed\Cache\Logger\CacheLogger::LEVEL_HOOK_DETAIL);
+            LiteSpeed\Cache\Logger\CacheLogger::log($mesg, LiteSpeed\Cache\Logger\CacheLogger::LEVEL_HOOK_DETAIL);
         }
 
         $html = parent::coreCallHook($module, $method, $params);
@@ -71,10 +73,10 @@ class Hook extends HookCore
     public static function coreRenderWidget($module, $hook_name, $params)
     {
         if (defined('_LITESPEED_DEBUG_')
-                && _LITESPEED_DEBUG_ >= \LiteSpeed\Cache\Logger\CacheLogger::LEVEL_HOOK_DETAIL) {
+                && _LITESPEED_DEBUG_ >= LiteSpeed\Cache\Logger\CacheLogger::LEVEL_HOOK_DETAIL) {
             // this debug log will only print when debug level is set to 10
             $mesg = '  in hook coreRenderWidget module ' . get_class($module) . ' - ' . $hook_name;
-            \LiteSpeed\Cache\Logger\CacheLogger::log($mesg, \LiteSpeed\Cache\Logger\CacheLogger::LEVEL_HOOK_DETAIL);
+            LiteSpeed\Cache\Logger\CacheLogger::log($mesg, LiteSpeed\Cache\Logger\CacheLogger::LEVEL_HOOK_DETAIL);
         }
 
         $html = parent::coreRenderWidget($module, $hook_name, $params);
@@ -89,6 +91,5 @@ class Hook extends HookCore
         }
 
         return $html;
-    
     }
 }

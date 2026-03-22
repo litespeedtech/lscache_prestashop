@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop — ESI front controller.
  *
@@ -10,7 +11,6 @@
  * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc.
  * @license  https://opensource.org/licenses/GPL-3.0
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -35,11 +35,11 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
         $this->handlers = [
             EsiItem::ESI_RENDERWIDGET => [$this, 'processRenderWidget'],
-            EsiItem::ESI_CALLHOOK    => [$this, 'processCallHook'],
+            EsiItem::ESI_CALLHOOK => [$this, 'processCallHook'],
             EsiItem::ESI_SMARTYFIELD => [$this, 'processSmartyField'],
-            EsiItem::ESI_JSDEF      => [LscIntegration::class, 'processJsDef'],
-            EsiItem::ESI_TOKEN      => [$this, 'processToken'],
-            EsiItem::ESI_ENV        => [$this, 'processEnv'],
+            EsiItem::ESI_JSDEF => [LscIntegration::class, 'processJsDef'],
+            EsiItem::ESI_TOKEN => [$this, 'processToken'],
+            EsiItem::ESI_ENV => [$this, 'processEnv'],
         ];
     }
 
@@ -48,12 +48,14 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         // Vary cookie changed (login/register/logout)
         if (LiteSpeedCache::setVaryCookie()) {
             $this->handleVaryChange();
+
             return;
         }
 
         $item = EsiItem::decodeEsiUrl();
         if (is_string($item)) {
             LSLog::log('Invalid ESI url ' . $item, LSLog::LEVEL_EXCEPTION);
+
             return;
         }
 
@@ -62,6 +64,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
         if ($html === EsiItem::RES_FAILED) {
             LSLog::log('ESI module not found', LSLog::LEVEL_EXCEPTION);
+
             return;
         }
 
@@ -89,6 +92,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         if ($this->isBrowserRequest()) {
             $home = $this->context->link->getPageLink('index', true);
             Tools::redirect($_SERVER['HTTP_REFERER'] ?? $home);
+
             return;
         }
 
@@ -102,7 +106,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
      */
     private function isBrowserRequest(): bool
     {
-        return str_contains(($_SERVER['HTTP_ACCEPT'] ?? ''), 'text/html');
+        return str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'text/html');
     }
 
     // -------------------------------------------------------------------------
@@ -129,6 +133,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             $this->processItem($ri);
             $inline .= $ri->getInline();
         }
+
         return $inline;
     }
 
@@ -177,9 +182,9 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
     private function processSmartyField(EsiItem $item): void
     {
         match ($item->getParam('f')) {
-            'widget'       => $this->processRenderWidget($item),
+            'widget' => $this->processRenderWidget($item),
             'widget_block' => $this->processWidgetBlock($item),
-            default        => LscIntegration::processModField($item),
+            default => LscIntegration::processModField($item),
         };
     }
 
@@ -205,8 +210,10 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         $module = Module::getInstanceByName($item->getParam('m'));
         if (!$module) {
             $item->setFailed();
+
             return null;
         }
+
         return $module;
     }
 
@@ -215,21 +222,22 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         return [
             'smarty' => $this->context->smarty,
             'cookie' => $this->context->cookie,
-            'cart'   => $this->context->cart,
+            'cart' => $this->context->cart,
         ];
     }
 
     private function resolveModuleVariables(array &$params, EsiItem $item): void
     {
-        $mp  = $item->getParam('mp');
+        $mp = $item->getParam('mp');
         $tas = $item->getConf()->getTemplateArgs();
 
         if (!$mp || !$tas) {
             (new HookParamsResolver($this->context))->resolve($item, $params);
+
             return;
         }
 
-        $keys   = explode(',', $tas);
+        $keys = explode(',', $tas);
         $values = json_decode($mp, true) ?? [];
         $smarty = $params['smarty'];
 
@@ -239,7 +247,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             }
 
             $parts = explode('.', trim($key));
-            $val   = $values[$i];
+            $val = $values[$i];
 
             if ($parts[0] === 'smarty') {
                 if (empty($parts[2])) {

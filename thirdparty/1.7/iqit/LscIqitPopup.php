@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -21,7 +22,6 @@
  * @copyright  Copyright (c) 2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -34,7 +34,7 @@ use LiteSpeed\Cache\Esi\EsiModuleConfig as EsiConf;
  */
 class LscIqitPopup extends LscIntegration
 {
-    const NAME = 'iqitpopup';
+    public const NAME = 'iqitpopup';
 
     protected function init()
     {

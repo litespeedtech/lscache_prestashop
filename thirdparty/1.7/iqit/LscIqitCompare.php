@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -21,18 +22,16 @@
  * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Esi\EsiModuleConfig as EsiConf;
 use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
 
 class LscIqitCompare extends LscIntegration
 {
-    const NAME = 'iqitcompare';
+    public const NAME = 'iqitcompare';
 
     protected function init()
     {
@@ -52,7 +51,7 @@ class LscIqitCompare extends LscIntegration
     protected function JSKeyProcess($jskey)
     {
         if ($jskey != 'iqitcompare:nbProducts') {
-            //something wrong, should not happen
+            // something wrong, should not happen
             LSLog::log(__FUNCTION__ . ' unexpected key ' . $jskey, LSLog::LEVEL_EXCEPTION);
 
             return '';

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -19,31 +20,30 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-use Context;
 class ExclusionsController extends AbstractController
 {
     use NavPillsTrait;
 
-
     public function indexAction(Request $request): Response
     {
         $config = Conf::getInstance();
-        $excl   = ExclusionsConfig::getAll();
-        $all    = $config->getAllConfigValues();
+        $excl = ExclusionsConfig::getAll();
+        $all = $config->getAllConfigValues();
 
         if ($request->isMethod('POST') && $request->request->has('submitExclusions')) {
             $this->handleSave($request, $config, $all);
+
             return $this->redirectToRoute('admin_litespeedcache_exclusions');
         }
 
-        $groups = \Group::getGroups((int) Context::getContext()->language->id);
+        $groups = \Group::getGroups((int) \Context::getContext()->language->id);
 
         return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/exclusions.html.twig', [
-            'values'       => $excl,
+            'values' => $excl,
             'nocache_urls' => $all['nocache_urls'] ?? '',
             'nocache_vars' => $all['nocache_vars'] ?? '',
-            'groups'       => $groups,
-            'noRoles'      => $excl[ExclusionsConfig::EXCL_NOCACHE_ROLES] ?? [],
+            'groups' => $groups,
+            'noRoles' => $excl[ExclusionsConfig::EXCL_NOCACHE_ROLES] ?? [],
         ], $request);
     }
 
@@ -61,10 +61,10 @@ class ExclusionsController extends AbstractController
         }
 
         $new = [
-            ExclusionsConfig::EXCL_NOCACHE_CATS    => trim((string) $request->request->get('exc_nocache_cats', '')),
+            ExclusionsConfig::EXCL_NOCACHE_CATS => trim((string) $request->request->get('exc_nocache_cats', '')),
             ExclusionsConfig::EXCL_NOCACHE_COOKIES => trim((string) $request->request->get('exc_nocache_cookies', '')),
-            ExclusionsConfig::EXCL_NOCACHE_UA      => trim((string) $request->request->get('exc_nocache_ua', '')),
-            ExclusionsConfig::EXCL_NOCACHE_ROLES   => array_map('intval', $roles),
+            ExclusionsConfig::EXCL_NOCACHE_UA => trim((string) $request->request->get('exc_nocache_ua', '')),
+            ExclusionsConfig::EXCL_NOCACHE_ROLES => array_map('intval', $roles),
         ];
 
         ExclusionsConfig::saveAll($new);

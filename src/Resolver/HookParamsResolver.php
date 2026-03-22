@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -6,7 +7,6 @@
  * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 
 namespace LiteSpeed\Cache\Resolver;
 
@@ -64,7 +64,7 @@ class HookParamsResolver
             return;
         }
 
-        $idProduct          = (int) $params['product']['id_product'];
+        $idProduct = (int) $params['product']['id_product'];
         $idProductAttribute = (int) ($params['product']['id_product_attribute'] ?? 0);
 
         $productObj = new \Product($idProduct, true, $this->context->language->id, $this->context->shop->id);
@@ -72,11 +72,11 @@ class HookParamsResolver
             return;
         }
 
-        $presented                          = (new ObjectPresenter())->present($productObj);
+        $presented = (new ObjectPresenter())->present($productObj);
         // ObjectPresenter maps ObjectModel::$id as 'id', but getProductProperties needs 'id_product'
-        $presented['id_product']            = $idProduct;
-        $presented['out_of_stock']          = (int) $productObj->out_of_stock;
-        $presented['id_product_attribute']  = $idProductAttribute;
+        $presented['id_product'] = $idProduct;
+        $presented['out_of_stock'] = (int) $productObj->out_of_stock;
+        $presented['id_product_attribute'] = $idProductAttribute;
 
         $productFull = \Product::getProductProperties($this->context->language->id, $presented, $this->context);
         if (!is_array($productFull)) {
@@ -93,16 +93,16 @@ class HookParamsResolver
             new \PrestaShop\PrestaShop\Adapter\Configuration()
         );
 
-        $settings                                        = new ProductPresentationSettings();
-        $settings->catalog_mode                          = (bool) \Configuration::get('PS_CATALOG_MODE');
-        $settings->catalog_mode_with_prices              = (bool) \Configuration::get('PS_CATALOG_MODE_WITH_PRICES');
-        $settings->restricted_country_mode               = isset($this->context->restricted_country_mode) && $this->context->restricted_country_mode;
-        $settings->include_taxes                         = $this->context->country ? $this->context->country->display_tax_label : false;
+        $settings = new ProductPresentationSettings();
+        $settings->catalog_mode = (bool) \Configuration::get('PS_CATALOG_MODE');
+        $settings->catalog_mode_with_prices = (bool) \Configuration::get('PS_CATALOG_MODE_WITH_PRICES');
+        $settings->restricted_country_mode = isset($this->context->restricted_country_mode) && $this->context->restricted_country_mode;
+        $settings->include_taxes = $this->context->country ? $this->context->country->display_tax_label : false;
         $settings->allow_add_variant_to_cart_from_listing = (int) \Configuration::get('PS_ATTRIBUTE_CATEGORY_DISPLAY');
-        $settings->stock_management_enabled              = (bool) \Configuration::get('PS_STOCK_MANAGEMENT');
-        $settings->showPrices                            = !(bool) \Configuration::get('PS_CATALOG_MODE');
-        $settings->lastRemainingItems                    = (int) \Configuration::get('PS_LAST_QTIES');
-        $settings->showLabelOOSListingPages              = (bool) \Configuration::get('PS_SHOW_LABEL_OOS_LISTING_PAGES');
+        $settings->stock_management_enabled = (bool) \Configuration::get('PS_STOCK_MANAGEMENT');
+        $settings->showPrices = !(bool) \Configuration::get('PS_CATALOG_MODE');
+        $settings->lastRemainingItems = (int) \Configuration::get('PS_LAST_QTIES');
+        $settings->showLabelOOSListingPages = (bool) \Configuration::get('PS_SHOW_LABEL_OOS_LISTING_PAGES');
 
         $params['product'] = $productPresenter->present($settings, $productFull, $this->context->language);
         $this->context->smarty->assign('product', $params['product']);

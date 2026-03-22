@@ -1,5 +1,7 @@
 /node_modules/
+/vendor/
 .DS_Store
 *.log
 .phpunit.cache/
+.php-cs-fixer.cache
 composer.lock

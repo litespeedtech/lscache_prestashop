@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -13,13 +14,12 @@
  * @copyright  Copyright (c) 2017-2020 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
+
 namespace LiteSpeed\Cache\Logger;
 
 if (!defined('_PS_VERSION_')) {
     exit;
 }
-
-use FileLogger;
 
 /**
  * CacheLogger — structured debug logger for LiteSpeedCache.
@@ -30,28 +30,28 @@ use FileLogger;
 class CacheLogger
 {
     // Log levels — numbers can overlap intentionally; used for threshold comparison only
-    const LEVEL_FORCE = 0;
-    const LEVEL_FOOTER_COMMENT = 3.5;
-    const LEVEL_EXCEPTION = 1;
-    const LEVEL_UNEXPECTED = 2;
-    const LEVEL_NOTICE = 3;
-    const LEVEL_CUST_SMARTY = 3;
-    const LEVEL_UPDCONFIG = 3;
-    const LEVEL_SETHEADER = 4;
-    const LEVEL_ENVCOOKIE_CHANGE = 5;
-    const LEVEL_PURGE_EVENT = 5;
-    const LEVEL_NOCACHE_REASON = 6;
-    const LEVEL_ESI_INCLUDE = 7;
-    const LEVEL_CACHE_ROUTE = 8;
-    const LEVEL_ENVCOOKIE_DETAIL = 9;
-    const LEVEL_WEBSERVICE_DETAIL = 9;
-    const LEVEL_SPECIFIC_PRICE = 9.5;
-    const LEVEL_ESI_OUTPUT = 9.5;
-    const LEVEL_SAVED_DATA = 10;
-    const LEVEL_HOOK_DETAIL = 10;
-    const LEVEL_TEMPORARY = 8.5;
+    public const LEVEL_FORCE = 0;
+    public const LEVEL_FOOTER_COMMENT = 3.5;
+    public const LEVEL_EXCEPTION = 1;
+    public const LEVEL_UNEXPECTED = 2;
+    public const LEVEL_NOTICE = 3;
+    public const LEVEL_CUST_SMARTY = 3;
+    public const LEVEL_UPDCONFIG = 3;
+    public const LEVEL_SETHEADER = 4;
+    public const LEVEL_ENVCOOKIE_CHANGE = 5;
+    public const LEVEL_PURGE_EVENT = 5;
+    public const LEVEL_NOCACHE_REASON = 6;
+    public const LEVEL_ESI_INCLUDE = 7;
+    public const LEVEL_CACHE_ROUTE = 8;
+    public const LEVEL_ENVCOOKIE_DETAIL = 9;
+    public const LEVEL_WEBSERVICE_DETAIL = 9;
+    public const LEVEL_SPECIFIC_PRICE = 9.5;
+    public const LEVEL_ESI_OUTPUT = 9.5;
+    public const LEVEL_SAVED_DATA = 10;
+    public const LEVEL_HOOK_DETAIL = 10;
+    public const LEVEL_TEMPORARY = 8.5;
 
-    /** @var FileLogger|null */
+    /** @var \FileLogger|null */
     protected $logger;
 
     /** @var string */
@@ -61,10 +61,10 @@ class CacheLogger
     private $isDebug = 0;
 
     /** @var self|null */
-    protected static $instance = null;
+    protected static $instance;
 
     /** @var array|null Cached debug filters to avoid re-reading config on every log call */
-    private $debugFilters = null;
+    private $debugFilters;
 
     /** @var bool Guard against recursive calls from CacheConfig::init() */
     private $filtering = false;
@@ -97,10 +97,10 @@ class CacheLogger
         $this->prefix = '[' . implode(':', $signature) . ']';
     }
 
-    protected function getLogger(): FileLogger
+    protected function getLogger(): \FileLogger
     {
         if ($this->logger === null) {
-            $this->logger = new FileLogger(FileLogger::DEBUG);
+            $this->logger = new \FileLogger(\FileLogger::DEBUG);
 
             if (version_compare(_PS_VERSION_, '1.7.0.0', '<')) {
                 $path = '/log';
@@ -116,8 +116,8 @@ class CacheLogger
     }
 
     /**
-     * @param string     $mesg
-     * @param int|float  $debugLevel
+     * @param string $mesg
+     * @param int|float $debugLevel
      */
     protected function logDebug(string $mesg, $debugLevel): void
     {
@@ -139,7 +139,7 @@ class CacheLogger
                 $mesg .= ' ###############';
             }
             if ($debugLevel != self::LEVEL_TEMPORARY) {
-                $mesg = str_replace("\n", ("\n" . $this->prefix . '  '), $mesg);
+                $mesg = str_replace("\n", "\n" . $this->prefix . '  ', $mesg);
             }
             $this->getLogger()->logDebug($this->prefix . ' (' . $debugLevel . ') ' . $mesg);
         }
@@ -154,7 +154,7 @@ class CacheLogger
     }
 
     /**
-     * @param string    $mesg
+     * @param string $mesg
      * @param int|float $debugLevel
      */
     public static function log(string $mesg, $debugLevel = 9): void
@@ -200,7 +200,9 @@ class CacheLogger
             $matched = false;
             foreach ($patterns as $p) {
                 $p = trim($p);
-                if ($p === '') continue;
+                if ($p === '') {
+                    continue;
+                }
                 if ($this->matchUri($requestUri, $p)) {
                     $matched = true;
                     break;
@@ -217,7 +219,9 @@ class CacheLogger
             $patterns = preg_split("/\r?\n/", $uriExc, -1, PREG_SPLIT_NO_EMPTY);
             foreach ($patterns as $p) {
                 $p = trim($p);
-                if ($p === '') continue;
+                if ($p === '') {
+                    continue;
+                }
                 if ($this->matchUri($requestUri, $p)) {
                     return false;
                 }
@@ -244,8 +248,12 @@ class CacheLogger
         $exact = str_ends_with($pattern, '$');
         $start = str_starts_with($pattern, '^');
 
-        if ($exact) $pattern = substr($pattern, 0, -1);
-        if ($start) $pattern = substr($pattern, 1);
+        if ($exact) {
+            $pattern = substr($pattern, 0, -1);
+        }
+        if ($start) {
+            $pattern = substr($pattern, 1);
+        }
 
         if ($start && $exact) {
             return $uri === $pattern;
@@ -256,6 +264,7 @@ class CacheLogger
         if ($exact) {
             return str_ends_with($uri, $pattern);
         }
+
         return str_contains($uri, $pattern);
     }
 }
