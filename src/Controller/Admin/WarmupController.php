@@ -6,8 +6,10 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+use LiteSpeed\Cache\Config\CacheConfig;
 use LiteSpeed\Cache\Config\CdnConfig;
 use LiteSpeed\Cache\Config\ObjConfig;
+use LiteSpeed\Cache\Config\WarmupConfig;
 use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -56,6 +58,17 @@ class WarmupController extends FrameworkBundleAdminController
                 \Configuration::updateGlobalValue('LITESPEED_WARMUP_SITEMAP', $sitemapUrl);
                 \Configuration::updateGlobalValue('LITESPEED_WARMUP_SHOP_URL', $shopUrl);
                 \Configuration::updateGlobalValue('LITESPEED_WARMUP_USERAGENT', $userAgent);
+
+                $defaults = WarmupConfig::getDefaults();
+                WarmupConfig::saveAll([
+                    WarmupConfig::CRAWL_DELAY => max(0, min(10000, (int) $request->request->get('crawl_delay', $defaults[WarmupConfig::CRAWL_DELAY]))),
+                    WarmupConfig::CONCURRENT_REQUESTS => max(1, min(10, (int) $request->request->get('concurrent', $defaults[WarmupConfig::CONCURRENT_REQUESTS]))),
+                    WarmupConfig::CRAWL_TIMEOUT => max(5, min(120, (int) $request->request->get('crawl_timeout', $defaults[WarmupConfig::CRAWL_TIMEOUT]))),
+                    WarmupConfig::SERVER_LOAD_LIMIT => max(0, min(100, (float) $request->request->get('load_limit', $defaults[WarmupConfig::SERVER_LOAD_LIMIT]))),
+                    WarmupConfig::MOBILE_CRAWL => (int) (bool) $request->request->get('mobile_crawl', 0),
+                    WarmupConfig::MOBILE_USER_AGENT => trim($request->request->get('mobile_useragent', '')) ?: $defaults[WarmupConfig::MOBILE_USER_AGENT],
+                ]);
+
                 $this->addFlash('success', 'Crawler settings saved.');
 
                 return $this->redirectToRoute('admin_litespeedcache_warmup');
@@ -71,12 +84,17 @@ class WarmupController extends FrameworkBundleAdminController
         $lastState = json_decode(\Configuration::getGlobalValue(self::STATE_KEY) ?: '{}', true) ?: [];
         $blacklist = json_decode(\Configuration::getGlobalValue(self::BLACKLIST_KEY) ?: '[]', true) ?: [];
 
+        $config = CacheConfig::getInstance();
+
         return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/warmup.html.twig', [
             'urlsAction' => $this->generateUrl('admin_litespeedcache_warmup_urls'),
             'crawlAction' => $this->generateUrl('admin_litespeedcache_warmup_crawl'),
             'saveStateAction' => $this->generateUrl('admin_litespeedcache_warmup_save_state'),
+            'loadCheckAction' => $this->generateUrl('admin_litespeedcache_warmup_load_check'),
             'redisEnabled' => !empty($objCfg[ObjConfig::OBJ_ENABLE]),
             'cdnEnabled' => !empty($cdnCfg[CdnConfig::CF_ENABLE]),
+            'diffMobile' => (bool) ($config->getAllConfigValues()['diff_mobile'] ?? 0),
+            'warmupSettings' => WarmupConfig::getAll(),
             'lastState' => $lastState,
             'blacklist' => $blacklist,
             'sitemapUrl' => \Configuration::getGlobalValue('LITESPEED_WARMUP_SITEMAP') ?: '',
@@ -115,6 +133,22 @@ class WarmupController extends FrameworkBundleAdminController
     }
 
     /**
+     * AJAX: returns current server load for throttling.
+     */
+    public function loadCheckAction(): JsonResponse
+    {
+        $limit = (float) WarmupConfig::get(WarmupConfig::SERVER_LOAD_LIMIT);
+        $load = function_exists('sys_getloadavg') ? sys_getloadavg() : [0, 0, 0];
+        $current = round($load[0], 2);
+
+        return new JsonResponse([
+            'load' => $current,
+            'limit' => $limit,
+            'ok' => $limit <= 0 || $current < $limit,
+        ]);
+    }
+
+    /**
      * AJAX: crawls a single URL and returns the result with cache headers.
      */
     public function crawlAction(Request $request): JsonResponse
@@ -122,6 +156,7 @@ class WarmupController extends FrameworkBundleAdminController
         $url = $request->request->get('url', '');
         $userAgent = $request->request->get('useragent', 'lscache_runner');
         $cookie = $request->request->get('cookie', '');
+        $timeout = (int) WarmupConfig::get(WarmupConfig::CRAWL_TIMEOUT) ?: 30;
 
         if (empty($url)) {
             return new JsonResponse(['success' => false, 'error' => 'No URL provided'], 400);
@@ -137,7 +172,7 @@ class WarmupController extends FrameworkBundleAdminController
         curl_setopt($ch, CURLOPT_ENCODING, '');
         curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
         curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($ch, CURLOPT_USERAGENT, $userAgent ?: 'lscache_runner');
 
         if (!empty($cookie)) {
@@ -177,7 +212,7 @@ class WarmupController extends FrameworkBundleAdminController
             curl_setopt($ch2, CURLOPT_ENCODING, '');
             curl_setopt($ch2, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
             curl_setopt($ch2, CURLOPT_URL, $url);
-            curl_setopt($ch2, CURLOPT_TIMEOUT, 10);
+            curl_setopt($ch2, CURLOPT_TIMEOUT, max(10, (int) ($timeout / 2)));
             curl_setopt($ch2, CURLOPT_USERAGENT, $userAgent ?: 'lscache_runner');
             // Only the vary cookie — no session cookies
             curl_setopt($ch2, CURLOPT_COOKIE, $varyCookie);

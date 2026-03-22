@@ -101,13 +101,14 @@
     </div>
     {% endif %}
 
-    {# ============ CRAWLER ============ #}
+    {# ============ CRAWLER SETTINGS ============ #}
     <div class="card mb-4">
       <div class="card-header">
-        <h3 class="card-header-title">Crawler</h3>
+        <h3 class="card-header-title">Crawler Settings</h3>
       </div>
       <div class="card-body">
         <form method="post">
+
           <div class="form-group row">
             <label class="form-control-label col-sm-3" for="sitemap_url">
               Sitemap XML URL <span class="text-danger">*</span>
@@ -142,15 +143,89 @@
             </div>
           </div>
 
+          <hr>
+          <h4 class="mb-3" style="font-size:15px; font-weight:600;">Performance</h4>
+
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="concurrent">Concurrent Requests</label>
+            <div class="col-sm-9">
+              <input type="number" class="form-control" id="concurrent" name="concurrent"
+                value="{{ warmupSettings.concurrent }}" min="1" max="10" style="max-width:120px;">
+              <small class="form-text text-muted">Number of URLs to crawl in parallel (1-10). Higher = faster but more server load.</small>
+            </div>
+          </div>
+
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="crawl_delay">Crawl Delay (microseconds)</label>
+            <div class="col-sm-9">
+              <input type="number" class="form-control" id="crawl_delay" name="crawl_delay"
+                value="{{ warmupSettings.crawl_delay }}" min="0" max="10000" step="100" style="max-width:160px;">
+              <small class="form-text text-muted">Pause between each batch of requests. 500 = 0.5ms. 0 = no delay.</small>
+            </div>
+          </div>
+
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="crawl_timeout">Timeout per URL (seconds)</label>
+            <div class="col-sm-9">
+              <input type="number" class="form-control" id="crawl_timeout" name="crawl_timeout"
+                value="{{ warmupSettings.crawl_timeout }}" min="5" max="120" style="max-width:120px;">
+              <small class="form-text text-muted">Maximum wait time per URL before skipping (5-120).</small>
+            </div>
+          </div>
+
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3" for="load_limit">Server Load Limit</label>
+            <div class="col-sm-9">
+              <input type="number" class="form-control" id="load_limit" name="load_limit"
+                value="{{ warmupSettings.load_limit }}" min="0" max="100" step="0.5" style="max-width:120px;">
+              <small class="form-text text-muted">Stop crawling when server 1-min load average exceeds this value. Recommended: 0.5 per CPU core. 0 = no limit.</small>
+            </div>
+          </div>
+
+          <hr>
+          <h4 class="mb-3" style="font-size:15px; font-weight:600;">Mobile Cache</h4>
+
+          <div class="form-group row">
+            <label class="form-control-label col-sm-3">Crawl with Mobile User-Agent</label>
+            <div class="col-sm-9">
+              <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" id="mobile_crawl" name="mobile_crawl" value="1"
+                  {{ warmupSettings.mobile_crawl ? 'checked' : '' }}>
+                <label class="custom-control-label" for="mobile_crawl">Enable mobile crawling</label>
+              </div>
+              <small class="form-text text-muted">
+                After the desktop crawl, re-crawl all URLs with a mobile user-agent to warm the mobile cache.
+                {% if not diffMobile %}
+                  <span class="text-warning">Warning: "Separate mobile cache" is not enabled in Cache Settings. Mobile crawling will have no effect.</span>
+                {% endif %}
+              </small>
+            </div>
+          </div>
+
+          <div class="form-group row" id="mobile-ua-row" style="{{ warmupSettings.mobile_crawl ? '' : 'display:none;' }}">
+            <label class="form-control-label col-sm-3" for="mobile_useragent">Mobile User-Agent</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" id="mobile_useragent" name="mobile_useragent"
+                value="{{ warmupSettings.mobile_useragent }}" style="max-width:500px;">
+              <small class="form-text text-muted">Must contain a mobile token (iPhone, Android, Mobile) for LiteSpeed to serve the mobile cache variant.</small>
+            </div>
+          </div>
+
           <div class="form-group row mb-0">
             <div class="col-sm-9 offset-sm-3">
-              <button type="submit" name="save_settings" value="1" class="btn btn-sm btn-secondary">Save Settings</button>
+              <button type="submit" name="save_settings" value="1" class="btn btn-primary">Save Settings</button>
             </div>
           </div>
         </form>
+      </div>
+    </div>
 
-        <hr>
-
+    {# ============ RUN CRAWLER ============ #}
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-header-title">Run Crawler</h3>
+      </div>
+      <div class="card-body">
         <div class="d-flex align-items-center justify-content-end">
           <div id="progress-wrapper" class="flex-grow-1 mr-3" style="display:none;">
             <div class="d-flex justify-content-between mb-1">
@@ -249,15 +324,17 @@
   {{ parent() }}
   <script>
   (function() {
-    var urlsEndpoint  = '{{ urlsAction }}';
-    var crawlEndpoint = '{{ crawlAction }}';
-    var saveEndpoint  = '{{ saveStateAction }}';
-    var redisEnabled  = {{ redisEnabled ? 'true' : 'false' }};
-    var cdnEnabled    = {{ cdnEnabled ? 'true' : 'false' }};
-    var blacklist     = {{ blacklist|json_encode|raw }};
-    var abortCtrl     = null;
-    var crawledUrls   = [];
-    var startTime     = 0;
+    var urlsEndpoint     = '{{ urlsAction }}';
+    var crawlEndpoint    = '{{ crawlAction }}';
+    var saveEndpoint     = '{{ saveStateAction }}';
+    var loadCheckUrl     = '{{ loadCheckAction }}';
+    var redisEnabled     = {{ redisEnabled ? 'true' : 'false' }};
+    var cdnEnabled       = {{ cdnEnabled ? 'true' : 'false' }};
+    var blacklist        = {{ blacklist|json_encode|raw }};
+    var warmupSettings   = {{ warmupSettings|json_encode|raw }};
+    var abortCtrl        = null;
+    var crawledUrls      = [];
+    var startTime        = 0;
 
     var els = {
       bar:     document.getElementById('warmup-bar'),
@@ -269,6 +346,17 @@
       stop:    document.getElementById('btn-stop')
     };
 
+    // Toggle mobile UA field
+    var mobileCheck = document.getElementById('mobile_crawl');
+    var mobileRow = document.getElementById('mobile-ua-row');
+    if (mobileCheck) {
+      mobileCheck.addEventListener('change', function() {
+        mobileRow.style.display = this.checked ? '' : 'none';
+      });
+    }
+
+    function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+
     function logLine(text) {
       els.log.textContent += text + '\n';
       els.log.scrollTop = els.log.scrollHeight;
@@ -279,6 +367,9 @@
       els.log.textContent += '\n' + sep + '\n  ' + title + '\n' + sep + '\n\n';
       els.log.scrollTop = els.log.scrollHeight;
     }
+
+    var globalCompleted = 0;
+    var globalTotal = 0;
 
     function updateBar(current, total) {
       var pct = total > 0 ? Math.round((current / total) * 100) : 0;
@@ -302,9 +393,7 @@
       if (!running) abortCtrl = null;
     }
 
-    function isBlacklisted(url) {
-      return blacklist.indexOf(url) !== -1;
-    }
+    function isBlacklisted(url) { return blacklist.indexOf(url) !== -1; }
 
     function formatCacheInfo(data) {
       var parts = [];
@@ -313,8 +402,18 @@
       return parts.length ? ' [' + parts.join(' | ') + ']' : '';
     }
 
+    async function checkServerLoad() {
+      if (warmupSettings.load_limit <= 0) return true;
+      try {
+        var resp = await fetch(loadCheckUrl, { method: 'POST' });
+        var data = await resp.json();
+        return data.ok;
+      } catch (e) {
+        return true;
+      }
+    }
+
     async function crawlPhase(label, urls, cookie, userAgent) {
-      // Track blacklisted URLs
       var filtered = [];
       for (var j = 0; j < urls.length; j++) {
         if (isBlacklisted(urls[j])) {
@@ -333,49 +432,76 @@
       }
 
       els.status.textContent = label + '...';
-      resetBar();
 
-      var successCount = 0, failCount = 0;
+      var concurrency = warmupSettings.concurrent || 3;
+      var delayMs = Math.max(0, Math.floor((warmupSettings.crawl_delay || 0) / 1000));
       var signal = abortCtrl ? abortCtrl.signal : null;
+      var successCount = 0, failCount = 0;
+      var queue = filtered.slice();
+      var stopped = false;
 
-      for (var i = 0; i < total; i++) {
-        if (signal && signal.aborted) {
-          return { stopped: true, success: successCount, fail: failCount };
-        }
+      async function worker() {
+        while (queue.length > 0 && !stopped) {
+          if (signal && signal.aborted) { stopped = true; return; }
 
-        try {
-          var body = new FormData();
-          body.append('url', filtered[i]);
-          body.append('useragent', userAgent);
-          body.append('cookie', cookie || '');
+          // Server load check
+          var loadOk = await checkServerLoad();
+          while (!loadOk && !stopped) {
+            logLine('  Server load too high, pausing 10s...');
+            els.status.textContent = label + ' (paused: server load)';
+            await sleep(10000);
+            if (signal && signal.aborted) { stopped = true; return; }
+            loadOk = await checkServerLoad();
+          }
 
-          var resp = await fetch(crawlEndpoint, { method: 'POST', body: body, signal: signal });
-          var data = await resp.json();
+          var url = queue.shift();
+          if (!url) return;
 
-          if (data.success) { successCount++; } else { failCount++; }
+          try {
+            var body = new FormData();
+            body.append('url', url);
+            body.append('useragent', userAgent);
+            body.append('cookie', cookie || '');
 
-          crawledUrls.push({
-            url: filtered[i],
-            httpCode: data.httpCode || 0,
-            lscache: data.lscache || '',
-            cfCache: data.cfCache || '',
-            success: data.success,
-            cached: data.cached || false
-          });
+            var resp = await fetch(crawlEndpoint, { method: 'POST', body: body, signal: signal });
+            var data = await resp.json();
 
-          var statusLabel = data.cached ? 'CACHED' : (data.success ? 'CRAWLED' : 'FAIL');
-          logLine('  ' + (i+1) + '/' + total + '  ' + statusLabel + ' ' + data.httpCode + '  ' + filtered[i] + formatCacheInfo(data));
-          updateBar(i + 1, total);
-        } catch (e) {
-          if (e.name === 'AbortError') return { stopped: true, success: successCount, fail: failCount };
-          failCount++;
-          logLine('  ' + (i+1) + '/' + total + '  ERROR  ' + filtered[i]);
-          updateBar(i + 1, total);
+            if (data.success) { successCount++; } else { failCount++; }
+
+            crawledUrls.push({
+              url: url,
+              httpCode: data.httpCode || 0,
+              lscache: data.lscache || '',
+              cfCache: data.cfCache || '',
+              success: data.success,
+              cached: data.cached || false
+            });
+
+            globalCompleted++;
+            var statusLabel = data.cached ? 'CACHED' : (data.success ? 'CRAWLED' : 'FAIL');
+            logLine('  ' + globalCompleted + '/' + globalTotal + '  ' + statusLabel + ' ' + data.httpCode + '  ' + url + formatCacheInfo(data));
+            updateBar(globalCompleted, globalTotal);
+          } catch (e) {
+            if (e.name === 'AbortError') { stopped = true; return; }
+            failCount++;
+            globalCompleted++;
+            logLine('  ' + globalCompleted + '/' + globalTotal + '  ERROR  ' + url);
+            updateBar(globalCompleted, globalTotal);
+          }
+
+          if (delayMs > 0) await sleep(delayMs);
         }
       }
 
+      // Launch concurrent workers
+      var workers = [];
+      for (var w = 0; w < concurrency; w++) {
+        workers.push(worker());
+      }
+      await Promise.all(workers);
+
       logLine('\n  Done: ' + successCount + ' success, ' + failCount + ' failed.\n');
-      return { stopped: false, success: successCount, fail: failCount };
+      return { stopped: stopped, success: successCount, fail: failCount };
     }
 
     async function saveState(success, fail, total, stopped) {
@@ -404,11 +530,13 @@
       setRunning(true);
       els.log.textContent = '';
       crawledUrls = [];
+      globalCompleted = 0;
+      globalTotal = 0;
       startTime = Date.now();
 
       var ua = document.getElementById('useragent').value.trim();
       ua = ua ? 'lscache_runner;' + ua : 'lscache_runner';
-      var totalSuccess = 0, totalFail = 0, totalUrls = 0;
+      var totalSuccess = 0, totalFail = 0;
 
       try {
         els.status.textContent = 'Loading URLs from sitemap...';
@@ -431,35 +559,63 @@
         var sitemapUrls = data.sitemapUrls || [];
         var productUrls = data.productUrls || [];
         var cookie = data.cookie || '';
-        totalUrls = sitemapUrls.length + productUrls.length;
 
-        logLine('Loaded ' + sitemapUrls.length + ' sitemap URLs, ' + productUrls.length + ' product URLs.\n');
+        // Calculate total URLs across all phases
+        globalTotal = sitemapUrls.length;
+        if (cookie) globalTotal += sitemapUrls.length;
+        if (redisEnabled && productUrls.length > 0) {
+          globalTotal += productUrls.length;
+          if (cookie) globalTotal += productUrls.length;
+        }
+        if (warmupSettings.mobile_crawl && warmupSettings.mobile_useragent) {
+          globalTotal += sitemapUrls.length;
+          if (cookie) globalTotal += sitemapUrls.length;
+        }
 
-        // Phase 1
+        logLine('Loaded ' + sitemapUrls.length + ' sitemap URLs, ' + productUrls.length + ' product URLs.');
+        logLine('Concurrency: ' + warmupSettings.concurrent + ', Delay: ' + warmupSettings.crawl_delay + 'us, Load limit: ' + warmupSettings.load_limit + '\n');
+
+        // Phase 1: Desktop
         logHeader('LITESPEED CACHE — Full page cache (' + sitemapUrls.length + ' URLs)');
         var r1 = await crawlPhase('LiteSpeed Cache', sitemapUrls, '', ua);
         totalSuccess += r1.success; totalFail += r1.fail;
-        if (r1.stopped) { finish(totalSuccess, totalFail, totalUrls, true); return; }
+        if (r1.stopped) { finish(totalSuccess, totalFail, globalTotal, true); return; }
 
         if (cookie) {
           logHeader('LITESPEED CACHE — With vary cookie (' + sitemapUrls.length + ' URLs)');
           var r1b = await crawlPhase('LiteSpeed Cache (cookie)', sitemapUrls, cookie, ua);
           totalSuccess += r1b.success; totalFail += r1b.fail;
-          if (r1b.stopped) { finish(totalSuccess, totalFail, totalUrls, true); return; }
+          if (r1b.stopped) { finish(totalSuccess, totalFail, globalTotal, true); return; }
         }
 
-        // Phase 2
+        // Phase 2: Redis product prices
         if (redisEnabled && productUrls.length > 0) {
           logHeader('REDIS — Product prices (' + productUrls.length + ' URLs)');
           var r2 = await crawlPhase('Redis — Product prices', productUrls, '', ua);
           totalSuccess += r2.success; totalFail += r2.fail;
-          if (r2.stopped) { finish(totalSuccess, totalFail, totalUrls, true); return; }
+          if (r2.stopped) { finish(totalSuccess, totalFail, globalTotal, true); return; }
 
           if (cookie) {
             logHeader('REDIS — Product prices with vary cookie');
             var r2b = await crawlPhase('Redis — Prices (cookie)', productUrls, cookie, ua);
             totalSuccess += r2b.success; totalFail += r2b.fail;
-            if (r2b.stopped) { finish(totalSuccess, totalFail, totalUrls, true); return; }
+            if (r2b.stopped) { finish(totalSuccess, totalFail, globalTotal, true); return; }
+          }
+        }
+
+        // Phase 3: Mobile
+        if (warmupSettings.mobile_crawl && warmupSettings.mobile_useragent) {
+          var mobileUA = warmupSettings.mobile_useragent;
+          logHeader('MOBILE CACHE — Full page cache (' + sitemapUrls.length + ' URLs)');
+          var rm = await crawlPhase('Mobile Cache', sitemapUrls, '', mobileUA);
+          totalSuccess += rm.success; totalFail += rm.fail;
+          if (rm.stopped) { finish(totalSuccess, totalFail, globalTotal, true); return; }
+
+          if (cookie) {
+            logHeader('MOBILE CACHE — With vary cookie');
+            var rmb = await crawlPhase('Mobile Cache (cookie)', sitemapUrls, cookie, mobileUA);
+            totalSuccess += rmb.success; totalFail += rmb.fail;
+            if (rmb.stopped) { finish(totalSuccess, totalFail, globalTotal, true); return; }
           }
         }
 
@@ -468,14 +624,14 @@
           logLine('  URLs already requested through CDN in previous phases.\n');
         }
 
-        finish(totalSuccess, totalFail, totalUrls, false);
+        finish(totalSuccess, totalFail, globalTotal, false);
 
       } catch (e) {
         if (e.name !== 'AbortError') {
           logLine('\nNetwork error: ' + e.message);
           els.bar.className = 'progress-bar bg-danger';
         } else {
-          finish(totalSuccess, totalFail, totalUrls, true);
+          finish(totalSuccess, totalFail, globalTotal, true);
         }
         setRunning(false);
       }
@@ -483,17 +639,18 @@
 
     function finish(success, fail, total, stopped) {
       els.bar.classList.remove('progress-bar-animated');
+      var duration = Math.round((Date.now() - startTime) / 1000);
       if (stopped) {
         els.bar.className = 'progress-bar bg-secondary';
-        els.status.textContent = 'Stopped. Success: ' + success + ', Failed: ' + fail;
+        els.status.textContent = 'Stopped. Success: ' + success + ', Failed: ' + fail + ' (' + duration + 's)';
         logLine('\n--- Stopped by user ---');
       } else if (fail === 0) {
-        els.status.textContent = 'Completed! ' + success + ' URLs warmed up.';
-        logLine('\n--- Completed successfully ---');
+        els.status.textContent = 'Completed! ' + success + ' URLs warmed up in ' + duration + 's';
+        logLine('\n--- Completed successfully in ' + duration + 's ---');
       } else {
         els.bar.className = 'progress-bar bg-warning';
-        els.status.textContent = 'Completed. Success: ' + success + ', Failed: ' + fail;
-        logLine('\n--- Completed with ' + fail + ' errors ---');
+        els.status.textContent = 'Completed. Success: ' + success + ', Failed: ' + fail + ' (' + duration + 's)';
+        logLine('\n--- Completed with ' + fail + ' errors in ' + duration + 's ---');
       }
       setRunning(false);
       saveState(success, fail, total, stopped);

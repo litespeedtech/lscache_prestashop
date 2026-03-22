@@ -84,6 +84,13 @@ admin_litespeedcache_warmup_crawl:
         _controller: 'LiteSpeed\Cache\Controller\Admin\WarmupController::crawlAction'
         _legacy_controller: AdminLiteSpeedCacheWarmup
 
+admin_litespeedcache_warmup_load_check:
+    path: /litespeedcache/warmup/load-check
+    methods: [POST]
+    defaults:
+        _controller: 'LiteSpeed\Cache\Controller\Admin\WarmupController::loadCheckAction'
+        _legacy_controller: AdminLiteSpeedCacheWarmup
+
 admin_litespeedcache_tools:
     path: /litespeedcache/tools
     methods: [GET]
