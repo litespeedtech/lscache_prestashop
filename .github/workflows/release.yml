@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+
+      - name: Build vendor (autoloader only)
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Build litespeedcache.zip
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Building litespeedcache ${VERSION}"
+
+          mkdir -p /tmp/litespeedcache
+          rsync -a --exclude-from=- . /tmp/litespeedcache/ <<'EOF'
+          .git
+          .github
+          .gitignore
+          .gitattributes
+          .vscode
+          .DS_Store
+          .php-cs-fixer.*
+          .phpunit.cache
+          .editorconfig
+          tests
+          phpunit.xml
+          phpunit.xml.dist
+          CONTRIBUTING.md
+          composer.lock
+          node_modules
+          EOF
+
+          cd /tmp
+          zip -r "${GITHUB_WORKSPACE}/litespeedcache.zip" litespeedcache/ -q
+          echo "ZIP_SIZE=$(du -h ${GITHUB_WORKSPACE}/litespeedcache.zip | cut -f1)" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "${GITHUB_REF_NAME}" \
+            litespeedcache.zip \
+            --title "LiteSpeed Cache ${VERSION}" \
+            --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
