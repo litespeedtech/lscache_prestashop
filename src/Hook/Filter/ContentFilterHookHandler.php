@@ -25,6 +25,10 @@
 
 namespace LiteSpeed\Cache\Hook\Filter;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use LiteSpeed\Cache\Config\CacheConfig;
 use LiteSpeed\Cache\Core\CacheManager;
 use LiteSpeed\Cache\Core\CacheState;

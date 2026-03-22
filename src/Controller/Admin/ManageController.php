@@ -3,6 +3,10 @@
 
 namespace LiteSpeed\Cache\Controller\Admin;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Core\CacheState;
 use LiteSpeed\Cache\Helper\CacheHelper;

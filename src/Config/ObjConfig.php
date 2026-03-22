@@ -10,6 +10,10 @@
 
 namespace LiteSpeed\Cache\Config;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 /**
  * ObjConfig — stores object cache integration settings globally.
  */

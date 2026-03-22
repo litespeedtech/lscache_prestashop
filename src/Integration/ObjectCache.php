@@ -10,6 +10,10 @@
 
 namespace LiteSpeed\Cache\Integration;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use LiteSpeed\Cache\Config\ObjConfig;
 
 /**

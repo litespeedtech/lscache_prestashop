@@ -3,6 +3,10 @@
 
 namespace LiteSpeed\Cache\Helper;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use LiteSpeed\Cache\Config\ObjConfig;
 use PrestaShop\PrestaShop\Adapter\Configuration\PhpParameters;
 

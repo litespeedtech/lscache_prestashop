@@ -10,6 +10,10 @@
 
 namespace LiteSpeed\Cache\Core;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Config\ExclusionsConfig;
 use LiteSpeed\Cache\Helper\CacheHelper;

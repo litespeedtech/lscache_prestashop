@@ -10,6 +10,10 @@
 
 namespace LiteSpeed\Cache\Controller\Admin;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use LiteSpeed\Cache\Config\ObjConfig;
 use LiteSpeed\Cache\Helper\ObjectCacheActivator;
 use LiteSpeed\Cache\Integration\ObjectCache;

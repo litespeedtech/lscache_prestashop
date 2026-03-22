@@ -10,6 +10,10 @@
 
 namespace LiteSpeed\Cache\Integration;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 /**
  * Cloudflare — lightweight wrapper around the Cloudflare API v4.
  *

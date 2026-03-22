@@ -15,6 +15,10 @@
  */
 namespace LiteSpeed\Cache\Logger;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use FileLogger;
 
 /**

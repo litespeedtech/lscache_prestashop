@@ -9,6 +9,10 @@
 
 namespace LiteSpeed\Cache\Form\Extension;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use PrestaShopBundle\Form\Admin\AdvancedParameters\Performance\CachingType;
 use Symfony\Component\Form\AbstractTypeExtension;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;

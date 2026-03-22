@@ -2,6 +2,10 @@
 
 namespace LiteSpeed\Cache\Command;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;

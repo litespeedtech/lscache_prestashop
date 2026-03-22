@@ -13,6 +13,10 @@
 
 namespace LiteSpeed\Cache\Cache;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 class CacheRedis extends \CacheCore
 {
     /** @var \Redis|null */

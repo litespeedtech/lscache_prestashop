@@ -10,6 +10,10 @@
 
 namespace LiteSpeed\Cache\Core;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 /**
  * CacheState — per-request cache control flag register.
  *

@@ -25,6 +25,10 @@
 
 namespace LiteSpeed\Cache;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use LiteSpeed\Cache\Config\CdnConfig;
 use LiteSpeed\Cache\Config\ObjConfig;
 use Symfony\Component\Console\Command\Command;

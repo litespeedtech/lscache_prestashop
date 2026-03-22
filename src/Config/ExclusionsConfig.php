@@ -9,6 +9,10 @@
 
 namespace LiteSpeed\Cache\Config;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 /**
  * ExclusionsConfig — stores cache exclusion settings that extend CacheConfig.
  *

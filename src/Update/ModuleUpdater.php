@@ -3,6 +3,10 @@
 
 namespace LiteSpeed\Cache\Update;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 class ModuleUpdater
 {
     private const GITHUB_API_URL = 'https://api.github.com/repos/litespeedtech/lscache_prestashop/releases';

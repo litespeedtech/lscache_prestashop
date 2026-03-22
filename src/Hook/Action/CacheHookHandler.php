@@ -10,6 +10,10 @@
 
 namespace LiteSpeed\Cache\Hook\Action;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Config\CdnConfig;
 use LiteSpeed\Cache\Core\CacheManager;

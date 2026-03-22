@@ -10,6 +10,10 @@
 
 namespace LiteSpeed\Cache\Resolver;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use PrestaShop\PrestaShop\Adapter\HookManager;
 use PrestaShop\PrestaShop\Adapter\Image\ImageRetriever;
 use PrestaShop\PrestaShop\Adapter\Presenter\Object\ObjectPresenter;

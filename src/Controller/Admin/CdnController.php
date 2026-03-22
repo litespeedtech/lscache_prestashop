@@ -3,6 +3,10 @@
 
 namespace LiteSpeed\Cache\Controller\Admin;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use LiteSpeed\Cache\Config\CdnConfig;
 use LiteSpeed\Cache\Integration\Cloudflare;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

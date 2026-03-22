@@ -24,6 +24,10 @@
 
 namespace LiteSpeed\Cache\Hook\Display;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 class BackOfficeDisplayHookHandler
 {
     /** @var string */

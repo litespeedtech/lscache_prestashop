@@ -25,6 +25,10 @@
 
 namespace LiteSpeed\Cache\Hook\Display;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use LiteSpeed\Cache\Config\CacheConfig;
 use LiteSpeed\Cache\Config\CdnConfig;
 use LiteSpeed\Cache\Core\CacheManager;

@@ -10,6 +10,10 @@
 
 namespace LiteSpeed\Cache\Helper;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
 use LiteSpeed\Cache\Esi\EsiItem;

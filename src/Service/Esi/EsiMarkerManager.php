@@ -11,6 +11,10 @@ declare(strict_types=1);
 
 namespace LiteSpeed\Cache\Service\Esi;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use LiteSpeed\Cache\Config\CacheConfig;
 use LiteSpeed\Cache\Core\CacheState;
 use LiteSpeed\Cache\Esi\EsiItem;

@@ -10,6 +10,10 @@
 
 namespace LiteSpeed\Cache\Hook\Action;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 use LiteSpeed\Cache\Core\CacheManager;
 
 /** Handles pricing-related action hooks (specific prices, cart rules, price rules). */

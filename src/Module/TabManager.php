@@ -10,6 +10,10 @@
 
 namespace LiteSpeed\Cache\Module;
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 /**
  * TabManager — installs and removes PrestaShop admin tabs for LiteSpeedCache.
  *
