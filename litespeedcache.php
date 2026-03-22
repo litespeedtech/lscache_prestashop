@@ -102,7 +102,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache';
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '2.0.5';
+        $this->version = '2.0.6';
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
