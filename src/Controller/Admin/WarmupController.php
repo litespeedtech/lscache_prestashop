@@ -59,12 +59,31 @@ class WarmupController extends FrameworkBundleAdminController
                 \Configuration::updateGlobalValue('LITESPEED_WARMUP_SHOP_URL', $shopUrl);
                 \Configuration::updateGlobalValue('LITESPEED_WARMUP_USERAGENT', $userAgent);
 
+                $profile = $request->request->get('profile', WarmupConfig::PROFILE_MEDIUM);
                 $defaults = WarmupConfig::getDefaults();
+                $profilePreset = WarmupConfig::getProfileSettings($profile);
+
+                if ($profilePreset && $profile !== WarmupConfig::PROFILE_CUSTOM) {
+                    $perf = array_merge($defaults, $profilePreset);
+                } else {
+                    $profile = WarmupConfig::PROFILE_CUSTOM;
+                    $perf = $defaults;
+                }
+
                 WarmupConfig::saveAll([
-                    WarmupConfig::CRAWL_DELAY => max(0, min(10000, (int) $request->request->get('crawl_delay', $defaults[WarmupConfig::CRAWL_DELAY]))),
-                    WarmupConfig::CONCURRENT_REQUESTS => max(1, min(10, (int) $request->request->get('concurrent', $defaults[WarmupConfig::CONCURRENT_REQUESTS]))),
-                    WarmupConfig::CRAWL_TIMEOUT => max(5, min(120, (int) $request->request->get('crawl_timeout', $defaults[WarmupConfig::CRAWL_TIMEOUT]))),
-                    WarmupConfig::SERVER_LOAD_LIMIT => max(0, min(100, (float) $request->request->get('load_limit', $defaults[WarmupConfig::SERVER_LOAD_LIMIT]))),
+                    WarmupConfig::PROFILE => $profile,
+                    WarmupConfig::CRAWL_DELAY => ($profile === WarmupConfig::PROFILE_CUSTOM)
+                        ? max(0, min(10000, (int) $request->request->get('crawl_delay', $perf[WarmupConfig::CRAWL_DELAY])))
+                        : $perf[WarmupConfig::CRAWL_DELAY],
+                    WarmupConfig::CONCURRENT_REQUESTS => ($profile === WarmupConfig::PROFILE_CUSTOM)
+                        ? max(1, min(10, (int) $request->request->get('concurrent', $perf[WarmupConfig::CONCURRENT_REQUESTS])))
+                        : $perf[WarmupConfig::CONCURRENT_REQUESTS],
+                    WarmupConfig::CRAWL_TIMEOUT => ($profile === WarmupConfig::PROFILE_CUSTOM)
+                        ? max(5, min(120, (int) $request->request->get('crawl_timeout', $perf[WarmupConfig::CRAWL_TIMEOUT])))
+                        : $perf[WarmupConfig::CRAWL_TIMEOUT],
+                    WarmupConfig::SERVER_LOAD_LIMIT => ($profile === WarmupConfig::PROFILE_CUSTOM)
+                        ? max(0, min(100, (float) $request->request->get('load_limit', $perf[WarmupConfig::SERVER_LOAD_LIMIT])))
+                        : $perf[WarmupConfig::SERVER_LOAD_LIMIT],
                     WarmupConfig::MOBILE_CRAWL => (int) (bool) $request->request->get('mobile_crawl', 0),
                     WarmupConfig::MOBILE_USER_AGENT => trim($request->request->get('mobile_useragent', '')) ?: $defaults[WarmupConfig::MOBILE_USER_AGENT],
                 ]);
@@ -95,6 +114,7 @@ class WarmupController extends FrameworkBundleAdminController
             'cdnEnabled' => !empty($cdnCfg[CdnConfig::CF_ENABLE]),
             'diffMobile' => (bool) ($config->getAllConfigValues()['diff_mobile'] ?? 0),
             'warmupSettings' => WarmupConfig::getAll(),
+            'profiles' => WarmupConfig::getProfiles(),
             'lastState' => $lastState,
             'blacklist' => $blacklist,
             'sitemapUrl' => \Configuration::getGlobalValue('LITESPEED_WARMUP_SITEMAP') ?: '',

@@ -147,38 +147,71 @@
           <h4 class="mb-3" style="font-size:15px; font-weight:600;">Performance</h4>
 
           <div class="form-group row">
-            <label class="form-control-label col-sm-3" for="concurrent">Concurrent Requests</label>
+            <label class="form-control-label col-sm-3">Performance Profile</label>
             <div class="col-sm-9">
-              <input type="number" class="form-control" id="concurrent" name="concurrent"
-                value="{{ warmupSettings.concurrent }}" min="1" max="10" style="max-width:120px;">
-              <small class="form-text text-muted">Number of URLs to crawl in parallel (1-10). Higher = faster but more server load.</small>
+              <div class="d-flex flex-wrap" style="gap:8px;" id="profile-selector">
+                {% set currentProfile = warmupSettings.profile|default('medium') %}
+                {% set profileLabels = {
+                  'low': {'name': 'Low', 'desc': '1 request · 500ms delay'},
+                  'medium': {'name': 'Medium', 'desc': '3 requests · 100ms delay'},
+                  'high': {'name': 'High', 'desc': '8 requests · no delay'}
+                } %}
+                {% for key, label in profileLabels %}
+                <label class="btn {{ currentProfile == key ? 'btn-primary' : 'btn-outline-secondary' }}" style="min-width:120px; cursor:pointer;">
+                  <input type="radio" name="profile" value="{{ key }}" {{ currentProfile == key ? 'checked' : '' }} style="display:none;">
+                  <div style="font-weight:600;">{{ label.name }}</div>
+                  <small style="font-size:11px; opacity:0.8;">{{ label.desc }}</small>
+                </label>
+                {% endfor %}
+                <label class="btn {{ currentProfile == 'custom' ? 'btn-primary' : 'btn-outline-secondary' }}" style="min-width:100px; cursor:pointer;">
+                  <input type="radio" name="profile" value="custom" {{ currentProfile == 'custom' ? 'checked' : '' }} style="display:none;">
+                  <div style="font-weight:600;">Custom</div>
+                  <small style="font-size:11px; opacity:0.8;">Manual config</small>
+                </label>
+              </div>
+              <small class="form-text text-muted mt-2">
+                <strong>Low:</strong> 1 request at a time, 500ms pause between requests, stops at load 0.5 — ideal for shared hosting.<br>
+                <strong>Medium:</strong> 3 concurrent requests, 100ms pause, stops at load 2 — good for VPS/dedicated.<br>
+                <strong>High:</strong> 8 concurrent requests, no pause, no load limit — for powerful servers only.
+              </small>
             </div>
           </div>
 
-          <div class="form-group row">
-            <label class="form-control-label col-sm-3" for="crawl_delay">Crawl Delay (microseconds)</label>
-            <div class="col-sm-9">
-              <input type="number" class="form-control" id="crawl_delay" name="crawl_delay"
-                value="{{ warmupSettings.crawl_delay }}" min="0" max="10000" step="100" style="max-width:160px;">
-              <small class="form-text text-muted">Pause between each batch of requests. 500 = 0.5ms. 0 = no delay.</small>
+          <div id="custom-fields" style="{{ currentProfile == 'custom' ? '' : 'display:none;' }}">
+            <div class="form-group row">
+              <label class="form-control-label col-sm-3" for="concurrent">Concurrent Requests</label>
+              <div class="col-sm-9">
+                <input type="number" class="form-control" id="concurrent" name="concurrent"
+                  value="{{ warmupSettings.concurrent }}" min="1" max="10" style="max-width:120px;">
+                <small class="form-text text-muted">Number of URLs to crawl in parallel (1-10). Higher = faster but more server load.</small>
+              </div>
             </div>
-          </div>
 
-          <div class="form-group row">
-            <label class="form-control-label col-sm-3" for="crawl_timeout">Timeout per URL (seconds)</label>
-            <div class="col-sm-9">
-              <input type="number" class="form-control" id="crawl_timeout" name="crawl_timeout"
-                value="{{ warmupSettings.crawl_timeout }}" min="5" max="120" style="max-width:120px;">
-              <small class="form-text text-muted">Maximum wait time per URL before skipping (5-120).</small>
+            <div class="form-group row">
+              <label class="form-control-label col-sm-3" for="crawl_delay">Crawl Delay (ms)</label>
+              <div class="col-sm-9">
+                <input type="number" class="form-control" id="crawl_delay" name="crawl_delay"
+                  value="{{ warmupSettings.crawl_delay }}" min="0" max="10000" step="50" style="max-width:160px;">
+                <small class="form-text text-muted">Pause between each batch of requests in milliseconds. 500 = half second. 0 = no delay.</small>
+              </div>
             </div>
-          </div>
 
-          <div class="form-group row">
-            <label class="form-control-label col-sm-3" for="load_limit">Server Load Limit</label>
-            <div class="col-sm-9">
-              <input type="number" class="form-control" id="load_limit" name="load_limit"
-                value="{{ warmupSettings.load_limit }}" min="0" max="100" step="0.5" style="max-width:120px;">
-              <small class="form-text text-muted">Stop crawling when server 1-min load average exceeds this value. Recommended: 0.5 per CPU core. 0 = no limit.</small>
+            <div class="form-group row">
+              <label class="form-control-label col-sm-3" for="crawl_timeout">Timeout per URL (seconds)</label>
+              <div class="col-sm-9">
+                <input type="number" class="form-control" id="crawl_timeout" name="crawl_timeout"
+                  value="{{ warmupSettings.crawl_timeout }}" min="5" max="120" style="max-width:120px;">
+                <small class="form-text text-muted">Maximum wait time per URL before skipping (5-120).</small>
+              </div>
+            </div>
+
+            <div class="form-group row">
+              <label class="form-control-label col-sm-3" for="load_limit">Server Load Limit</label>
+              <div class="col-sm-9">
+                <input type="number" class="form-control" id="load_limit" name="load_limit"
+                  value="{{ warmupSettings.load_limit }}" min="0" max="100" step="0.5" style="max-width:120px;">
+                <small class="form-text text-muted">Stop crawling when server 1-min load average exceeds this value. Recommended: 0.5 per CPU core. 0 = no limit.</small>
+              </div>
             </div>
           </div>
 
@@ -345,6 +378,35 @@
       stop:    document.getElementById('btn-stop')
     };
 
+    var profilePresets = {{ profiles|json_encode|raw }};
+
+    // Toggle profile selector
+    var profileRadios = document.querySelectorAll('#profile-selector input[name="profile"]');
+    var customFields = document.getElementById('custom-fields');
+    profileRadios.forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        // Update button styles
+        document.querySelectorAll('#profile-selector label').forEach(function(l) {
+          l.classList.remove('btn-primary');
+          l.classList.add('btn-outline-secondary');
+        });
+        this.parentElement.classList.remove('btn-outline-secondary');
+        this.parentElement.classList.add('btn-primary');
+
+        // Show/hide custom fields
+        customFields.style.display = this.value === 'custom' ? '' : 'none';
+
+        // Apply preset values to warmupSettings for the crawler
+        if (this.value !== 'custom' && profilePresets[this.value]) {
+          var p = profilePresets[this.value];
+          warmupSettings.concurrent = p.concurrent;
+          warmupSettings.crawl_delay = p.crawl_delay;
+          warmupSettings.crawl_timeout = p.crawl_timeout;
+          warmupSettings.load_limit = p.load_limit;
+        }
+      });
+    });
+
     // Toggle mobile UA field
     var mobileCheck = document.getElementById('mobile_crawl');
     var mobileRow = document.getElementById('mobile-ua-row');
@@ -433,7 +495,7 @@
       els.status.textContent = label + '...';
 
       var concurrency = warmupSettings.concurrent || 3;
-      var delayMs = Math.max(0, Math.floor((warmupSettings.crawl_delay || 0) / 1000));
+      var delayMs = Math.max(0, warmupSettings.crawl_delay || 0);
       var signal = abortCtrl ? abortCtrl.signal : null;
       var successCount = 0, failCount = 0;
       var queue = filtered.slice();
@@ -525,6 +587,15 @@
       var sitemap = document.getElementById('sitemap_url').value.trim();
       if (!sitemap) { alert('Please enter a valid Sitemap XML URL.'); return; }
 
+      // Read current profile and apply custom values if needed
+      var selectedProfile = document.querySelector('#profile-selector input[name="profile"]:checked');
+      if (selectedProfile && selectedProfile.value === 'custom') {
+        warmupSettings.concurrent = parseInt(document.getElementById('concurrent').value) || 3;
+        warmupSettings.crawl_delay = parseInt(document.getElementById('crawl_delay').value) || 0;
+        warmupSettings.crawl_timeout = parseInt(document.getElementById('crawl_timeout').value) || 30;
+        warmupSettings.load_limit = parseFloat(document.getElementById('load_limit').value) || 0;
+      }
+
       abortCtrl = new AbortController();
       setRunning(true);
       els.log.textContent = '';
@@ -567,7 +638,7 @@
         }
 
         logLine('Loaded ' + sitemapUrls.length + ' URLs from sitemap.');
-        logLine('Concurrency: ' + warmupSettings.concurrent + ', Delay: ' + warmupSettings.crawl_delay + 'us, Load limit: ' + warmupSettings.load_limit + '\n');
+        logLine('Concurrency: ' + warmupSettings.concurrent + ', Delay: ' + warmupSettings.crawl_delay + 'ms, Load limit: ' + warmupSettings.load_limit + '\n');
 
         // Phase 1: Desktop
         logHeader('LITESPEED CACHE — Full page cache (' + sitemapUrls.length + ' URLs)');

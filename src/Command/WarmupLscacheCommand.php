@@ -23,7 +23,7 @@ class WarmupLscacheCommand extends Command
              ->addArgument('sitemap', InputArgument::REQUIRED, 'Sitemap XML URL')
              ->addArgument('useragent', InputArgument::OPTIONAL, 'Extra User-Agent string')
              ->addOption('concurrency', 'c', InputOption::VALUE_REQUIRED, 'Concurrent requests (overrides saved setting)')
-             ->addOption('delay', 'd', InputOption::VALUE_REQUIRED, 'Delay between batches in microseconds (overrides saved setting)')
+             ->addOption('delay', 'd', InputOption::VALUE_REQUIRED, 'Delay between batches in milliseconds (overrides saved setting)')
              ->addOption('timeout', 't', InputOption::VALUE_REQUIRED, 'Timeout per URL in seconds (overrides saved setting)')
              ->addOption('load-limit', 'l', InputOption::VALUE_REQUIRED, 'Server load limit (overrides saved setting)')
              ->addOption('mobile', 'm', InputOption::VALUE_NONE, 'Also crawl with mobile user-agent');
@@ -35,7 +35,7 @@ class WarmupLscacheCommand extends Command
 
         $settings = WarmupConfig::getAll();
         $concurrency = (int) ($input->getOption('concurrency') ?? $settings[WarmupConfig::CONCURRENT_REQUESTS]);
-        $delayUs = (int) ($input->getOption('delay') ?? $settings[WarmupConfig::CRAWL_DELAY]);
+        $delayMs = (int) ($input->getOption('delay') ?? $settings[WarmupConfig::CRAWL_DELAY]);
         $timeout = (int) ($input->getOption('timeout') ?? $settings[WarmupConfig::CRAWL_TIMEOUT]);
         $loadLimit = (float) ($input->getOption('load-limit') ?? $settings[WarmupConfig::SERVER_LOAD_LIMIT]);
         $mobileCrawl = $input->getOption('mobile') || (bool) $settings[WarmupConfig::MOBILE_CRAWL];
@@ -62,38 +62,38 @@ class WarmupLscacheCommand extends Command
 
         $cookie = $this->getDefaultCookies($urls[0], $timeout);
 
-        $output->writeln("<info>Settings: concurrency={$concurrency}, delay={$delayUs}us, timeout={$timeout}s, load_limit={$loadLimit}</info>");
+        $output->writeln("<info>Settings: concurrency={$concurrency}, delay={$delayMs}ms, timeout={$timeout}s, load_limit={$loadLimit}</info>");
         $output->writeln('');
 
         // Phase 1: Desktop
         $output->writeln('<info>[LSCache] Crawling ' . count($urls) . ' URLs...</info>');
-        $this->crawlUrls($urls, $output, $concurrency, $delayUs, $timeout, $loadLimit);
+        $this->crawlUrls($urls, $output, $concurrency, $delayMs, $timeout, $loadLimit);
 
         if ($cookie) {
             $output->writeln('<info>[LSCache] Crawling with cookies...</info>');
-            $this->crawlUrls($urls, $output, $concurrency, $delayUs, $timeout, $loadLimit, $cookie);
+            $this->crawlUrls($urls, $output, $concurrency, $delayMs, $timeout, $loadLimit, $cookie);
         }
 
         $userAgent = $input->getArgument('useragent');
         if ($userAgent !== null) {
             $ua = 'lscache_runner;' . $userAgent;
             $output->writeln('<info>[LSCache] Crawling with extra User-Agent...</info>');
-            $this->crawlUrls($urls, $output, $concurrency, $delayUs, $timeout, $loadLimit, '', $ua);
+            $this->crawlUrls($urls, $output, $concurrency, $delayMs, $timeout, $loadLimit, '', $ua);
 
             if ($cookie) {
                 $output->writeln('<info>[LSCache] Crawling with extra User-Agent + cookies...</info>');
-                $this->crawlUrls($urls, $output, $concurrency, $delayUs, $timeout, $loadLimit, $cookie, $ua);
+                $this->crawlUrls($urls, $output, $concurrency, $delayMs, $timeout, $loadLimit, $cookie, $ua);
             }
         }
 
         // Phase 2: Mobile
         if ($mobileCrawl) {
             $output->writeln('<info>[Mobile] Crawling ' . count($urls) . ' URLs with mobile UA...</info>');
-            $this->crawlUrls($urls, $output, $concurrency, $delayUs, $timeout, $loadLimit, '', $mobileUA);
+            $this->crawlUrls($urls, $output, $concurrency, $delayMs, $timeout, $loadLimit, '', $mobileUA);
 
             if ($cookie) {
                 $output->writeln('<info>[Mobile] Crawling with mobile UA + cookies...</info>');
-                $this->crawlUrls($urls, $output, $concurrency, $delayUs, $timeout, $loadLimit, $cookie, $mobileUA);
+                $this->crawlUrls($urls, $output, $concurrency, $delayMs, $timeout, $loadLimit, $cookie, $mobileUA);
             }
         }
 
@@ -106,7 +106,7 @@ class WarmupLscacheCommand extends Command
         array $urls,
         OutputInterface $output,
         int $concurrency,
-        int $delayUs,
+        int $delayMs,
         int $timeout,
         float $loadLimit,
         string $cookie = '',
@@ -136,8 +136,8 @@ class WarmupLscacheCommand extends Command
                 curl_multi_add_handle($mh, $ch);
                 $active[(int) $ch] = $url;
 
-                if ($delayUs > 0) {
-                    usleep($delayUs);
+                if ($delayMs > 0) {
+                    usleep($delayMs * 1000);
                 }
             }
 
