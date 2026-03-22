@@ -105,7 +105,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache';
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '2.0.1';
+        $this->version = '2.1.0';
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
@@ -165,7 +165,7 @@ class LiteSpeedCache extends Module
 
     public static function getVersion(): string
     {
-        return '2.0.1';
+        return '2.1.0';
     }
 
     // ---- State accessors --------------------------------------------------------
