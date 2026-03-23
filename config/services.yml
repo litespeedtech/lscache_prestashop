@@ -59,6 +59,11 @@ services:
         tags:
             - { name: controller.service_arguments }
 
+    LiteSpeed\Cache\Controller\Admin\WizardController:
+        public: true
+        tags:
+            - { name: controller.service_arguments }
+
     LiteSpeed\Cache\Controller\Admin\AdvancedController:
         public: true
         tags:

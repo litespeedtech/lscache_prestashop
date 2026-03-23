@@ -102,7 +102,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache';
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '2.0.6';
+        $this->version = '2.0.7';
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
@@ -534,14 +534,32 @@ class LiteSpeedCache extends Module
 
     // ---- Module lifecycle -------------------------------------------------------
 
-    public function getContent(): void
+    public function getContent()
     {
-        $url = $this->context->link->getAdminLink('AdminLiteSpeedCacheConfig');
-        if (!headers_sent()) {
-            header('Location: ' . $url);
+        try {
+            Tools::redirectAdmin(
+                \PrestaShop\PrestaShop\Adapter\SymfonyContainer::getInstance()
+                    ->get('router')
+                    ->generate('admin_litespeedcache_wizard')
+            );
+        } catch (\Throwable $e) {
+            // Routes not compiled — remove Symfony cache so it rebuilds on next request
+            $fs = new \Symfony\Component\Filesystem\Filesystem();
+            foreach (['dev', 'prod'] as $env) {
+                $dir = _PS_ROOT_DIR_ . '/var/cache/' . $env;
+                if (is_dir($dir)) {
+                    $fs->remove($dir);
+                }
+            }
+
+            $currentUrl = $_SERVER['REQUEST_URI'] ?? '';
+            echo '<div style="text-align:center; padding:60px 20px; font-family:sans-serif;">'
+                . '<h2>LiteSpeed Cache</h2>'
+                . '<p>Building cache configuration, please wait...</p>'
+                . '<meta http-equiv="refresh" content="3;url=' . htmlspecialchars($currentUrl) . '">'
+                . '</div>';
             exit;
         }
-        Tools::redirectAdmin($url);
     }
 
     public function install(): bool
@@ -573,7 +591,11 @@ class LiteSpeedCache extends Module
 
         PrestaShopLogger::addLog('LiteSpeed Cache module installed', 1, null, 'LiteSpeedCache', 0, true);
 
-        return $this->installHooks();
+        if (!$this->installHooks()) {
+            return false;
+        }
+
+        return true;
     }
 
     public function disable($force_all = false)
@@ -590,12 +612,25 @@ class LiteSpeedCache extends Module
         PrestaShopLogger::addLog('LiteSpeed Cache module uninstalled', 2, null, 'LiteSpeedCache', 0, true);
         (new TabManager($this))->uninstall();
         CacheHelper::htAccessUpdate(false, false, false);
+        CacheHelper::htAccessUpdateVaryCookies('_lscache_vary', '');
         Configuration::deleteByName(Conf::ENTRY_ALL);
         Configuration::deleteByName(Conf::ENTRY_SHOP);
         Configuration::deleteByName(Conf::ENTRY_MODULE);
         Configuration::deleteByName(CdnConfig::ENTRY);
         Configuration::deleteByName(ObjConfig::ENTRY);
         Configuration::deleteByName(ExclusionsConfig::ENTRY);
+        Configuration::deleteByName('LITESPEED_WARMUP_SETTINGS');
+        Configuration::deleteByName('LITESPEED_CACHE_ADVANCED');
+        Configuration::deleteByName('LITESPEED_CACHE_BYPASS');
+        Configuration::deleteByName('LITESPEED_ACTIVE_PRESET');
+        Configuration::deleteByName('LITESPEED_PRESETS_HISTORY');
+        Configuration::deleteByName('LITESPEED_WARMUP_STATE');
+        Configuration::deleteByName('LITESPEED_WARMUP_BLACKLIST');
+        Configuration::deleteByName('LITESPEED_WARMUP_SITEMAP');
+        Configuration::deleteByName('LITESPEED_WARMUP_SHOP_URL');
+        Configuration::deleteByName('LITESPEED_WARMUP_USERAGENT');
+        Configuration::deleteByName('LITESPEED_LAST_EXPORT');
+        Configuration::deleteByName('LITESPEED_LAST_IMPORT');
 
         return parent::uninstall();
     }

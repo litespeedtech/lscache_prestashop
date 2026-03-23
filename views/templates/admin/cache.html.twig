@@ -131,38 +131,66 @@
       </div>
 
       {# ================================================================== #}
-      {# Cache Rules                                                         #}
+      {# Vary                                                                 #}
       {# ================================================================== #}
       <div class="card mb-3">
         <div class="card-header">
-          <h3 class="card-header-title">Cache Rules</h3>
+          <h3 class="card-header-title">Vary</h3>
         </div>
         <div class="card-body">
 
-          {# nocache_vars #}
+          {# login_cookie #}
           <div class="form-group row">
-            <label class="form-control-label col-sm-3" for="nocache_vars">Do-Not-Cache GET Parameters</label>
+            <label class="form-control-label col-sm-3" for="login_cookie">Login Cookie Name</label>
             <div class="col-sm-9">
-              <textarea class="form-control" id="nocache_vars" name="nocache_vars" rows="4" {{ disabled ? 'disabled' : '' }}>{{ values.nocache_vars|default('') }}</textarea>
-              <small class="form-text text-muted">Comma-separated list of GET variables that prevent caching when present.</small>
+              <input type="text" class="form-control" id="login_cookie" name="login_cookie" value="{{ values.login_cookie|default('_lscache_vary') }}" style="max-width:400px;" {{ disabled ? 'disabled' : '' }}>
+              <small class="form-text text-muted">
+                The server uses this cookie to determine if a user is logged in. Default: <code>_lscache_vary</code>.<br>
+                Useful when running multiple PrestaShop installations on the same domain.
+              </small>
             </div>
           </div>
 
-          {# nocache_urls #}
+          {# vary_cookies #}
           <div class="form-group row">
-            <label class="form-control-label col-sm-3" for="nocache_urls">URL Blacklist</label>
+            <label class="form-control-label col-sm-3" for="vary_cookies">Third-Party Vary Cookies</label>
             <div class="col-sm-9">
-              <textarea class="form-control" id="nocache_urls" name="nocache_urls" rows="6" {{ disabled ? 'disabled' : '' }}>{{ values.nocache_urls|default('') }}</textarea>
-              <small class="form-text text-muted">Relative URLs to exclude from caching. Start with <code>/</code>. One per line. Use <code>*</code> for partial matches.</small>
+              <textarea class="form-control" id="vary_cookies" name="vary_cookies" rows="4" style="max-width:400px;" {{ disabled ? 'disabled' : '' }}>{{ values.vary_cookies|default('') }}</textarea>
+              <small class="form-text text-muted">
+                One cookie name per line. Only needed if a third-party module uses a cookie to change visible page content (e.g. cookie consent banners, A/B testing, geolocation plugins).<br>
+                Each unique cookie value will generate a separate cached version of the page. Leave empty if unsure.
+              </small>
             </div>
           </div>
 
           {# vary_bypass #}
           <div class="form-group row">
-            <label class="form-control-label col-sm-3" for="vary_bypass">Context Vary Bypass</label>
+            <label class="form-control-label col-sm-3">Context Vary Bypass</label>
             <div class="col-sm-9">
-              <textarea class="form-control" id="vary_bypass" name="vary_bypass" rows="3" {{ disabled ? 'disabled' : '' }}>{{ values.vary_bypass|default('') }}</textarea>
-              <small class="form-text text-muted">Comma-delimited context names to bypass vary. Supported: <code>ctry</code>, <code>curr</code>, <code>lang</code>.</small>
+              {% set currentBypass = values.vary_bypass|default('')|split(',')|map(v => v|trim)|filter(v => v != '') %}
+              {% for key, reason in suggestedVary %}
+              <div class="custom-control custom-checkbox mb-1">
+                <input type="checkbox" class="custom-control-input js-vary-check" id="vary_{{ key }}" value="{{ key }}"
+                  {{ key in currentBypass ? 'checked' : '' }} {{ disabled ? 'disabled' : '' }}>
+                <label class="custom-control-label" for="vary_{{ key }}">
+                  <code>{{ key }}</code> — <small class="text-muted">{{ reason }}</small>
+                </label>
+              </div>
+              {% endfor %}
+              {% set otherKeys = ['lang', 'curr', 'ctry']|filter(k => k not in suggestedVary|keys) %}
+              {% for key in otherKeys %}
+              <div class="custom-control custom-checkbox mb-1">
+                <input type="checkbox" class="custom-control-input js-vary-check" id="vary_{{ key }}" value="{{ key }}"
+                  {{ key in currentBypass ? 'checked' : '' }} {{ disabled ? 'disabled' : '' }}>
+                <label class="custom-control-label" for="vary_{{ key }}">
+                  <code>{{ key }}</code>
+                </label>
+              </div>
+              {% endfor %}
+              <input type="hidden" id="vary_bypass" name="vary_bypass" value="{{ values.vary_bypass|default('') }}">
+              <small class="form-text text-muted">
+                Create separate cache variants per context. Checked items are auto-detected from your store configuration.
+              </small>
             </div>
           </div>
 
@@ -181,4 +209,20 @@
   </div>
 </div>
 {% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script>
+  (function() {
+    var checks = document.querySelectorAll('.js-vary-check');
+    var hidden = document.getElementById('vary_bypass');
+    function sync() {
+      var vals = [];
+      checks.forEach(function(c) { if (c.checked) vals.push(c.value); });
+      hidden.value = vals.join(', ');
+    }
+    checks.forEach(function(c) { c.addEventListener('change', sync); });
+  })();
+  </script>
 {% endblock %}

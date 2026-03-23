@@ -69,6 +69,8 @@ class CacheConfig
     public const CFG_NOCACHE_VAR = 'nocache_vars';
     public const CFG_NOCACHE_URL = 'nocache_urls';
     public const CFG_VARY_BYPASS = 'vary_bypass';
+    public const CFG_LOGIN_COOKIE = 'login_cookie';
+    public const CFG_VARY_COOKIES = 'vary_cookies';
     public const CFG_DEBUG = 'debug';
     public const CFG_DEBUG_HEADER = 'debug_header';
     public const CFG_DEBUG_LEVEL = 'debug_level';
@@ -90,6 +92,8 @@ class CacheConfig
 
     /** @var self|null */
     private static $instance;
+
+    private static bool $migrated = false;
 
     public static function getInstance(): self
     {
@@ -119,6 +123,8 @@ class CacheConfig
             case self::CFG_NOCACHE_VAR:
             case self::CFG_NOCACHE_URL:
             case self::CFG_VARY_BYPASS:
+            case self::CFG_LOGIN_COOKIE:
+            case self::CFG_VARY_COOKIES:
             case self::CFG_FLUSH_PRODCAT:
             case self::CFG_FLUSH_ALL:
             case self::CFG_FLUSH_HOME:
@@ -182,9 +188,11 @@ class CacheConfig
                 self::CFG_NOCACHE_VAR => '',
                 self::CFG_NOCACHE_URL => '',
                 self::CFG_VARY_BYPASS => '',
-                self::CFG_FLUSH_PRODCAT => 0,
-                self::CFG_FLUSH_ALL => 0,
-                self::CFG_FLUSH_HOME => 0,
+                self::CFG_LOGIN_COOKIE => '_lscache_vary',
+                self::CFG_VARY_COOKIES => '',
+                self::CFG_FLUSH_PRODCAT => 3,
+                self::CFG_FLUSH_ALL => 1,
+                self::CFG_FLUSH_HOME => 2,
                 self::CFG_FLUSH_HOME_INPUT => '',
                 self::CFG_DEBUG => 0,
                 self::CFG_DEBUG_HEADER => 0,
@@ -296,6 +304,8 @@ class CacheConfig
                     self::CFG_NOCACHE_VAR => $values[self::CFG_NOCACHE_VAR],
                     self::CFG_NOCACHE_URL => $values[self::CFG_NOCACHE_URL],
                     self::CFG_VARY_BYPASS => $values[self::CFG_VARY_BYPASS],
+                    self::CFG_LOGIN_COOKIE => $values[self::CFG_LOGIN_COOKIE] ?? '_lscache_vary',
+                    self::CFG_VARY_COOKIES => $values[self::CFG_VARY_COOKIES] ?? '',
                     self::CFG_FLUSH_PRODCAT => $values[self::CFG_FLUSH_PRODCAT],
                     self::CFG_FLUSH_ALL => $values[self::CFG_FLUSH_ALL],
                     self::CFG_FLUSH_HOME => $values[self::CFG_FLUSH_HOME],
@@ -342,6 +352,8 @@ class CacheConfig
 
     private function init(): void
     {
+        self::migrateAdvancedConfig();
+
         $this->all = json_decode(\Configuration::getGlobalValue(self::ENTRY_ALL), true);
         if (!$this->all) {
             LSLog::log('Config not exist yet or decode err', LSLog::LEVEL_FORCE);
@@ -602,6 +614,42 @@ class CacheConfig
     public function getDefaultPurgeTagsByCategory(): array
     {
         return [self::TAG_SEARCH, self::TAG_SITEMAP];
+    }
+
+    public static function migrateAdvancedConfig(): void
+    {
+        if (self::$migrated) {
+            return;
+        }
+        self::$migrated = true;
+
+        $raw = \Configuration::getGlobalValue('LITESPEED_CACHE_ADVANCED');
+        if (!$raw) {
+            return;
+        }
+
+        $advanced = json_decode($raw, true);
+        if (!is_array($advanced)) {
+            \Configuration::deleteByName('LITESPEED_CACHE_ADVANCED');
+
+            return;
+        }
+
+        $globalRaw = \Configuration::getGlobalValue(self::ENTRY_ALL);
+        $global = $globalRaw ? json_decode($globalRaw, true) : [];
+        if (!is_array($global)) {
+            $global = [];
+        }
+
+        if (isset($advanced['login_cookie']) && !isset($global['login_cookie'])) {
+            $global['login_cookie'] = $advanced['login_cookie'];
+        }
+        if (isset($advanced['vary_cookies']) && !isset($global['vary_cookies'])) {
+            $global['vary_cookies'] = $advanced['vary_cookies'];
+        }
+
+        \Configuration::updateGlobalValue(self::ENTRY_ALL, json_encode($global));
+        \Configuration::deleteByName('LITESPEED_CACHE_ADVANCED');
     }
 
     public static function isBypassed(): bool

@@ -24,100 +24,45 @@ class PresetsController extends FrameworkBundleAdminController
 
     public function indexAction(Request $request): Response
     {
-        $d = 'Modules.Litespeedcache.Admin';
-
-        // Apply preset
-        if ($request->isMethod('POST') && $request->request->has('apply_preset')) {
-            $preset = $request->request->get('apply_preset');
-            $this->applyPreset($preset);
-
-            return $this->redirectToRoute('admin_litespeedcache_presets');
-        }
-
-        // Restore backup
-        if ($request->isMethod('POST') && $request->request->has('restore_backup')) {
-            $index = (int) $request->request->get('restore_backup');
-            $this->restoreBackup($index);
-
-            return $this->redirectToRoute('admin_litespeedcache_presets');
-        }
-
-        $presets = $this->getPresetDefinitions();
-        $history = $this->getHistory();
-        $currentPreset = \Configuration::getGlobalValue('LITESPEED_ACTIVE_PRESET') ?: null;
-
-        return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/presets.html.twig', [
-            'presets' => $presets,
-            'history' => $history,
-            'currentPreset' => $currentPreset,
-        ], $request);
+        return $this->redirectToRoute('admin_litespeedcache_wizard');
     }
 
     private function getPresetDefinitions(): array
     {
         return [
-            'essentials' => [
-                'name' => 'Essentials',
+            'standard' => [
+                'name' => 'Standard',
                 'recommended' => false,
                 'features' => [
-                    'Default cache enabled',
-                    'Higher TTL (1 week)',
-                    'Guest mode enabled',
-                ],
-                'description' => 'This risk-free preset is appropriate for all sites. Good for new users, simple sites, or cache-oriented development.',
-                'note' => 'Only basic caching features are enabled. No additional server requirements.',
-            ],
-            'basic' => [
-                'name' => 'Basic',
-                'recommended' => false,
-                'features' => [
-                    'Everything in Essentials, plus',
+                    'Cache enabled with guest mode',
+                    'Public TTL: 1 day',
                     'Separate mobile cache',
                     'Cache per customer group (2 views)',
-                    '404 page caching',
+                    'Auto-purge product, category & home on order',
+                    'Flush all on cache clear',
                 ],
-                'description' => 'This low-risk preset introduces basic speed optimizations and better user segmentation. Suitable for enthusiastic beginners.',
-                'note' => 'Includes optimizations known to improve page speed scores.',
+                'description' => 'Safe defaults for any store. Stock and prices update automatically when orders are placed. No additional server requirements.',
             ],
-            'advanced' => [
-                'name' => 'Advanced (Recommended)',
+            'optimized' => [
+                'name' => 'Optimized',
                 'recommended' => true,
                 'features' => [
-                    'Everything in Basic, plus',
-                    'Guest mode optimized',
-                    'Product & category flush on order',
-                    'Flush all on cache clear',
-                    'ESI for private blocks',
+                    'Everything in Standard, plus',
+                    'Public TTL: 3 days',
                     'Object cache (if Redis available)',
                 ],
-                'description' => 'This preset is good for most sites, and rarely causes conflicts. Any caching issues can be resolved with the Exclusions settings.',
-                'note' => 'Includes many optimizations known to improve page speed. Redis recommended for object cache.',
+                'description' => 'Recommended for most stores. Longer cache TTL with automatic purge on content changes. Redis object cache activated if available.',
             ],
-            'aggressive' => [
-                'name' => 'Aggressive',
+            'maximum' => [
+                'name' => 'Maximum',
                 'recommended' => false,
                 'features' => [
-                    'Everything in Advanced, plus',
+                    'Everything in Optimized, plus',
+                    'Public TTL: 1 week',
                     'Shorter private TTL (15 min)',
-                    'Instant Click enabled',
-                    'All vary bypass disabled',
-                    'Maximum flush on order',
+                    'Aggressive home flush on order',
                 ],
-                'description' => 'This preset may work out of the box on some sites, but make sure to test! Some exclusions may be needed.',
-                'note' => 'Enables maximum caching aggressiveness. Monitor your site closely after applying.',
-            ],
-            'extreme' => [
-                'name' => 'Extreme',
-                'recommended' => false,
-                'features' => [
-                    'Everything in Aggressive, plus',
-                    'Very high TTL (2 weeks)',
-                    'Minimal private TTL (10 min)',
-                    'Debug headers enabled',
-                    'Home page flush on any order',
-                ],
-                'description' => 'This preset will almost certainly require testing and exclusions. Pay special attention to dynamic content like cart widgets and user-specific blocks.',
-                'note' => 'Enables the maximum level of optimizations. For expert users only.',
+                'description' => 'Maximum caching performance for high-traffic stores with mostly static catalogs. Test thoroughly — some exclusions may be needed for dynamic content.',
             ],
         ];
     }
@@ -138,115 +83,59 @@ class PresetsController extends FrameworkBundleAdminController
         $all = $config->get(Conf::ENTRY_ALL);
         $shop = $config->get(Conf::ENTRY_SHOP);
 
+        // Common base for all presets
+        $all[Conf::CFG_ENABLED] = 1;
+        $all[Conf::CFG_GUESTMODE] = 1;
+        $all[Conf::CFG_DIFFMOBILE] = 1;
+        $all[Conf::CFG_FLUSH_ALL] = 1;
+        $all[Conf::CFG_FLUSH_PRODCAT] = 3;
+        $all[Conf::CFG_FLUSH_HOME] = 1;
+        $shop[Conf::CFG_DIFFCUSTGRP] = 2;
+
+        // Auto-detect vary bypass contexts
+        $all[Conf::CFG_VARY_BYPASS] = $this->detectVaryBypass();
+
         switch ($presetKey) {
-            case 'essentials':
-                $all[Conf::CFG_ENABLED] = 1;
-                $all[Conf::CFG_GUESTMODE] = 1;
-                $all[Conf::CFG_DIFFMOBILE] = 0;
-                $all[Conf::CFG_FLUSH_ALL] = 0;
-                $all[Conf::CFG_FLUSH_PRODCAT] = 0;
-                $all[Conf::CFG_FLUSH_HOME] = 0;
-                $shop[Conf::CFG_PUBLIC_TTL] = 604800;
-                $shop[Conf::CFG_PRIVATE_TTL] = 1800;
-                $shop[Conf::CFG_HOME_TTL] = 604800;
-                $shop[Conf::CFG_404_TTL] = 3600;
-                $shop[Conf::CFG_DIFFCUSTGRP] = 0;
-                \Configuration::updateGlobalValue('LITESPEED_CACHE_ADVANCED', json_encode([
-                    'login_cookie' => '_lscache_vary', 'vary_cookies' => '', 'instant_click' => 0,
-                ]));
+            case 'standard':
+                $shop[Conf::CFG_PUBLIC_TTL] = 86400;      // 1 day
+                $shop[Conf::CFG_PRIVATE_TTL] = 1800;      // 30 min
+                $shop[Conf::CFG_HOME_TTL] = 86400;        // 1 day
+                $shop[Conf::CFG_404_TTL] = 3600;          // 1 hour
+                $shop[Conf::CFG_PCOMMENTS_TTL] = 3600;    // 1 hour
                 break;
 
-            case 'basic':
-                $all[Conf::CFG_ENABLED] = 1;
-                $all[Conf::CFG_GUESTMODE] = 1;
-                $all[Conf::CFG_DIFFMOBILE] = 1;
-                $all[Conf::CFG_FLUSH_ALL] = 0;
-                $all[Conf::CFG_FLUSH_PRODCAT] = 0;
-                $all[Conf::CFG_FLUSH_HOME] = 0;
-                $shop[Conf::CFG_PUBLIC_TTL] = 604800;
-                $shop[Conf::CFG_PRIVATE_TTL] = 1800;
-                $shop[Conf::CFG_HOME_TTL] = 604800;
-                $shop[Conf::CFG_404_TTL] = 86400;
-                $shop[Conf::CFG_DIFFCUSTGRP] = 2;
-                \Configuration::updateGlobalValue('LITESPEED_CACHE_ADVANCED', json_encode([
-                    'login_cookie' => '_lscache_vary', 'vary_cookies' => '', 'instant_click' => 0,
-                ]));
-                break;
-
-            case 'advanced':
-                $all[Conf::CFG_ENABLED] = 1;
-                $all[Conf::CFG_GUESTMODE] = 1;
-                $all[Conf::CFG_DIFFMOBILE] = 1;
-                $all[Conf::CFG_FLUSH_ALL] = 1;
-                $all[Conf::CFG_FLUSH_PRODCAT] = 3;
-                $all[Conf::CFG_FLUSH_HOME] = 1;
-                $shop[Conf::CFG_PUBLIC_TTL] = 604800;
-                $shop[Conf::CFG_PRIVATE_TTL] = 1800;
-                $shop[Conf::CFG_HOME_TTL] = 604800;
-                $shop[Conf::CFG_404_TTL] = 86400;
-                $shop[Conf::CFG_PCOMMENTS_TTL] = 7200;
-                $shop[Conf::CFG_DIFFCUSTGRP] = 2;
-                // Enable object cache if Redis is available
+            case 'optimized':
+                $shop[Conf::CFG_PUBLIC_TTL] = 259200;     // 3 days
+                $shop[Conf::CFG_PRIVATE_TTL] = 1800;      // 30 min
+                $shop[Conf::CFG_HOME_TTL] = 259200;       // 3 days
+                $shop[Conf::CFG_404_TTL] = 86400;         // 1 day
+                $shop[Conf::CFG_PCOMMENTS_TTL] = 7200;    // 2 hours
+                // Enable Redis object cache if available and connectable
                 if (extension_loaded('redis')) {
                     $objCfg = ObjConfig::getAll();
-                    $objCfg[ObjConfig::OBJ_ENABLE] = 1;
-                    \Configuration::updateGlobalValue(ObjConfig::ENTRY, json_encode($objCfg));
-                    ObjConfig::reset();
+                    if ($this->testRedisConnection($objCfg)) {
+                        $objCfg[ObjConfig::OBJ_ENABLE] = 1;
+                        \Configuration::updateGlobalValue(ObjConfig::ENTRY, json_encode($objCfg));
+                        ObjConfig::reset();
+                    }
                 }
-                \Configuration::updateGlobalValue('LITESPEED_CACHE_ADVANCED', json_encode([
-                    'login_cookie' => '_lscache_vary', 'vary_cookies' => '', 'instant_click' => 0,
-                ]));
                 break;
 
-            case 'aggressive':
-                $all[Conf::CFG_ENABLED] = 1;
-                $all[Conf::CFG_GUESTMODE] = 1;
-                $all[Conf::CFG_DIFFMOBILE] = 1;
-                $all[Conf::CFG_FLUSH_ALL] = 1;
-                $all[Conf::CFG_FLUSH_PRODCAT] = 3;
+            case 'maximum':
                 $all[Conf::CFG_FLUSH_HOME] = 2;
-                $all[Conf::CFG_VARY_BYPASS] = '';
-                $shop[Conf::CFG_PUBLIC_TTL] = 604800;
-                $shop[Conf::CFG_PRIVATE_TTL] = 900;
-                $shop[Conf::CFG_HOME_TTL] = 604800;
-                $shop[Conf::CFG_404_TTL] = 86400;
-                $shop[Conf::CFG_PCOMMENTS_TTL] = 7200;
-                $shop[Conf::CFG_DIFFCUSTGRP] = 2;
+                $shop[Conf::CFG_PUBLIC_TTL] = 604800;     // 1 week
+                $shop[Conf::CFG_PRIVATE_TTL] = 900;       // 15 min
+                $shop[Conf::CFG_HOME_TTL] = 604800;       // 1 week
+                $shop[Conf::CFG_404_TTL] = 86400;         // 1 day
+                $shop[Conf::CFG_PCOMMENTS_TTL] = 7200;    // 2 hours
                 if (extension_loaded('redis')) {
                     $objCfg = ObjConfig::getAll();
-                    $objCfg[ObjConfig::OBJ_ENABLE] = 1;
-                    \Configuration::updateGlobalValue(ObjConfig::ENTRY, json_encode($objCfg));
-                    ObjConfig::reset();
+                    if ($this->testRedisConnection($objCfg)) {
+                        $objCfg[ObjConfig::OBJ_ENABLE] = 1;
+                        \Configuration::updateGlobalValue(ObjConfig::ENTRY, json_encode($objCfg));
+                        ObjConfig::reset();
+                    }
                 }
-                \Configuration::updateGlobalValue('LITESPEED_CACHE_ADVANCED', json_encode([
-                    'login_cookie' => '_lscache_vary', 'vary_cookies' => '', 'instant_click' => 1,
-                ]));
-                break;
-
-            case 'extreme':
-                $all[Conf::CFG_ENABLED] = 1;
-                $all[Conf::CFG_GUESTMODE] = 1;
-                $all[Conf::CFG_DIFFMOBILE] = 1;
-                $all[Conf::CFG_FLUSH_ALL] = 1;
-                $all[Conf::CFG_FLUSH_PRODCAT] = 3;
-                $all[Conf::CFG_FLUSH_HOME] = 2;
-                $all[Conf::CFG_VARY_BYPASS] = '';
-                $all[Conf::CFG_DEBUG_HEADER] = 1;
-                $shop[Conf::CFG_PUBLIC_TTL] = 1209600;
-                $shop[Conf::CFG_PRIVATE_TTL] = 600;
-                $shop[Conf::CFG_HOME_TTL] = 1209600;
-                $shop[Conf::CFG_404_TTL] = 604800;
-                $shop[Conf::CFG_PCOMMENTS_TTL] = 86400;
-                $shop[Conf::CFG_DIFFCUSTGRP] = 1;
-                if (extension_loaded('redis')) {
-                    $objCfg = ObjConfig::getAll();
-                    $objCfg[ObjConfig::OBJ_ENABLE] = 1;
-                    \Configuration::updateGlobalValue(ObjConfig::ENTRY, json_encode($objCfg));
-                    ObjConfig::reset();
-                }
-                \Configuration::updateGlobalValue('LITESPEED_CACHE_ADVANCED', json_encode([
-                    'login_cookie' => '_lscache_vary', 'vary_cookies' => '', 'instant_click' => 1,
-                ]));
                 break;
         }
 
@@ -276,7 +165,6 @@ class PresetsController extends FrameworkBundleAdminController
             'cdn' => json_decode(\Configuration::getGlobalValue(CdnConfig::ENTRY) ?: '{}', true),
             'object' => json_decode(\Configuration::getGlobalValue(ObjConfig::ENTRY) ?: '{}', true),
             'exclusions' => json_decode(\Configuration::getGlobalValue(ExclusionsConfig::ENTRY) ?: '{}', true),
-            'advanced' => json_decode(\Configuration::getGlobalValue('LITESPEED_CACHE_ADVANCED') ?: '{}', true),
         ];
 
         $history = $this->getHistory();
@@ -313,10 +201,6 @@ class PresetsController extends FrameworkBundleAdminController
             \Configuration::updateGlobalValue(ExclusionsConfig::ENTRY, json_encode($backup['exclusions']));
             ExclusionsConfig::reset();
         }
-        if (!empty($backup['advanced'])) {
-            \Configuration::updateGlobalValue('LITESPEED_CACHE_ADVANCED', json_encode($backup['advanced']));
-        }
-
         CdnConfig::reset();
         \Configuration::updateGlobalValue('LITESPEED_ACTIVE_PRESET', null);
 
@@ -326,6 +210,45 @@ class PresetsController extends FrameworkBundleAdminController
 
         \PrestaShopLogger::addLog('Settings restored from backup: ' . $backup['date'], 2, null, 'LiteSpeedCache', 0, true);
         $this->addFlash('success', $this->trans('Settings restored from backup created on %s.', 'Modules.Litespeedcache.Admin', [$backup['date']]));
+    }
+
+    private function detectVaryBypass(): string
+    {
+        $contexts = [];
+
+        if (count(\Language::getLanguages(true)) > 1) {
+            $contexts[] = 'lang';
+        }
+        if (count(\Currency::getCurrencies(false, true)) > 1) {
+            $contexts[] = 'curr';
+        }
+        if (\Shop::isFeatureActive() || \Configuration::get('PS_GEOLOCATION_ENABLED')) {
+            $contexts[] = 'ctry';
+        }
+
+        return implode(', ', $contexts);
+    }
+
+    private function testRedisConnection(array $objCfg): bool
+    {
+        try {
+            $redis = new \Redis();
+            $host = $objCfg[ObjConfig::OBJ_HOST] ?? 'localhost';
+            $port = (int) ($objCfg[ObjConfig::OBJ_PORT] ?? 6379);
+            if (!$redis->connect($host, $port, 2.0)) {
+                return false;
+            }
+            $pass = $objCfg[ObjConfig::OBJ_PASSWORD] ?? '';
+            if ($pass !== '') {
+                $redis->auth($pass);
+            }
+            $redis->ping();
+            $redis->close();
+
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     private function getHistory(): array

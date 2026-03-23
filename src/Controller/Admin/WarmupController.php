@@ -117,7 +117,7 @@ class WarmupController extends FrameworkBundleAdminController
             'profiles' => WarmupConfig::getProfiles(),
             'lastState' => $lastState,
             'blacklist' => $blacklist,
-            'sitemapUrl' => \Configuration::getGlobalValue('LITESPEED_WARMUP_SITEMAP') ?: '',
+            'sitemapUrl' => \Configuration::getGlobalValue('LITESPEED_WARMUP_SITEMAP') ?: $this->detectSitemapUrl(),
             'shopUrl' => \Configuration::getGlobalValue('LITESPEED_WARMUP_SHOP_URL') ?: '',
             'userAgent' => \Configuration::getGlobalValue('LITESPEED_WARMUP_USERAGENT') ?: '',
             'cliCommand' => 'php bin/console litespeedcache:warmup',
@@ -312,6 +312,32 @@ class WarmupController extends FrameworkBundleAdminController
         }
 
         return '';
+    }
+
+    private function detectSitemapUrl(): string
+    {
+        $ssl = \Configuration::get('PS_SSL_ENABLED');
+        $domain = $ssl ? \Configuration::get('PS_SHOP_DOMAIN_SSL') : \Configuration::get('PS_SHOP_DOMAIN');
+        if (!$domain) {
+            return '';
+        }
+
+        $baseUrl = ($ssl ? 'https://' : 'http://') . $domain;
+        $idShop = (int) \Configuration::get('PS_SHOP_DEFAULT') ?: 1;
+
+        // PrestaShop generates sitemap as {id_shop}_index_sitemap.xml
+        $sitemapPath = _PS_ROOT_DIR_ . '/' . $idShop . '_index_sitemap.xml';
+        if (is_file($sitemapPath)) {
+            return $baseUrl . '/' . $idShop . '_index_sitemap.xml';
+        }
+
+        // Fallback: check for sitemap.xml
+        if (is_file(_PS_ROOT_DIR_ . '/sitemap.xml')) {
+            return $baseUrl . '/sitemap.xml';
+        }
+
+        // Default to expected PrestaShop sitemap path
+        return $baseUrl . '/' . $idShop . '_index_sitemap.xml';
     }
 
     private function parseSitemap(string $sitemapUrl): array

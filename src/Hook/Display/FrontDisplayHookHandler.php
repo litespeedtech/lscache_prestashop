@@ -40,9 +40,6 @@ class FrontDisplayHookHandler
     /** @var CacheConfig */
     private $config;
 
-    /** @var bool|null */
-    private static $instantClick;
-
     public function __construct(CacheConfig $config)
     {
         $this->config = $config;
@@ -51,15 +48,6 @@ class FrontDisplayHookHandler
     public function onDisplayFooterAfter(array $params): string
     {
         $output = '';
-
-        // Instant Click — cache the config read
-        if (self::$instantClick === null) {
-            $advanced = json_decode(\Configuration::getGlobalValue('LITESPEED_CACHE_ADVANCED') ?: '{}', true);
-            self::$instantClick = !empty($advanced['instant_click']);
-        }
-        if (self::$instantClick) {
-            $output .= '<script src="//instant.page/5.2.0" type="module" integrity="sha384-jnZyxPjiipYXnSU0bbe99Xk6eL+HkjrHXb0TtY1l6eVPGs40IN/bDPd26Ua0NR6"></script>' . PHP_EOL;
-        }
 
         // Cache debug panel — shown when debug headers are enabled
         if ($this->config->get(CacheConfig::CFG_DEBUG_HEADER)) {

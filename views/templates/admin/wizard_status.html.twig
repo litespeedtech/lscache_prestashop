@@ -1,0 +1,39 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-10">
+
+    <div class="card mb-4">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-header-title mb-0">Current Configuration</h3>
+        <a href="{{ rerunUrl }}" class="btn btn-outline-primary btn-sm">Run Wizard Again</a>
+      </div>
+      <div class="card-body">
+
+        <div class="alert alert-success">
+          The setup wizard has been applied. Your cache is configured and active.
+          <a href="/" target="_blank" rel="noopener" class="btn btn-secondary btn-sm ml-2" style="padding:4px 12px;">Visit your store</a>
+        </div>
+
+        <table class="table table-hover">
+          <thead>
+            <tr><th style="width:40%;">Setting</th><th>Value</th></tr>
+          </thead>
+          <tbody>
+            {% for label, value in summary %}
+            <tr>
+              <td style="font-weight:600;">{{ label }}</td>
+              <td>{{ value }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+{% endblock %}

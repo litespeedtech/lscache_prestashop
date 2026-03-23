@@ -1,0 +1,550 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-10">
+
+    {# Step indicators #}
+    <div class="card mb-4">
+      <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center" id="step-indicators">
+          {% set stepLabels = ['Your Store', 'Purge', 'Object Cache', 'CDN', 'Summary'] %}
+          {% for label in stepLabels %}
+          <div class="text-center flex-fill wizard-step-indicator" data-step="{{ loop.index }}">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-1 wizard-step-circle {{ loop.first ? 'bg-primary text-white' : 'bg-light text-muted' }}" style="width:36px; height:36px; font-weight:700; font-size:14px; border:2px solid {{ loop.first ? '#25b9d7' : '#dee2e6' }}; transition: all 0.2s;">
+              {{ loop.index }}
+            </div>
+            <div style="font-size:12px; font-weight:600;" class="{{ loop.first ? 'text-primary' : 'text-muted' }}">{{ label }}</div>
+          </div>
+          {% if not loop.last %}
+          <div class="flex-fill" style="height:2px; background:#dee2e6; margin:0 4px; align-self:center; margin-bottom:18px;"></div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {# ============ STEP 1: Your Store ============ #}
+    <div class="wizard-step" data-step="1">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-header-title">Step 1: Your Store</h3>
+        </div>
+        <div class="card-body">
+
+          {# Auto-detected info #}
+          <div class="mb-4 p-3 rounded" style="background:#f0f7ff; border:1px solid #d0e3f7;">
+            <strong style="font-size:13px;">Detected store settings:</strong>
+            <div class="mt-2">
+              <span class="badge badge-info mr-1">{{ detected.languages }} language{{ detected.languages != 1 ? 's' : '' }}</span>
+              <span class="badge badge-info mr-1">{{ detected.currencies }} currenc{{ detected.currencies != 1 ? 'ies' : 'y' }}</span>
+              {% if detected.multistore %}
+                <span class="badge badge-warning mr-1">Multistore active</span>
+              {% endif %}
+              {% if detected.geolocation %}
+                <span class="badge badge-warning mr-1">Geolocation enabled</span>
+              {% endif %}
+            </div>
+          </div>
+
+          {# Hosting type #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-4">Hosting type</label>
+            <div class="col-sm-8">
+              <div class="d-flex flex-wrap wizard-radio" style="gap:8px;">
+                <label class="btn btn-primary" style="min-width:120px; cursor:pointer;">
+                  <input type="radio" name="hosting" value="shared" checked style="display:none;">
+                  <div style="font-weight:600;">Shared</div>
+                  <small style="font-size:11px; opacity:0.8;">Low resources</small>
+                </label>
+                <label class="btn btn-outline-secondary" style="min-width:120px; cursor:pointer;">
+                  <input type="radio" name="hosting" value="vps" style="display:none;">
+                  <div style="font-weight:600;">VPS</div>
+                  <small style="font-size:11px; opacity:0.8;">Moderate resources</small>
+                </label>
+                <label class="btn btn-outline-secondary" style="min-width:120px; cursor:pointer;">
+                  <input type="radio" name="hosting" value="dedicated" style="display:none;">
+                  <div style="font-weight:600;">Dedicated</div>
+                  <small style="font-size:11px; opacity:0.8;">Full resources</small>
+                </label>
+              </div>
+              <small class="form-text text-muted">Determines the crawler speed profile for cache warmup.</small>
+            </div>
+          </div>
+
+          {# Separate mobile theme #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-4">Separate mobile theme?</label>
+            <div class="col-sm-8">
+              <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" id="wiz_diff_mobile" name="diff_mobile" value="1">
+                <label class="custom-control-label" for="wiz_diff_mobile">Yes, my store uses a different theme for mobile</label>
+              </div>
+              <small class="form-text text-muted">Enable if your store shows different content on mobile devices.</small>
+            </div>
+          </div>
+
+          {# Different prices per customer group #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-4">Different prices per customer group?</label>
+            <div class="col-sm-8">
+              <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" id="wiz_diff_customergroup" name="diff_customergroup" value="1" checked>
+                <label class="custom-control-label" for="wiz_diff_customergroup">Yes, different groups see different prices</label>
+              </div>
+              <small class="form-text text-muted">Enable if customer groups (e.g. wholesale, retail) have different pricing.</small>
+            </div>
+          </div>
+
+          {# Catalog update frequency #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-4">How often do you update the catalog?</label>
+            <div class="col-sm-8">
+              <div class="d-flex flex-wrap wizard-radio" style="gap:8px;">
+                <label class="btn btn-primary" style="min-width:120px; cursor:pointer;">
+                  <input type="radio" name="catalog_frequency" value="daily" checked style="display:none;">
+                  <div style="font-weight:600;">Daily</div>
+                  <small style="font-size:11px; opacity:0.8;">TTL: 1 day</small>
+                </label>
+                <label class="btn btn-outline-secondary" style="min-width:120px; cursor:pointer;">
+                  <input type="radio" name="catalog_frequency" value="weekly" style="display:none;">
+                  <div style="font-weight:600;">Weekly</div>
+                  <small style="font-size:11px; opacity:0.8;">TTL: 1 week</small>
+                </label>
+                <label class="btn btn-outline-secondary" style="min-width:120px; cursor:pointer;">
+                  <input type="radio" name="catalog_frequency" value="rarely" style="display:none;">
+                  <div style="font-weight:600;">Rarely</div>
+                  <small style="font-size:11px; opacity:0.8;">TTL: 2 weeks</small>
+                </label>
+              </div>
+              <small class="form-text text-muted">Sets the cache TTL (time-to-live). More frequent updates need shorter TTLs.</small>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    {# ============ STEP 2: Purge ============ #}
+    <div class="wizard-step" data-step="2" style="display:none;">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-header-title">Step 2: Purge Settings</h3>
+        </div>
+        <div class="card-body">
+
+          <p class="text-muted mb-4">Configure how the cache is purged when content changes. These defaults work well for most stores.</p>
+
+          {# Flush all on cache clear #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-4">Flush All on Cache Clear</label>
+            <div class="col-sm-8">
+              <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" id="wiz_flush_all" name="flush_all" value="1" checked>
+                <label class="custom-control-label" for="wiz_flush_all">Flush entire cache when PrestaShop clears its cache</label>
+              </div>
+              <small class="form-text text-muted">Recommended: keeps LiteSpeed cache in sync with PrestaShop.</small>
+            </div>
+          </div>
+
+          {# Flush on order placed #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-4">Flush on Order Placed</label>
+            <div class="col-sm-8">
+              <select class="form-control" id="wiz_flush_prodcat" name="flush_prodcat" style="max-width:400px;">
+                <option value="0">Do not purge</option>
+                <option value="1">Purge product page only</option>
+                <option value="2">Purge product + its categories</option>
+                <option value="3" selected>Purge product + categories + manufacturer</option>
+              </select>
+              <small class="form-text text-muted">What to purge when an order is placed to update stock/availability info.</small>
+            </div>
+          </div>
+
+          {# Flush home on order #}
+          <div class="form-group row">
+            <label class="form-control-label col-sm-4">Flush Home on Order</label>
+            <div class="col-sm-8">
+              <select class="form-control" id="wiz_flush_home" name="flush_home" style="max-width:400px;">
+                <option value="0">Do not flush home page</option>
+                <option value="1">Flush on any order</option>
+                <option value="2" selected>Flush only for featured products</option>
+              </select>
+              <small class="form-text text-muted">Whether to purge the home page cache when an order is placed.</small>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    {# ============ STEP 3: Object Cache ============ #}
+    <div class="wizard-step" data-step="3" style="display:none;">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-header-title">Step 3: Object Cache</h3>
+        </div>
+        <div class="card-body">
+
+          {% if detected.redisAvailable and detected.redisConnectable %}
+            <div class="p-3 rounded mb-4" style="background:#e8f5e9; border:1px solid #c8e6c9;">
+              <strong>Redis detected</strong> at <code>{{ detected.redisHost }}:{{ detected.redisPort }}</code>
+            </div>
+
+            <div class="form-group row">
+              <label class="form-control-label col-sm-4">Enable Redis Object Cache</label>
+              <div class="col-sm-8">
+                <div class="custom-control custom-switch">
+                  <input type="checkbox" class="custom-control-input" id="wiz_redis_enable" name="redis_enable" value="1" checked>
+                  <label class="custom-control-label" for="wiz_redis_enable">Use Redis for object caching</label>
+                </div>
+                <small class="form-text text-muted">Caches database queries and objects in Redis for faster back-office and front-end performance.</small>
+              </div>
+            </div>
+
+          {% elseif detected.redisAvailable and not detected.redisConnectable %}
+            <div class="p-3 rounded mb-4" style="background:#fff3e0; border:1px solid #ffe0b2;">
+              <strong>Redis extension loaded</strong> but could not connect to <code>{{ detected.redisHost }}:{{ detected.redisPort }}</code>.
+              Configure the Redis connection in the Object Cache settings page before enabling.
+            </div>
+
+            <div class="form-group row">
+              <label class="form-control-label col-sm-4">Enable Redis Object Cache</label>
+              <div class="col-sm-8">
+                <div class="custom-control custom-switch">
+                  <input type="checkbox" class="custom-control-input" id="wiz_redis_enable" name="redis_enable" value="1" disabled>
+                  <label class="custom-control-label" for="wiz_redis_enable">Not available (connection failed)</label>
+                </div>
+              </div>
+            </div>
+
+          {% else %}
+            <div class="p-3 rounded mb-4" style="background:#f5f5f5; border:1px solid #e0e0e0;">
+              <strong>Redis not available.</strong> The PHP Redis extension is not loaded. Object caching will be skipped.
+            </div>
+            <input type="hidden" id="wiz_redis_enable" name="redis_enable" value="0">
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+    {# ============ STEP 4: CDN ============ #}
+    <div class="wizard-step" data-step="4" style="display:none;">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-header-title">Step 4: CDN (Cloudflare)</h3>
+        </div>
+        <div class="card-body">
+
+          <div class="form-group row">
+            <label class="form-control-label col-sm-4">Do you use Cloudflare?</label>
+            <div class="col-sm-8">
+              <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" id="wiz_cf_enable" name="cf_enable" value="1"
+                  {{ cdnCfg.cf_enable ? 'checked' : '' }}>
+                <label class="custom-control-label" for="wiz_cf_enable">Yes, enable Cloudflare integration</label>
+              </div>
+              <small class="form-text text-muted">Purges Cloudflare cache automatically when LiteSpeed cache is purged.</small>
+            </div>
+          </div>
+
+          <div id="cf-fields" style="{{ cdnCfg.cf_enable ? '' : 'display:none;' }}">
+            <div class="form-group row">
+              <label class="form-control-label col-sm-4" for="wiz_cf_email">Cloudflare Email</label>
+              <div class="col-sm-8">
+                <input type="email" class="form-control" id="wiz_cf_email" name="cf_email"
+                  value="{{ cdnCfg.cf_email }}" placeholder="your@email.com" style="max-width:500px;">
+                <small class="form-text text-muted">The email address associated with your Cloudflare account.</small>
+              </div>
+            </div>
+
+            <div class="form-group row">
+              <label class="form-control-label col-sm-4" for="wiz_cf_api_key">Cloudflare API Key</label>
+              <div class="col-sm-8">
+                <input type="text" class="form-control" id="wiz_cf_api_key" name="cf_api_key"
+                  value="{{ cdnCfg.cf_key }}" placeholder="Enter your Global API Key" style="max-width:500px;">
+                <small class="form-text text-muted">Found at <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">Cloudflare Profile → API Tokens → Global API Key</a>.</small>
+              </div>
+            </div>
+
+            <div class="form-group row">
+              <label class="form-control-label col-sm-4" for="wiz_cf_domain">Domain</label>
+              <div class="col-sm-8">
+                <input type="text" class="form-control" id="wiz_cf_domain" name="cf_domain"
+                  value="{{ cdnCfg.cf_domain ?: shopDomain }}" style="max-width:500px;" readonly>
+                <small class="form-text text-muted">Auto-detected from your store configuration.</small>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    {# ============ STEP 5: Summary ============ #}
+    <div class="wizard-step" data-step="5" style="display:none;">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-header-title">Step 5: Summary</h3>
+        </div>
+        <div class="card-body">
+
+          <p class="text-muted mb-3">Review the configuration that will be applied. A backup of your current settings will be created automatically.</p>
+
+          <table class="table table-hover" id="summary-table">
+            <thead>
+              <tr><th style="width:40%;">Setting</th><th>Value</th></tr>
+            </thead>
+            <tbody id="summary-body">
+              {# Populated by JS #}
+            </tbody>
+          </table>
+
+          <div id="wizard-result" style="display:none;" class="mt-3"></div>
+
+        </div>
+      </div>
+    </div>
+
+    {# Navigation buttons #}
+    <div class="d-flex justify-content-between mb-4" style="position:relative; z-index:100;">
+      <button type="button" id="btn-prev" class="btn btn-outline-secondary" style="display:none;">
+Back
+      </button>
+      <div class="ml-auto">
+        <button type="button" id="btn-next" class="btn btn-primary">
+Next
+        </button>
+        <button type="button" id="btn-apply" class="btn btn-success" style="display:none;">
+          Apply Configuration
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% include "@Modules/litespeedcache/views/templates/admin/_tools_dropdown.html.twig" %}
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  <script>
+  (function() {
+    var applyUrl = '{{ applyUrl }}';
+    var currentStep = 1;
+    var totalSteps = 5;
+
+    var steps = document.querySelectorAll('.wizard-step');
+    var indicators = document.querySelectorAll('.wizard-step-indicator');
+    var btnPrev = document.getElementById('btn-prev');
+    var btnNext = document.getElementById('btn-next');
+    var btnApply = document.getElementById('btn-apply');
+
+    function showStep(step) {
+      currentStep = step;
+
+      steps.forEach(function(el) {
+        el.style.display = parseInt(el.dataset.step) === step ? '' : 'none';
+      });
+
+      indicators.forEach(function(el) {
+        var s = parseInt(el.dataset.step);
+        var circle = el.querySelector('.wizard-step-circle');
+        var label = el.querySelector('div:last-child');
+        if (s === step) {
+          circle.className = 'd-inline-flex align-items-center justify-content-center rounded-circle mb-1 wizard-step-circle bg-primary text-white';
+          circle.style.borderColor = '#25b9d7';
+          label.className = 'text-primary';
+        } else if (s < step) {
+          circle.className = 'd-inline-flex align-items-center justify-content-center rounded-circle mb-1 wizard-step-circle bg-success text-white';
+          circle.style.borderColor = '#70b580';
+          label.className = 'text-success';
+        } else {
+          circle.className = 'd-inline-flex align-items-center justify-content-center rounded-circle mb-1 wizard-step-circle bg-light text-muted';
+          circle.style.borderColor = '#dee2e6';
+          label.className = 'text-muted';
+        }
+      });
+
+      btnPrev.style.display = step > 1 ? '' : 'none';
+      btnNext.style.display = step < totalSteps ? '' : 'none';
+      btnApply.style.display = step === totalSteps ? '' : 'none';
+
+      if (step === totalSteps) {
+        buildSummary();
+      }
+    }
+
+    // Radio button styling for hosting and catalog_frequency
+    function syncRadioGroup(name) {
+      var radios = document.querySelectorAll('input[name="' + name + '"]');
+      radios.forEach(function(r) {
+        if (r.checked) {
+          r.parentElement.classList.remove('btn-outline-secondary');
+          r.parentElement.classList.add('btn-primary', 'active');
+        } else {
+          r.parentElement.classList.remove('btn-primary', 'active');
+          r.parentElement.classList.add('btn-outline-secondary');
+        }
+      });
+    }
+
+    function initRadioGroups() {
+      var groups = ['hosting', 'catalog_frequency'];
+      groups.forEach(function(name) {
+        syncRadioGroup(name);
+        var radios = document.querySelectorAll('input[name="' + name + '"]');
+        radios.forEach(function(radio) {
+          radio.addEventListener('change', function() { syncRadioGroup(name); });
+        });
+      });
+    }
+
+    // CF fields toggle
+    var cfToggle = document.getElementById('wiz_cf_enable');
+    var cfFields = document.getElementById('cf-fields');
+    if (cfToggle) {
+      cfToggle.addEventListener('change', function() {
+        cfFields.style.display = this.checked ? '' : 'none';
+      });
+    }
+
+    function getFormData() {
+      var checkedHosting = document.querySelector('input[name="hosting"]:checked');
+      var checkedFreq = document.querySelector('input[name="catalog_frequency"]:checked');
+      var redisEl = document.getElementById('wiz_redis_enable');
+
+      return {
+        hosting: checkedHosting ? checkedHosting.value : 'vps',
+        diff_mobile: document.getElementById('wiz_diff_mobile').checked ? 1 : 0,
+        diff_customergroup: document.getElementById('wiz_diff_customergroup').checked ? 1 : 0,
+        catalog_frequency: checkedFreq ? checkedFreq.value : 'weekly',
+        flush_all: document.getElementById('wiz_flush_all').checked ? 1 : 0,
+        flush_prodcat: parseInt(document.getElementById('wiz_flush_prodcat').value),
+        flush_home: parseInt(document.getElementById('wiz_flush_home').value),
+        redis_enable: (redisEl && !redisEl.disabled && redisEl.checked) ? 1 : 0,
+        redis_host: '{{ detected.redisHost }}',
+        cf_enable: cfToggle && cfToggle.checked ? 1 : 0,
+        cf_email: document.getElementById('wiz_cf_email') ? document.getElementById('wiz_cf_email').value : '',
+        cf_api_key: document.getElementById('wiz_cf_api_key') ? document.getElementById('wiz_cf_api_key').value : '',
+        cf_domain: document.getElementById('wiz_cf_domain') ? document.getElementById('wiz_cf_domain').value : ''
+      };
+    }
+
+    var hostingLabels = { shared: 'Shared', vps: 'VPS', dedicated: 'Dedicated' };
+    var frequencyLabels = { daily: 'Daily (TTL: 1 day)', weekly: 'Weekly (TTL: 1 week)', rarely: 'Rarely (TTL: 2 weeks)' };
+    var flushProdcatLabels = {
+      0: 'Do not purge',
+      1: 'Product page only',
+      2: 'Product + categories',
+      3: 'Product + categories + manufacturer'
+    };
+    var flushHomeLabels = {
+      0: 'Do not flush',
+      1: 'Flush on any order',
+      2: 'Flush only for featured products'
+    };
+
+    function buildSummary() {
+      var data = getFormData();
+      var rows = [
+        ['Hosting type', hostingLabels[data.hosting] || data.hosting],
+        ['Crawler profile', data.hosting === 'shared' ? 'Low' : (data.hosting === 'dedicated' ? 'High' : 'Medium')],
+        ['Separate mobile theme', data.diff_mobile ? 'Yes' : 'No'],
+        ['Different prices per group', data.diff_customergroup ? 'Yes' : 'No'],
+        ['Catalog update frequency', frequencyLabels[data.catalog_frequency] || data.catalog_frequency],
+        ['Flush all on cache clear', data.flush_all ? 'Yes' : 'No'],
+        ['Flush on order placed', flushProdcatLabels[data.flush_prodcat] || data.flush_prodcat],
+        ['Flush home on order', flushHomeLabels[data.flush_home] || data.flush_home],
+        ['Redis object cache', data.redis_enable ? 'Enabled' : 'Disabled'],
+        ['Cloudflare CDN', data.cf_enable ? 'Enabled' : 'Disabled']
+      ];
+
+      if (data.cf_enable) {
+        rows.push(['Cloudflare Email', data.cf_email || '(not set)']);
+        rows.push(['Cloudflare Domain', data.cf_domain || '(not set)']);
+      }
+
+      var tbody = document.getElementById('summary-body');
+      tbody.innerHTML = '';
+      rows.forEach(function(row) {
+        var tr = document.createElement('tr');
+        var td1 = document.createElement('td');
+        td1.textContent = row[0];
+        td1.style.fontWeight = '600';
+        var td2 = document.createElement('td');
+        td2.textContent = row[1];
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        tbody.appendChild(tr);
+      });
+    }
+
+    btnNext.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (currentStep < totalSteps) {
+        showStep(currentStep + 1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+
+    btnPrev.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (currentStep > 1) {
+        showStep(currentStep - 1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+
+    btnApply.addEventListener('click', function() {
+      btnApply.disabled = true;
+      btnApply.innerHTML = 'Applying...';
+
+      var data = getFormData();
+      var resultEl = document.getElementById('wizard-result');
+
+      fetch(applyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      .then(function(resp) { return resp.json(); })
+      .then(function(result) {
+        if (result.success) {
+          window.location.href = applyUrl.replace('/apply', '');
+        } else {
+          resultEl.style.display = '';
+          resultEl.className = 'alert alert-danger mt-3';
+          resultEl.textContent = result.error || 'An error occurred.';
+          btnApply.disabled = false;
+          btnApply.innerHTML = 'Apply Configuration';
+        }
+      })
+      .catch(function(err) {
+        resultEl.style.display = '';
+        resultEl.className = 'alert alert-danger mt-3';
+        resultEl.textContent = 'Network error: ' + err.message;
+        btnApply.disabled = false;
+        btnApply.innerHTML = '<i class="material-icons" style="font-size:18px; vertical-align:middle;">check</i> Apply Configuration';
+      });
+    });
+
+    // Prevent any parent form from submitting (PS admin may wrap content in a form)
+    var wizardArea = document.querySelector('.wizard-step[data-step="1"]');
+    if (wizardArea) {
+      var parentForm = wizardArea.closest('form');
+      if (parentForm) {
+        parentForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+        });
+      }
+    }
+
+    initRadioGroups();
+    showStep(1);
+  })();
+  </script>
+{% endblock %}

@@ -55,6 +55,21 @@ admin_litespeedcache_stats:
         _legacy_link: AdminLiteSpeedCacheStats
 
 
+admin_litespeedcache_wizard:
+    path: /litespeedcache/wizard
+    methods: [GET]
+    defaults:
+        _controller: 'LiteSpeed\Cache\Controller\Admin\WizardController::indexAction'
+        _legacy_controller: AdminLiteSpeedCacheWizard
+        _legacy_link: AdminLiteSpeedCacheWizard
+
+admin_litespeedcache_wizard_apply:
+    path: /litespeedcache/wizard/apply
+    methods: [POST]
+    defaults:
+        _controller: 'LiteSpeed\Cache\Controller\Admin\WizardController::applyAction'
+        _legacy_controller: AdminLiteSpeedCacheWizard
+
 admin_litespeedcache_warmup:
     path: /litespeedcache/warmup
     methods: [GET, POST]

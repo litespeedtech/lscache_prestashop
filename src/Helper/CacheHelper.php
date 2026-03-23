@@ -244,6 +244,55 @@ class CacheHelper
         return false;
     }
 
+    public static function htAccessUpdateVaryCookies(string $loginCookie, string $varyCookies): bool
+    {
+        $htaccessPath = _PS_ROOT_DIR_ . '/.htaccess';
+        if (!is_file($htaccessPath) || !is_writable($htaccessPath)) {
+            return false;
+        }
+
+        $content = file_get_contents($htaccessPath);
+
+        // Remove existing LSCache vary cookie block
+        $content = preg_replace(
+            '/\n?# BEGIN LSCache Vary Cookie.*?# END LSCache Vary Cookie\n?/s',
+            '',
+            $content
+        );
+
+        // Build new block
+        $block = "\n# BEGIN LSCache Vary Cookie\n";
+        $block .= '<IfModule LiteSpeed>' . "\n";
+        $block .= 'CacheLookup on' . "\n";
+
+        if ($loginCookie !== '_lscache_vary') {
+            $block .= 'RewriteRule .* - [E="Cache-Vary:' . $loginCookie . '"]' . "\n";
+        }
+
+        if (!empty($varyCookies)) {
+            $cookies = preg_split("/\r?\n/", $varyCookies, -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($cookies as $cookie) {
+                $cookie = trim($cookie);
+                if ($cookie !== '') {
+                    $block .= 'RewriteRule .* - [E="Cache-Vary:' . $cookie . '"]' . "\n";
+                }
+            }
+        }
+
+        $block .= '</IfModule>' . "\n";
+        $block .= "# END LSCache Vary Cookie\n";
+
+        if (preg_match('/(<IfModule mod_rewrite\.c>)/i', $content, $m, PREG_OFFSET_CAPTURE)) {
+            $content = substr($content, 0, $m[0][1]) . $block . substr($content, $m[0][1]);
+        } else {
+            $content .= $block;
+        }
+
+        file_put_contents($htaccessPath, $content);
+
+        return true;
+    }
+
     public static function htAccessUpdate(bool $enableCache, bool $guestMode, bool $mobileView): bool
     {
         $path = _PS_ROOT_DIR_ . '/.htaccess';

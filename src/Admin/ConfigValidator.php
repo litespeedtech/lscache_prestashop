@@ -123,6 +123,31 @@ class ConfigValidator
 
                 return [$post, [], $post !== $orig ? self::SCOPE_ALL | self::PURGE_MUST : 0];
 
+            case Conf::CFG_LOGIN_COOKIE:
+                $post = trim((string) $post);
+                if ($post === '') {
+                    $post = '_lscache_vary';
+                }
+                if (!preg_match('/^[a-zA-Z0-9_]+$/', $post)) {
+                    return [(string) $orig, ['Only alphanumeric characters and underscores allowed.'], 0];
+                }
+
+                return [$post, [], $post !== $orig ? self::SCOPE_ALL | self::HTACCESS : 0];
+
+            case Conf::CFG_VARY_COOKIES:
+                $post = trim((string) $post);
+                if ($post !== '') {
+                    $lines = preg_split("/\r?\n/", $post, -1, PREG_SPLIT_NO_EMPTY);
+                    foreach ($lines as $line) {
+                        $line = trim($line);
+                        if ($line !== '' && !preg_match('/^[a-zA-Z0-9_]+$/', $line)) {
+                            return [(string) $orig, ['"' . htmlspecialchars($line) . '" contains invalid characters.'], 0];
+                        }
+                    }
+                }
+
+                return [$post, [], $post !== $orig ? self::SCOPE_ALL | self::HTACCESS : 0];
+
             case Conf::CFG_DEBUG_HEADER:
             case Conf::CFG_DEBUG:
                 $post = (int) $post;

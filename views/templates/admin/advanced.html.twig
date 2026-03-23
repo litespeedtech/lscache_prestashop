@@ -50,28 +50,6 @@
         </div>
       </div>
 
-      {# Instant Click #}
-      <div class="card mb-3">
-        <div class="card-header">
-          <h3 class="card-header-title">Instant Click</h3>
-        </div>
-        <div class="card-body">
-          <div class="form-group row">
-            <label class="form-control-label col-sm-3" for="instant_click">Enable Instant Click</label>
-            <div class="col-sm-9">
-              <div class="custom-control custom-switch">
-                <input type="hidden" name="instant_click" value="0">
-                <input type="checkbox" class="custom-control-input" id="instant_click" name="instant_click" value="1" {{ config.instant_click ? 'checked' : '' }}>
-                <label class="custom-control-label" for="instant_click">Preload pages when a visitor hovers over a link</label>
-              </div>
-              <small class="form-text text-muted">
-                When enabled, pages are preloaded in the background as soon as a visitor hovers over a link, making navigation feel instant.<br>
-                <span class="text-warning">This will generate extra requests to the server, which may increase server load.</span>
-              </small>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {# Submit #}
       <div class="card">

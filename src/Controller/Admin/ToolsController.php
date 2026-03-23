@@ -10,6 +10,7 @@ use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Config\CdnConfig;
 use LiteSpeed\Cache\Config\ExclusionsConfig;
 use LiteSpeed\Cache\Config\ObjConfig;
+use LiteSpeed\Cache\Config\WarmupConfig;
 use LiteSpeed\Cache\Helper\CacheHelper;
 use LiteSpeed\Cache\Helper\ObjectCacheActivator;
 use LiteSpeed\Cache\Module\TabManager;
@@ -646,7 +647,7 @@ class ToolsController extends FrameworkBundleAdminController
             'cdn' => json_decode(\Configuration::getGlobalValue(CdnConfig::ENTRY) ?: '{}', true),
             'object' => json_decode(\Configuration::getGlobalValue(ObjConfig::ENTRY) ?: '{}', true),
             'exclusions' => json_decode(\Configuration::getGlobalValue(ExclusionsConfig::ENTRY) ?: '{}', true),
-            'advanced' => json_decode(\Configuration::getGlobalValue('LITESPEED_CACHE_ADVANCED') ?: '{}', true),
+            'warmup' => json_decode(\Configuration::getGlobalValue(WarmupConfig::ENTRY) ?: '{}', true),
             'bypass' => (int) \Configuration::getGlobalValue('LITESPEED_CACHE_BYPASS'),
         ];
 
@@ -686,6 +687,19 @@ class ToolsController extends FrameworkBundleAdminController
             return;
         }
 
+        // Backwards compat: migrate old 'advanced' key into 'global'
+        if (isset($data['advanced']) && is_array($data['advanced'])) {
+            if (!isset($data['global'])) {
+                $data['global'] = [];
+            }
+            if (isset($data['advanced']['login_cookie']) && !isset($data['global']['login_cookie'])) {
+                $data['global']['login_cookie'] = $data['advanced']['login_cookie'];
+            }
+            if (isset($data['advanced']['vary_cookies']) && !isset($data['global']['vary_cookies'])) {
+                $data['global']['vary_cookies'] = $data['advanced']['vary_cookies'];
+            }
+        }
+
         if (isset($data['global'])) {
             \Configuration::updateGlobalValue(Conf::ENTRY_ALL, json_encode($data['global']));
         }
@@ -704,8 +718,9 @@ class ToolsController extends FrameworkBundleAdminController
         if (isset($data['exclusions'])) {
             \Configuration::updateGlobalValue(ExclusionsConfig::ENTRY, json_encode($data['exclusions']));
         }
-        if (isset($data['advanced'])) {
-            \Configuration::updateGlobalValue('LITESPEED_CACHE_ADVANCED', json_encode($data['advanced']));
+        if (isset($data['warmup'])) {
+            \Configuration::updateGlobalValue(WarmupConfig::ENTRY, json_encode($data['warmup']));
+            WarmupConfig::reset();
         }
         if (isset($data['bypass'])) {
             \Configuration::updateGlobalValue('LITESPEED_CACHE_BYPASS', (int) $data['bypass']);
@@ -716,13 +731,17 @@ class ToolsController extends FrameworkBundleAdminController
         ObjConfig::reset();
         ExclusionsConfig::reset();
 
-        // Regenerate .htaccess if cache settings changed
+        // Regenerate .htaccess
         if (isset($data['global'])) {
             $global = $data['global'];
             CacheHelper::htAccessUpdate(
                 (bool) ($global[Conf::CFG_ENABLED] ?? false),
                 ($global[Conf::CFG_GUESTMODE] ?? 0) == 1,
                 (bool) ($global[Conf::CFG_DIFFMOBILE] ?? false)
+            );
+            CacheHelper::htAccessUpdateVaryCookies(
+                $global[Conf::CFG_LOGIN_COOKIE] ?? '_lscache_vary',
+                $global[Conf::CFG_VARY_COOKIES] ?? ''
             );
         }
 
@@ -755,14 +774,14 @@ class ToolsController extends FrameworkBundleAdminController
         \Configuration::updateGlobalValue(CdnConfig::ENTRY, json_encode(CdnConfig::getDefaults()));
         \Configuration::updateGlobalValue(ObjConfig::ENTRY, json_encode(ObjConfig::getDefaults()));
         \Configuration::updateGlobalValue(ExclusionsConfig::ENTRY, json_encode(ExclusionsConfig::getDefaults()));
-        \Configuration::updateGlobalValue('LITESPEED_CACHE_ADVANCED', json_encode([
-            'login_cookie' => '_lscache_vary', 'vary_cookies' => '', 'instant_click' => 0,
-        ]));
+        \Configuration::updateGlobalValue(WarmupConfig::ENTRY, json_encode(WarmupConfig::getDefaults()));
+        \Configuration::deleteByName('LITESPEED_CACHE_ADVANCED');
         \Configuration::updateGlobalValue('LITESPEED_CACHE_BYPASS', 0);
 
         CdnConfig::reset();
         ObjConfig::reset();
         ExclusionsConfig::reset();
+        WarmupConfig::reset();
 
         \PrestaShopLogger::addLog('All settings reset to defaults', 2, null, 'LiteSpeedCache', 0, true);
         $this->addFlash('success', $this->trans('All settings have been reset to defaults.', 'Modules.Litespeedcache.Admin'));

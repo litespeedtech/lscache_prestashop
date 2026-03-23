@@ -41,9 +41,13 @@ class CacheController extends FrameworkBundleAdminController
             return $this->redirectToRoute('admin_litespeedcache_cache_settings');
         }
 
+        // Auto-detect recommended vary bypass contexts
+        $suggestedVary = $this->detectVaryContexts();
+
         return $this->renderWithNavPills('@Modules/litespeedcache/views/templates/admin/cache.html.twig', [
             'values' => $currentValues,
             'disabled' => $disabled,
+            'suggestedVary' => $suggestedVary,
         ], $request);
     }
 
@@ -56,7 +60,7 @@ class CacheController extends FrameworkBundleAdminController
 
         // Global fields
         $globalFields = [
-            'enable', 'diff_mobile', 'guestmode', 'nocache_vars', 'nocache_urls', 'vary_bypass',
+            'enable', 'diff_mobile', 'guestmode', 'vary_bypass', 'login_cookie', 'vary_cookies',
             'flush_prodcat', 'flush_all', 'flush_home', 'flush_homeinput',
         ];
 
@@ -117,6 +121,11 @@ class CacheController extends FrameworkBundleAdminController
             } else {
                 $this->addFlash('warning', $this->trans('Failed to update .htaccess. Please update manually.', $d));
             }
+
+            // Vary cookie .htaccess update
+            $loginCookie = $currentValues['login_cookie'] ?? '_lscache_vary';
+            $varyCookies = $currentValues['vary_cookies'] ?? '';
+            CacheHelper::htAccessUpdateVaryCookies($loginCookie, $varyCookies);
         }
 
         // Purge if needed
@@ -133,5 +142,31 @@ class CacheController extends FrameworkBundleAdminController
 
         $this->addFlash('success', $this->trans('Settings saved.', $d));
         \PrestaShopLogger::addLog('Cache settings updated', 1, null, 'LiteSpeedCache', 0, true);
+    }
+
+    private function detectVaryContexts(): array
+    {
+        $contexts = [];
+
+        // Multiple languages active
+        $languages = \Language::getLanguages(true);
+        if (count($languages) > 1) {
+            $contexts['lang'] = count($languages) . ' languages active';
+        }
+
+        // Multiple currencies active
+        $currencies = \Currency::getCurrencies(false, true);
+        if (count($currencies) > 1) {
+            $contexts['curr'] = count($currencies) . ' currencies active';
+        }
+
+        // Multistore / geolocation
+        if (\Shop::isFeatureActive()) {
+            $contexts['ctry'] = 'Multistore active';
+        } elseif (\Configuration::get('PS_GEOLOCATION_ENABLED')) {
+            $contexts['ctry'] = 'Geolocation enabled';
+        }
+
+        return $contexts;
     }
 }
