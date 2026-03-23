@@ -2,6 +2,8 @@
 /**
  * LiteSpeed Cache for PrestaShop — Redis object cache driver.
  *
+ * @author   LiteSpeed Technologies
+ *
  * Namespaced class loaded by the Cache.php override when
  * _PS_CACHING_SYSTEM_ === 'CacheRedis'. The override loads the module's
  * vendor/autoload.php which registers this PSR-4 namespace.

@@ -1,6 +1,9 @@
 <?php
 /**
  * LiteSpeed Cache for Prestashop — backward-compatibility shim.
+ *
+ * @author   LiteSpeed Technologies
+ *
  * The real implementation is in LiteSpeed\Cache\Integration\Integration.
  * This file exists only so third-party integrations extending LscIntegration continue to work.
  *

@@ -2,6 +2,8 @@
 /**
  * LiteSpeed Cache — Cache override (PS 8 / PS 9 compatible).
  *
+ * @author   LiteSpeed Technologies
+ *
  * When _PS_CACHING_SYSTEM_ is 'CacheRedis', loads the module's Composer
  * autoloader and instantiates the namespaced Redis driver. All other
  * caching systems fall through to the parent implementation.

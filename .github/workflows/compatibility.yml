@@ -111,6 +111,8 @@ jobs:
               require 'vendor/autoload.php';
               \$loader = new \Twig\Loader\ArrayLoader(['test' => file_get_contents('$f')]);
               \$twig = new \Twig\Environment(\$loader);
+              \$twig->addFunction(new \Twig\TwigFunction('path', function() { return ''; }));
+              \$twig->addFunction(new \Twig\TwigFunction('url', function() { return ''; }));
               try {
                 \$twig->parse(\$twig->tokenize(new \Twig\Source(file_get_contents('$f'), '$f')));
                 echo 'OK: $f' . PHP_EOL;
