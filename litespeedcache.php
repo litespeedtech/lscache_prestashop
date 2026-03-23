@@ -484,14 +484,22 @@ class LiteSpeedCache extends Module
     // ---- ESI static wrappers (called from Hook.php / Media.php overrides) ------
 
     /** @return string|false */
-    public static function injectRenderWidget($module, string $hook_name, $params = false)
+    public static function injectRenderWidget($module, ?string $hook_name, $params = false)
     {
+        if ($hook_name === null) {
+            return false;
+        }
+
         return self::myInstance()->esiRenderer()->injectRenderWidget($module, $hook_name, $params);
     }
 
     /** @return string|false */
-    public static function injectCallHook($module, string $method, $params = false)
+    public static function injectCallHook($module, ?string $method, $params = false)
     {
+        if ($method === null) {
+            return false;
+        }
+
         return self::myInstance()->esiRenderer()->injectCallHook($module, $method, $params);
     }
 
