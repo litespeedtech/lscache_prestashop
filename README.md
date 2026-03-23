@@ -6,8 +6,8 @@ Full Page Cache module for PrestaShop running on LiteSpeed Web Server. Saves and
 
 | Component | Version |
 |---|---|
-| PHP | >= 8.1 |
-| PrestaShop | 8.x / 9.x |
+| PHP | >= 7.4 |
+| PrestaShop | 1.7.8 / 8.x / 9.x |
 | Web Server | LiteSpeed Enterprise or OpenLiteSpeed |
 
 ## Installation
@@ -34,6 +34,7 @@ The module includes a guided wizard that configures the cache based on your stor
 - Full page cache with automatic purge on content changes
 - Setup Wizard for guided configuration
 - Edge Side Includes (ESI) for per-user dynamic blocks (cart, account)
+- Automatic product page purge on cart changes (stock/availability sync)
 - Multi-store, multi-language, multi-currency and geolocation support
 - Separate mobile view caching
 - Tag-based purge (products, categories, CMS, prices, manufacturers, suppliers)
@@ -44,9 +45,9 @@ The module includes a guided wizard that configures the cache based on your stor
 - Cache warmup with concurrent crawling and performance profiles (Low/Medium/High)
 - Server load throttling for crawl operations
 - Mobile cache warmup
-- Import/export configuration
+- Import/export full configuration
 - Debug headers and logging
-- PrestaShop 9 compatible
+- Compatible with PrestaShop 1.7.8, 8.x and 9.x
 
 ## Architecture
 
@@ -73,6 +74,12 @@ src/
 ├── Service/Esi/            EsiMarkerManager, EsiOutputProcessor, EsiRenderer
 ├── Update/                 ModuleUpdater
 └── Vary/                   VaryCookie
+integrations/
+├── LscIntegration.php      Base class for ESI integrations
+├── core/                   Internal ESI blocks (Token, Env)
+├── prestashop/             Native PS modules (CustomerSignIn, Shoppingcart, EmailAlerts)
+├── modules/                Third-party modules (GdprPro, Pscartdropdown)
+└── themes/                 Theme integrations (Warehouse, Panda, Alysum)
 config/
 ├── routes.yml              30 admin routes
 └── services.yml            Symfony DI services
