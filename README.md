@@ -15,24 +15,38 @@ Full Page Cache module for PrestaShop running on LiteSpeed Web Server. Saves and
 1. Download `litespeedcache.zip` from the [latest release](https://github.com/ecomlabs-es/lscache_prestashop/releases/latest).
 2. In PrestaShop Admin, go to **Modules > Module Manager** and click **Upload a Module**.
 3. Select the zip file.
-4. Navigate to **LiteSpeed Cache > Settings** and set **Enable LiteSpeed Cache** to `Yes`.
+4. Click **Configure** to launch the Setup Wizard.
 
 > Make sure your LiteSpeed license includes the LSCache module. A free 2-CPU trial license is available for 15 days.
+
+## Setup Wizard
+
+The module includes a guided wizard that configures the cache based on your store:
+
+1. **Your Store** — Auto-detects languages, currencies, multistore. Asks about hosting type, mobile theme, customer group pricing, catalog update frequency.
+2. **Purge** — Configures automatic cache purge on orders and content changes.
+3. **Object Cache** — Detects Redis and enables object caching if available.
+4. **CDN** — Cloudflare integration with email, API key and auto-detected domain.
+5. **Summary** — Review and apply configuration.
 
 ## Features
 
 - Full page cache with automatic purge on content changes
+- Setup Wizard for guided configuration
 - Edge Side Includes (ESI) for per-user dynamic blocks (cart, account)
 - Multi-store, multi-language, multi-currency and geolocation support
 - Separate mobile view caching
 - Tag-based purge (products, categories, CMS, prices, manufacturers, suppliers)
-- Redis object cache backend
+- Redis object cache backend with auto-detection
 - Cloudflare CDN integration
 - Configurable TTL per content type
-- Cache exclusions by URL, query string or customer group
-- Cache warmup via CLI and admin UI
+- Cache exclusions by URL, query string, cookie, user agent or customer group
+- Cache warmup with concurrent crawling and performance profiles (Low/Medium/High)
+- Server load throttling for crawl operations
+- Mobile cache warmup
 - Import/export configuration
 - Debug headers and logging
+- PrestaShop 9 compatible
 
 ## Architecture
 
@@ -40,10 +54,10 @@ Full Page Cache module for PrestaShop running on LiteSpeed Web Server. Saves and
 litespeedcache.php          Main module class (hooks, install/uninstall)
 src/
 ├── Admin/                  ConfigValidator
-├── Cache/                  Redis object cache integration
-├── Command/                WarmupLscacheCommand (Symfony console)
-├── Config/                 CacheConfig, CdnConfig, ObjConfig, ExclusionsConfig
-├── Controller/Admin/       14 Symfony admin controllers
+├── Cache/                  CacheRedis (object cache driver)
+├── Command/                WarmupLscacheCommand (CLI: litespeedcache:warmup)
+├── Config/                 CacheConfig, CdnConfig, ObjConfig, ExclusionsConfig, WarmupConfig
+├── Controller/Admin/       15 Symfony admin controllers + WizardController
 ├── Core/                   CacheManager, CacheState
 ├── Esi/                    EsiItem, EsiModuleConfig
 ├── Form/                   CachingTypeExtension, ImportSettingsType
@@ -60,39 +74,34 @@ src/
 ├── Update/                 ModuleUpdater
 └── Vary/                   VaryCookie
 config/
-├── routes.yml              28 admin routes
+├── routes.yml              30 admin routes
 └── services.yml            Symfony DI services
 views/templates/admin/      Twig templates for admin UI
 ```
-
-## Hooks
-
-The module registers 54 hooks:
-
-| Category | Hooks |
-|---|---|
-| **Product** | actionProductAdd, actionProductSave, actionProductUpdate, actionProductDelete, actionProductAttributeDelete, actionUpdateQuantity, actionProductSearchAfter |
-| **Category** | actionCategoryUpdate, actionCategoryAdd, actionCategoryDelete |
-| **CMS** | actionObjectCmsAddAfter, actionObjectCmsUpdateAfter, actionObjectCmsDeleteAfter |
-| **Pricing** | actionObjectSpecificPrice\*, actionObjectCartRule\*, actionObjectSpecificPriceRule\* (add/update/delete) |
-| **Auth** | actionAuthentication, actionCustomerLogoutAfter, actionCustomerAccountAdd |
-| **Catalog** | actionObjectSupplier\*, actionObjectManufacturer\*, actionObjectStoreUpdateAfter |
-| **Display** | displayFooterAfter, overrideLayoutTemplate, DisplayOverrideTemplate, displayOrderConfirmation, displayBackOfficeHeader |
-| **Filter** | filterCategoryContent, filterProductContent, filterCmsContent, filterCmsCategoryContent |
-| **Core** | actionDispatcher, actionWatermark, actionHtaccessCreate, actionClearCompileCache, actionClearSf2Cache |
-| **Custom** | litespeedCachePurge, litespeedNotCacheable, litespeedEsiBegin, litespeedEsiEnd, litespeedCacheProductUpdate |
 
 ## CLI Commands
 
 Cache warmup from the PrestaShop root directory:
 
 ```bash
-# Warm up all pages from sitemap
-php bin/console litespeedcache:warmup https://example.com/sitemap.xml
+# Warm up all pages from sitemap (uses saved config: concurrency, delay, timeout, load limit)
+php bin/console litespeedcache:warmup https://example.com/1_index_sitemap.xml
 
-# Warm up with mobile user-agent (when separate mobile view is enabled)
-php bin/console litespeedcache:warmup https://example.com/sitemap.xml iphone
+# Override settings for a single run
+php bin/console litespeedcache:warmup https://example.com/1_index_sitemap.xml --concurrency=8 --delay=0
+
+# Include mobile cache warmup
+php bin/console litespeedcache:warmup https://example.com/1_index_sitemap.xml --mobile
 ```
+
+### Cron setup
+
+```bash
+# Run daily at 3 AM
+0 3 * * * cd /var/www/html && php bin/console litespeedcache:warmup https://example.com/1_index_sitemap.xml
+```
+
+The command reads the crawler configuration (concurrency, delay, timeout, load limit, mobile) from the module settings automatically.
 
 ## Testing Cache Headers
 
@@ -110,7 +119,7 @@ Use your browser's developer tools (Network tab) to check response headers:
 # Install dev dependencies
 composer install
 
-# Run tests
+# Run tests (61 tests, 103 assertions)
 vendor/bin/phpunit --testdox
 
 # Check coding standards
@@ -122,9 +131,9 @@ composer cs-fix
 
 ## CI/CD
 
-The repository includes GitHub Actions workflows:
+GitHub Actions workflows:
 
-- **compatibility.yml** — PHP lint (8.1/8.2/8.3), PHP CS Fixer, composer validate, PHPUnit, Twig lint, integration tests on PS8 + PS9
+- **compatibility.yml** — PHP Lint (8.1/8.2/8.3), PHP CS Fixer, Composer Validate, Unit Tests (PHPUnit), Twig Lint
 - **release.yml** — Builds `litespeedcache.zip` and creates a GitHub release on tag push (`v*`)
 
 ## License
