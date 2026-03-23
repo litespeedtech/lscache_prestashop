@@ -1,6 +1,6 @@
 <?php
 
-namespace LiteSpeed\Cache\Tests\Unit\Controller\Admin;
+namespace LiteSpeed\Cache\Tests\Unit\Helper;
 
 if (!defined('_PS_VERSION_')) {
     exit;
