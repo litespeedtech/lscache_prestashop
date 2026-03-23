@@ -133,7 +133,7 @@ class LscPkAmp extends LscIntegration
             case 'supplier':
                 $id = Tools::getValue('id_supplier');
                 if ($id) {
-                    $tag = Conf::TAG_PREFIX_SUPPLIER . $id;
+                    return Conf::TAG_PREFIX_SUPPLIER . $id;
                 }
                 break;
             case 'cms':

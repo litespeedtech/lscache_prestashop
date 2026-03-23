@@ -18,53 +18,48 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-// for integration with PrestaChamps gdprpro module
-
-use LiteSpeed\Cache\Config\CacheConfig as Conf;
 use LiteSpeed\Cache\Esi\EsiModuleConfig as EsiConf;
 use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
 
-class LscGdprPro extends LscIntegration
+class LscIqitCompare extends LscIntegration
 {
-    public const NAME = 'gdprpro';
+    public const NAME = 'iqitcompare';
 
     protected function init()
     {
         $confData = [
             EsiConf::FLD_PRIV => 1,
-            EsiConf::FLD_TAG => 'gdprpro',
-            EsiConf::FLD_PURGE_CONTROLLERS => 'GdprProStoreCookieModuleFrontController',
+            EsiConf::FLD_TAG => 'compare',
+            EsiConf::FLD_PURGE_CONTROLLERS => 'iqitcompareactionsModuleFrontController',
             EsiConf::FLD_ASVAR => 1,
         ];
         $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);
         $this->registerEsiModule();
-        Conf::getInstance()->overrideGuestMode();
-        $this->addJsDef('gdprSettings:showWindow', $this);
+        $this->addJsDef('iqitcompare:nbProducts', $this);
 
         return true;
     }
 
-    protected function JSKeyProcess($jskey)
+    protected function jsKeyProcess($jskey)
     {
-        // LSLog::log(__FUNCTION__ . 'GDPR JSKeyProcess key ' . $jskey, LSLog::LEVEL_TEMPORARY);
-        if ($jskey != 'gdprSettings:showWindow') {
+        if ($jskey != 'iqitcompare:nbProducts') {
             // something wrong, should not happen
             LSLog::log(__FUNCTION__ . ' unexpected key ' . $jskey, LSLog::LEVEL_EXCEPTION);
 
             return '';
         }
-        // LSLog::log(__FUNCTION__ . 'GDPR JSKeyProcess context cookie  gdpr_windows_was_opened ' . print_r(Context::getContext()->cookie, 1));
-        $data = !Context::getContext()->cookie->gdpr_windows_was_opened;
+        $cookie = Context::getContext()->cookie;
+        $data = ($cookie && isset($cookie->iqitCompareNb)) ? (int) $cookie->iqitCompareNb : 0;
 
         return json_encode($data);
     }
 }
 
-LscGdprPro::register();
+LscIqitCompare::register();

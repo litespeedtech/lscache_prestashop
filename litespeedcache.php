@@ -102,7 +102,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache';
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '2.0.8';
+        $this->version = '2.0.9';
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
@@ -148,7 +148,7 @@ class LiteSpeedCache extends Module
         }
 
         if (self::isActiveForUser()) {
-            require_once _PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php';
+            require_once _PS_MODULE_DIR_ . 'litespeedcache/integrations/lsc_include.php';
             Hook::exec('actionLiteSpeedCacheInitThirdParty');
         }
     }

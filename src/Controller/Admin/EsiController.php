@@ -29,7 +29,7 @@ class EsiController extends FrameworkBundleAdminController
         $config = Conf::getInstance();
         $config->get(Conf::ENTRY_MODULE); // force CacheConfig::init() before lsc_include.php registers built-ins
 
-        include_once _PS_MODULE_DIR_ . 'litespeedcache/thirdparty/lsc_include.php';
+        include_once _PS_MODULE_DIR_ . 'litespeedcache/integrations/lsc_include.php';
         \Hook::exec('actionLiteSpeedCacheInitThirdParty');
 
         $data = $config->get(Conf::ENTRY_MODULE);

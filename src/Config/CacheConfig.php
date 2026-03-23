@@ -585,9 +585,8 @@ class CacheConfig
             }
         }
 
-        if (empty($conf['priv']) && empty($conf['pub'])) {
-            $this->advancedCheckPurgeController($controller_class, $conf);
-        }
+        // Always run advanced check (e.g. CartController needs to purge product pages)
+        $this->advancedCheckPurgeController($controller_class, $conf);
 
         if (!empty($conf['priv']) || !empty($conf['pub'])) {
             return $conf;
@@ -602,6 +601,14 @@ class CacheConfig
             if (\Tools::isSubmit('deleteSpecificPrice') || \Tools::isSubmit('submitSpecificPricePriorities')) {
                 $id_product = \Tools::getValue('id_product');
                 \Hook::exec('litespeedCacheProductUpdate', ['id_product' => $id_product]);
+            }
+        }
+
+        // CartController: purge the product page so next visit reflects cart/stock state
+        if (strtolower($controller_class) === 'cartcontroller') {
+            $idProduct = (int) \Tools::getValue('id_product');
+            if ($idProduct > 0) {
+                $conf['pub'][] = self::TAG_PREFIX_PRODUCT . $idProduct;
             }
         }
     }

@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @author   LiteSpeed Technologies
- * @copyright  Copyright (c) 2017-2018 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 if (!defined('_PS_VERSION_')) {
@@ -26,39 +26,24 @@ if (!defined('_PS_VERSION_')) {
 }
 
 use LiteSpeed\Cache\Esi\EsiModuleConfig as EsiConf;
-use LiteSpeed\Cache\Logger\CacheLogger as LSLog;
 
-class LscIqitCompare extends LscIntegration
+class LscEmailAlerts extends LscIntegration
 {
-    public const NAME = 'iqitcompare';
+    public const NAME = 'ps_emailalerts';
 
     protected function init()
     {
         $confData = [
             EsiConf::FLD_PRIV => 1,
-            EsiConf::FLD_TAG => 'compare',
-            EsiConf::FLD_PURGE_CONTROLLERS => 'iqitcompareactionsModuleFrontController',
-            EsiConf::FLD_ASVAR => 1,
+            EsiConf::FLD_HOOK_METHODS => 'hookDisplayProductAdditionalInfo',
+            EsiConf::FLD_TEMPLATE_ARGUMENT => 'product.id_product,product.id_product_attribute',
+            EsiConf::FLD_TAG => 'emailalerts',
+            EsiConf::FLD_PURGE_CONTROLLERS => 'CartController',
         ];
-        $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_INTEGRATED, $confData);
-        $this->registerEsiModule();
-        $this->addJsDef('iqitcompare:nbProducts', $this);
+        $this->esiConf = new EsiConf(self::NAME, EsiConf::TYPE_BUILTIN, $confData);
 
-        return true;
-    }
-
-    protected function JSKeyProcess($jskey)
-    {
-        if ($jskey != 'iqitcompare:nbProducts') {
-            // something wrong, should not happen
-            LSLog::log(__FUNCTION__ . ' unexpected key ' . $jskey, LSLog::LEVEL_EXCEPTION);
-
-            return '';
-        }
-        $data = (int) Context::getContext()->cookie->iqitCompareNb;
-
-        return json_encode($data);
+        return $this->registerEsiModule();
     }
 }
 
-LscIqitCompare::register();
+LscEmailAlerts::register();
