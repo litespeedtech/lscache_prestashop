@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * LiteSpeed Cache for Prestashop.
  *
@@ -9,6 +6,8 @@ declare(strict_types=1);
  * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license    https://opensource.org/licenses/GPL-3.0
  */
+
+declare(strict_types=1);
 
 namespace LiteSpeed\Cache\Service\Esi;
 

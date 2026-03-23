@@ -215,5 +215,9 @@ if (!class_exists('Symfony\Bundle\FrameworkBundle\Controller\AbstractController'
     }');
 }
 
+if (!class_exists('PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController')) {
+    eval('namespace PrestaShopBundle\Controller\Admin; class FrameworkBundleAdminController extends \Symfony\Bundle\FrameworkBundle\Controller\AbstractController {}');
+}
+
 // Autoloader
 require_once __DIR__ . '/../vendor/autoload.php';

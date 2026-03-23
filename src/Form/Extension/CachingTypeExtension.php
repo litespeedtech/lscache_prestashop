@@ -3,6 +3,8 @@
  * LiteSpeed Cache — Adds Redis option to the Performance > Caching form.
  *
  * @author   LiteSpeed Technologies
+ * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @license     https://opensource.org/licenses/GPL-3.0
  *
  * Standard Symfony Form Extension: extends the core CachingType without
  * modifying core files. Registered via services.yml tag.

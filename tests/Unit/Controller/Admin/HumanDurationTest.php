@@ -6,7 +6,7 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-use LiteSpeed\Cache\Controller\Admin\TtlController;
+use LiteSpeed\Cache\Helper\CacheHelper;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -15,7 +15,7 @@ class HumanDurationTest extends TestCase
     #[DataProvider('durationProvider')]
     public function testHumanDurationReturnsExpectedString(int $seconds, string $expected): void
     {
-        $this->assertSame($expected, TtlController::humanDuration($seconds));
+        $this->assertSame($expected, CacheHelper::humanDuration($seconds));
     }
 
     public static function durationProvider(): array

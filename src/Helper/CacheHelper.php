@@ -424,4 +424,25 @@ class CacheHelper
         return (isset($_SERVER['X-LSCACHE']) && $_SERVER['X-LSCACHE'])
             || (isset($_SERVER['HTTP_X_LSCACHE']) && $_SERVER['HTTP_X_LSCACHE']);
     }
+
+    public static function humanDuration(int $seconds): string
+    {
+        if ($seconds <= 0) {
+            return 'disabled';
+        }
+        if ($seconds < 60) {
+            return $seconds . 's';
+        }
+        if ($seconds < 3600) {
+            return round($seconds / 60) . ' minutes';
+        }
+        if ($seconds < 86400) {
+            return round($seconds / 3600, 1) . ' hours';
+        }
+        if ($seconds < 604800) {
+            return round($seconds / 86400, 1) . ' days';
+        }
+
+        return round($seconds / 604800, 1) . ' weeks';
+    }
 }

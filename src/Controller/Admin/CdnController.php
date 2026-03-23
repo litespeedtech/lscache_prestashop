@@ -182,7 +182,7 @@ class CdnController extends FrameworkBundleAdminController
                 $this->addFlash('success', $this->trans('Cloudflare zone resolved: %s', 'Modules.Litespeedcache.Admin', [$zoneId]));
             } else {
                 $new[CdnConfig::CF_ZONE_ID] = '';
-                $this->addFlash('warning', $this->trans('Cloudflare zone not found for domain "%domain%". Check your API credentials and domain name.', ['%domain%' => $new[CdnConfig::CF_DOMAIN]], 'Modules.Litespeedcache.Admin'));
+                $this->addFlash('warning', $this->trans('Cloudflare zone not found for domain "%domain%". Check your API credentials and domain name.', 'Modules.Litespeedcache.Admin', ['%domain%' => $new[CdnConfig::CF_DOMAIN]]));
             }
         }
 

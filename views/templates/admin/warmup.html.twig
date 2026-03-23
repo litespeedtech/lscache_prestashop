@@ -295,7 +295,7 @@
       <div class="card-body">
         <form method="post" class="mb-3">
           <div class="input-group" style="max-width:600px;">
-            <input type="url" class="form-control" name="blacklist_url" placeholder="https://example.com/page-to-skip">
+            <input type="url" class="form-control" name="blacklist_url" placeholder="{{ sitemapUrl ? sitemapUrl|split('/')|slice(0,3)|join('/') ~ '/page-to-skip' : 'https://example.com/page-to-skip' }}">
             <div class="input-group-append">
               <button type="submit" name="blacklist_add" value="1" class="btn btn-outline-secondary">Add URL</button>
             </div>
@@ -335,15 +335,16 @@
       </div>
       <div class="card-body">
         <p class="text-muted mb-2">Schedule automatic cache warmup using a cron job:</p>
-        <div class="input-group mb-3" style="max-width:700px;">
+        <div class="input-group mb-3" style="max-width:900px;">
           <input type="text" class="form-control bg-dark text-light" style="font-family:monospace; font-size:13px;"
-            value="{{ cliCommand }} {{ sitemapUrl ? sitemapUrl : 'https://yoursite.com/sitemap.xml' }}" readonly id="cron-command">
+            value="{{ cliCommand }}" readonly id="cron-command">
           <div class="input-group-append">
-            <button type="button" class="btn btn-outline-secondary js-copy-text" data-text="{{ cliCommand }} {{ sitemapUrl ? sitemapUrl : 'https://yoursite.com/sitemap.xml' }}">Copy</button>
+            <button type="button" class="btn btn-outline-secondary js-copy-text" data-text="{{ cliCommand }}">Copy</button>
           </div>
         </div>
         <small class="form-text text-muted">
-          Add this command to your server's crontab. Example: <code>0 3 * * * {{ cliCommand }} https://yoursite.com/sitemap.xml</code> (runs daily at 3 AM).
+          Add this command to your server's crontab. Example: <code>0 3 * * * {{ cliCommand }}</code> (runs daily at 3 AM).
+          The command uses your saved crawler settings (concurrency, delay, timeout, load limit).
         </small>
       </div>
     </div>

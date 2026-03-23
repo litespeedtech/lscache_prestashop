@@ -3,6 +3,8 @@
  * LiteSpeed Cache — Cache override (PS 8 / PS 9 compatible).
  *
  * @author   LiteSpeed Technologies
+ * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @license     https://opensource.org/licenses/GPL-3.0
  *
  * When _PS_CACHING_SYSTEM_ is 'CacheRedis', loads the module's Composer
  * autoloader and instantiates the namespaced Redis driver. All other

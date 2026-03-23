@@ -1,7 +1,7 @@
 services:
     # Console command: cache warmup
     prestashop.module.litespeedcache.warmup:
-        class: LiteSpeed\Cache\Warmup
+        class: LiteSpeed\Cache\Command\WarmupLscacheCommand
         tags:
             - { name: 'console.command' }
 

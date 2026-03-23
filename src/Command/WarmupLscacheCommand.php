@@ -22,7 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class WarmupLscacheCommand extends Command
 {
-    protected static $defaultName = 'litespeedcache:warmup:lscache';
+    protected static $defaultName = 'litespeedcache:warmup';
 
     protected function configure(): void
     {

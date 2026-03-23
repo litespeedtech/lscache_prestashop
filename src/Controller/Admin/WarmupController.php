@@ -127,7 +127,7 @@ class WarmupController extends FrameworkBundleAdminController
             'sitemapUrl' => \Configuration::getGlobalValue('LITESPEED_WARMUP_SITEMAP') ?: $this->detectSitemapUrl(),
             'shopUrl' => \Configuration::getGlobalValue('LITESPEED_WARMUP_SHOP_URL') ?: '',
             'userAgent' => \Configuration::getGlobalValue('LITESPEED_WARMUP_USERAGENT') ?: '',
-            'cliCommand' => 'php bin/console litespeedcache:warmup',
+            'cliCommand' => $this->buildCliCommand(),
         ], $request);
     }
 
@@ -319,6 +319,13 @@ class WarmupController extends FrameworkBundleAdminController
         }
 
         return '';
+    }
+
+    private function buildCliCommand(): string
+    {
+        $sitemap = \Configuration::getGlobalValue('LITESPEED_WARMUP_SITEMAP') ?: $this->detectSitemapUrl();
+
+        return 'php bin/console litespeedcache:warmup ' . ($sitemap ?: 'https://yoursite.com/sitemap.xml');
     }
 
     private function detectSitemapUrl(): string

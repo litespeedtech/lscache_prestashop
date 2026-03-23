@@ -3,6 +3,8 @@
  * LiteSpeed Cache for PrestaShop — Redis object cache driver.
  *
  * @author   LiteSpeed Technologies
+ * @copyright  Copyright (c) 2017-2024 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @license     https://opensource.org/licenses/GPL-3.0
  *
  * Namespaced class loaded by the Cache.php override when
  * _PS_CACHING_SYSTEM_ === 'CacheRedis'. The override loads the module's
