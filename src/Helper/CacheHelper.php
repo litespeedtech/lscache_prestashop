@@ -64,7 +64,8 @@ class CacheHelper
         }
     }
 
-    public static function getRelativeUri(string $url): string|false
+    /** @return string|false */
+    public static function getRelativeUri(string $url)
     {
         if (($pos0 = strpos($url, '://')) !== false) {
             $pos0 += 4;

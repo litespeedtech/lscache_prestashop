@@ -522,7 +522,7 @@ class ToolsController extends FrameworkBundleAdminController
         string $comments,
         array $report,
         array $phpInfo,
-        array $moduleList,
+        array $moduleList
     ): string {
         $moduleVersion = \Module::getInstanceByName('litespeedcache')->version ?? '-';
         $date = date('d M Y, H:i');
