@@ -65,7 +65,7 @@ class ObjectCache
 
                 $keys = 0;
                 foreach ($ksInfo as $k => $v) {
-                    if (str_starts_with((string) $k, 'db') && is_string($v) && preg_match('/keys=(\d+)/', $v, $m)) {
+                    if (strpos((string) $k, 'db') === 0 && is_string($v) && preg_match('/keys=(\d+)/', $v, $m)) {
                         $keys += (int) $m[1];
                     }
                 }

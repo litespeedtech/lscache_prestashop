@@ -14,7 +14,7 @@
             <form method="post">
               <input type="hidden" name="cleanup_action" value="{{ item.key }}">
               <button type="{{ item.count > 0 ? 'submit' : 'button' }}" class="btn btn-block text-left p-0 border-0" style="background:none;" {{ item.count > 0 ? 'onclick=return confirm(\'' ~ item.title ~ ': Are you sure?\');' : 'disabled' }}>
-                <div class="d-flex align-items-start p-3 rounded h-100" style="background:#f8f9fa; border:1px solid #dee2e6; min-height:90px; position:relative;">
+                <div class="d-flex align-items-start p-3 rounded h-100 w-100" style="background:#f8f9fa; border:1px solid #dee2e6; min-height:90px; position:relative;">
                   <i class="material-icons mr-3" style="font-size:40px; color:#adb5bd;">{{ item.icon }}</i>
                   <div class="flex-grow-1">
                     <div style="font-weight:600; color:#343a40; font-size:14px;">

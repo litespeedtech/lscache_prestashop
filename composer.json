@@ -6,7 +6,7 @@
     "author": "LiteSpeedTech",
     "license": "GPL-3.0+",
     "require": {
-        "php": ">=8.1"
+        "php": ">=7.4"
     },
     "autoload": {
         "psr-4": {

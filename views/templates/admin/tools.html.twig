@@ -26,7 +26,7 @@
             <div class="col-lg-3 col-md-4 col-sm-6 p-2">
               {% set disabled = item.enabled is defined and not item.enabled %}
               <a href="{{ disabled ? '#' : path('admin_litespeedcache_tools_purge', { purge_action: item.action }) }}" class="text-decoration-none" {% if not disabled %}onclick="return confirm('{{ item.title }}?');"{% endif %}>
-                <div class="d-flex align-items-start p-3 rounded h-100" style="background:#f8f9fa; border:1px solid #dee2e6; min-height:90px; {{ disabled ? 'opacity:0.4; pointer-events:none;' : '' }}">
+                <div class="d-flex align-items-start p-3 rounded h-100 w-100" style="background:#f8f9fa; border:1px solid #dee2e6; min-height:90px; {{ disabled ? 'opacity:0.4; pointer-events:none;' : '' }}">
                   <i class="material-icons mr-3" style="font-size:40px; color:#adb5bd;">{{ item.icon }}</i>
                   <div class="flex-grow-1">
                     <div style="font-weight:600; color:#343a40; font-size:14px;">{{ item.title }}</div>
@@ -39,7 +39,7 @@
 
             <div class="col-lg-3 col-md-4 col-sm-6 p-2">
               <a href="{{ path('admin_litespeedcache_tools_purge', { purge_action: 'purge_all' }) }}" class="text-decoration-none" onclick="return confirm('Purge All?');">
-                <div class="d-flex align-items-start p-3 rounded h-100" style="background:#fff3e0; border:1px solid #f0ad4e; min-height:90px;">
+                <div class="d-flex align-items-start p-3 rounded h-100 w-100" style="background:#fff3e0; border:1px solid #f0ad4e; min-height:90px;">
                   <i class="material-icons mr-3" style="font-size:40px; color:#f0ad4e;">delete_sweep</i>
                   <div class="flex-grow-1">
                     <div style="font-weight:600; color:#e65100; font-size:14px;">Purge All</div>
@@ -51,7 +51,7 @@
             {% if shopLevel != 1 %}
             <div class="col-lg-3 col-md-4 col-sm-6 p-2">
               <a href="{{ path('admin_litespeedcache_tools_purge', { purge_action: 'flush_all' }) }}" class="text-decoration-none" onclick="return confirm('This will flush the ENTIRE cache storage including other applications. Are you sure?');">
-                <div class="d-flex align-items-start p-3 rounded h-100" style="background:#fce4ec; border:1px solid #e84e6a; min-height:90px;">
+                <div class="d-flex align-items-start p-3 rounded h-100 w-100" style="background:#fce4ec; border:1px solid #e84e6a; min-height:90px;">
                   <i class="material-icons mr-3" style="font-size:40px; color:#e84e6a;">warning</i>
                   <div class="flex-grow-1">
                     <div style="font-weight:600; color:#c62828; font-size:14px;">Flush Entire Cache</div>

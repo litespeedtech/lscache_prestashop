@@ -102,7 +102,7 @@ class LiteSpeedCache extends Module
         $this->name = 'litespeedcache';
         $this->tab = 'administration';
         $this->author = 'LiteSpeedTech';
-        $this->version = '2.0.9';
+        $this->version = '2.1.0';
         $this->need_instance = 0;
         $this->module_key = '2a93f81de38cad872010f09589c279ba';
 
@@ -465,17 +465,34 @@ class LiteSpeedCache extends Module
     {
         static $handlers = [];
         if (!isset($handlers[$key])) {
-            $handlers[$key] = match ($key) {
-                'product' => new ProductHookHandler($this->cache),
-                'category' => new CategoryHookHandler($this->cache),
-                'cms' => new CmsHookHandler($this->cache),
-                'pricing' => new PricingHookHandler($this->cache),
-                'auth' => new AuthHookHandler($this->cache),
-                'order' => new OrderHookHandler($this->cache),
-                'catalog' => new CatalogEntitiesHookHandler($this->cache),
-                'cacheHook' => $this->cacheHook(),
-                default => throw new LogicException("Unknown handler key: $key"),
-            };
+            switch ($key) {
+                case 'product':
+                    $handlers[$key] = new ProductHookHandler($this->cache);
+                    break;
+                case 'category':
+                    $handlers[$key] = new CategoryHookHandler($this->cache);
+                    break;
+                case 'cms':
+                    $handlers[$key] = new CmsHookHandler($this->cache);
+                    break;
+                case 'pricing':
+                    $handlers[$key] = new PricingHookHandler($this->cache);
+                    break;
+                case 'auth':
+                    $handlers[$key] = new AuthHookHandler($this->cache);
+                    break;
+                case 'order':
+                    $handlers[$key] = new OrderHookHandler($this->cache);
+                    break;
+                case 'catalog':
+                    $handlers[$key] = new CatalogEntitiesHookHandler($this->cache);
+                    break;
+                case 'cacheHook':
+                    $handlers[$key] = $this->cacheHook();
+                    break;
+                default:
+                    throw new LogicException("Unknown handler key: $key");
+            }
         }
 
         return $handlers[$key];

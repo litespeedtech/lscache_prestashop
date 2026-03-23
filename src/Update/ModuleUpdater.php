@@ -95,7 +95,7 @@ class ModuleUpdater
             // Prefer attached zip asset over zipball
             if (!empty($release['assets'])) {
                 foreach ($release['assets'] as $asset) {
-                    if (str_ends_with($asset['name'] ?? '', '.zip')) {
+                    if (substr($asset['name'] ?? '', -4) === '.zip') {
                         $downloadUrl = $asset['browser_download_url'];
                         $isAsset = true;
                         break;
@@ -313,7 +313,7 @@ class ModuleUpdater
         // Detect root folder inside zip
         $rootPrefix = '';
         $firstEntry = $zip->getNameIndex(0);
-        if ($firstEntry && str_contains($firstEntry, '/')) {
+        if ($firstEntry && strpos($firstEntry, '/') !== false) {
             $rootPrefix = explode('/', $firstEntry)[0] . '/';
         }
 
@@ -336,7 +336,7 @@ class ModuleUpdater
 
             $targetPath = $this->modulePath . $relativePath;
 
-            if (str_ends_with($entryName, '/')) {
+            if (substr($entryName, -1) === '/') {
                 // Directory
                 if (!is_dir($targetPath)) {
                     mkdir($targetPath, 0755, true);
@@ -399,7 +399,7 @@ class ModuleUpdater
         foreach ($iterator as $item) {
             // Don't delete the backups directory reference or .git
             $rel = substr($item->getPathname(), strlen($this->modulePath));
-            if (str_starts_with($rel, '.git')) {
+            if (strpos($rel, '.git') === 0) {
                 continue;
             }
 

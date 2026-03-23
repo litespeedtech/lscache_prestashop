@@ -393,7 +393,7 @@ class Cloudflare
             foreach ($rulesets['result'] as $rs) {
                 if (!empty($rs['rules'])) {
                     foreach ($rs['rules'] as $rule) {
-                        if (str_contains($rule['description'] ?? '', 'PrestaShop')) {
+                        if (strpos($rule['description'] ?? '', 'PrestaShop') !== false) {
                             $this->request('DELETE', 'zones/' . $zoneId . '/rulesets/' . $rs['id'] . '/rules/' . $rule['id']);
                         }
                     }
@@ -425,7 +425,7 @@ class Cloudflare
                     // Check if our rules already exist
                     if (!empty($rs['rules'])) {
                         foreach ($rs['rules'] as $rule) {
-                            if (str_contains($rule['description'] ?? '', 'PrestaShop')) {
+                            if (strpos($rule['description'] ?? '', 'PrestaShop') !== false) {
                                 $hasRules = true;
                                 break;
                             }

@@ -655,6 +655,9 @@ class ToolsController extends FrameworkBundleAdminController
             'object' => json_decode(\Configuration::getGlobalValue(ObjConfig::ENTRY) ?: '{}', true),
             'exclusions' => json_decode(\Configuration::getGlobalValue(ExclusionsConfig::ENTRY) ?: '{}', true),
             'warmup' => json_decode(\Configuration::getGlobalValue(WarmupConfig::ENTRY) ?: '{}', true),
+            'warmup_sitemap' => \Configuration::getGlobalValue('LITESPEED_WARMUP_SITEMAP') ?: '',
+            'warmup_shop_url' => \Configuration::getGlobalValue('LITESPEED_WARMUP_SHOP_URL') ?: '',
+            'warmup_useragent' => \Configuration::getGlobalValue('LITESPEED_WARMUP_USERAGENT') ?: '',
             'bypass' => (int) \Configuration::getGlobalValue('LITESPEED_CACHE_BYPASS'),
         ];
 
@@ -729,6 +732,15 @@ class ToolsController extends FrameworkBundleAdminController
             \Configuration::updateGlobalValue(WarmupConfig::ENTRY, json_encode($data['warmup']));
             WarmupConfig::reset();
         }
+        if (isset($data['warmup_sitemap'])) {
+            \Configuration::updateGlobalValue('LITESPEED_WARMUP_SITEMAP', $data['warmup_sitemap']);
+        }
+        if (isset($data['warmup_shop_url'])) {
+            \Configuration::updateGlobalValue('LITESPEED_WARMUP_SHOP_URL', $data['warmup_shop_url']);
+        }
+        if (isset($data['warmup_useragent'])) {
+            \Configuration::updateGlobalValue('LITESPEED_WARMUP_USERAGENT', $data['warmup_useragent']);
+        }
         if (isset($data['bypass'])) {
             \Configuration::updateGlobalValue('LITESPEED_CACHE_BYPASS', (int) $data['bypass']);
         }
@@ -783,6 +795,9 @@ class ToolsController extends FrameworkBundleAdminController
         \Configuration::updateGlobalValue(ExclusionsConfig::ENTRY, json_encode(ExclusionsConfig::getDefaults()));
         \Configuration::updateGlobalValue(WarmupConfig::ENTRY, json_encode(WarmupConfig::getDefaults()));
         \Configuration::deleteByName('LITESPEED_CACHE_ADVANCED');
+        \Configuration::deleteByName('LITESPEED_WARMUP_SITEMAP');
+        \Configuration::deleteByName('LITESPEED_WARMUP_SHOP_URL');
+        \Configuration::deleteByName('LITESPEED_WARMUP_USERAGENT');
         \Configuration::updateGlobalValue('LITESPEED_CACHE_BYPASS', 0);
 
         CdnConfig::reset();

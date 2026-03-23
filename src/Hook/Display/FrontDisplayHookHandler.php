@@ -337,7 +337,7 @@ class FrontDisplayHookHandler
     private function formatHeaderValue(string $name, string $value): string
     {
         // Tags — show as pills
-        if (str_contains($name, 'tag')) {
+        if (strpos($name, 'tag') !== false) {
             $tags = explode(',', $value);
             $pills = '';
             foreach ($tags as $t) {
@@ -349,7 +349,7 @@ class FrontDisplayHookHandler
         }
 
         // Vary — parse JSON and format nicely
-        if (str_contains($name, 'vary')) {
+        if (strpos($name, 'vary') !== false) {
             $jsonPos = strpos($value, '{');
             if ($jsonPos === false) {
                 return '<span style="color:#fff">' . htmlspecialchars($value) . '</span>';
@@ -401,7 +401,7 @@ class FrontDisplayHookHandler
         }
 
         // Cache status — colored
-        if (str_contains($name, 'cache') && strlen($value) < 10) {
+        if (strpos($name, 'cache') !== false && strlen($value) < 10) {
             $v = strtoupper($value);
             if ($v === 'HIT') {
                 $color = '#70b580';

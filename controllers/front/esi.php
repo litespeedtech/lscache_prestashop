@@ -105,7 +105,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
      */
     private function isBrowserRequest(): bool
     {
-        return str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'text/html');
+        return strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'text/html') !== false;
     }
 
     // -------------------------------------------------------------------------
@@ -180,11 +180,17 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
     private function processSmartyField(EsiItem $item): void
     {
-        match ($item->getParam('f')) {
-            'widget' => $this->processRenderWidget($item),
-            'widget_block' => $this->processWidgetBlock($item),
-            default => LscIntegration::processModField($item),
-        };
+        switch ($item->getParam('f')) {
+            case 'widget':
+                $this->processRenderWidget($item);
+                break;
+            case 'widget_block':
+                $this->processWidgetBlock($item);
+                break;
+            default:
+                LscIntegration::processModField($item);
+                break;
+        }
     }
 
     private function processWidgetBlock(EsiItem $item): void

@@ -233,7 +233,7 @@ class CacheLogger
             $strings = preg_split("/\r?\n/", $strExc, -1, PREG_SPLIT_NO_EMPTY);
             foreach ($strings as $s) {
                 $s = trim($s);
-                if ($s !== '' && str_contains($mesg, $s)) {
+                if ($s !== '' && strpos($mesg, $s) !== false) {
                     return false;
                 }
             }
@@ -244,8 +244,8 @@ class CacheLogger
 
     private function matchUri(string $uri, string $pattern): bool
     {
-        $exact = str_ends_with($pattern, '$');
-        $start = str_starts_with($pattern, '^');
+        $exact = substr($pattern, -1) === '$';
+        $start = strpos($pattern, '^') === 0;
 
         if ($exact) {
             $pattern = substr($pattern, 0, -1);
@@ -258,12 +258,12 @@ class CacheLogger
             return $uri === $pattern;
         }
         if ($start) {
-            return str_starts_with($uri, $pattern);
+            return strpos($uri, $pattern) === 0;
         }
         if ($exact) {
-            return str_ends_with($uri, $pattern);
+            return substr($uri, -strlen($pattern)) === $pattern;
         }
 
-        return str_contains($uri, $pattern);
+        return strpos($uri, $pattern) !== false;
     }
 }
