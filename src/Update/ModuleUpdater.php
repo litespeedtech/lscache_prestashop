@@ -8,7 +8,7 @@ if (!defined('_PS_VERSION_')) {
 
 class ModuleUpdater
 {
-    private const GITHUB_API_URL = 'https://api.github.com/repos/litespeedtech/lscache_prestashop/releases';
+    private const GITHUB_API_URL = 'https://api.github.com/repos/ecomlabs-es/lscache_prestashop/releases';
     private const CACHE_KEY = 'LITESPEED_GITHUB_RELEASES';
     private const CACHE_TTL = 3600;
     private const MAX_BACKUPS = 5;

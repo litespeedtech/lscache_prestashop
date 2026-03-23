@@ -55,7 +55,7 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           gh release create "${GITHUB_REF_NAME}" \
             litespeedcache.zip \
-            --title "LiteSpeed Cache ${VERSION}" \
+            --title "${VERSION}" \
             --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
