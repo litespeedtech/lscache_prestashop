@@ -18,8 +18,8 @@ jobs:
         php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
     name: "PHP Lint (${{ matrix.php }})"
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v6
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
       - name: PHP Syntax Check
@@ -41,8 +41,8 @@ jobs:
     runs-on: ubuntu-latest
     name: "PHP CS Fixer"
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v6
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           tools: composer
@@ -58,8 +58,8 @@ jobs:
     runs-on: ubuntu-latest
     name: "Composer Validate"
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v6
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
       - name: Validate composer.json
@@ -77,8 +77,8 @@ jobs:
         php: ['8.1', '8.2', '8.3', '8.4']
     name: "Unit Tests (PHP ${{ matrix.php }})"
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v6
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
           tools: composer
@@ -94,8 +94,8 @@ jobs:
     runs-on: ubuntu-latest
     name: "Twig Lint"
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v6
+      - uses: actions/checkout@v6
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           tools: composer
