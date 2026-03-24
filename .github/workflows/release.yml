@@ -14,9 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@v6
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           tools: composer
 
       - name: Build vendor (autoloader only)
@@ -42,6 +42,7 @@ jobs:
           phpunit.xml
           phpunit.xml.dist
           CONTRIBUTING.md
+          composer.json
           composer.lock
           node_modules
           EOF

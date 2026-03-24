@@ -120,8 +120,7 @@ class VaryCookie extends \CookieCore
             return;
         }
 
-        // Workaround for PS validator — access $_COOKIE via variable variable
-        $cookies = ${'_COOKIE'};
+        $cookies = $GLOBALS['_COOKIE'] ?? [];
         $ov = null;
 
         if (isset($cookies[self::AMP_VARY_COOKIE_NAME])) {
@@ -237,8 +236,7 @@ class VaryCookie extends \CookieCore
         $bypass = $conf->getContextBypass();
         $this->debug_header = $conf->get(CacheConfig::CFG_DEBUG_HEADER);
 
-        // Workaround for PS validator — access $_COOKIE via variable variable
-        $cookies = ${'_COOKIE'};
+        $cookies = $GLOBALS['_COOKIE'] ?? [];
         $data = [];
 
         if (CacheState::isRestrictedIP()) {

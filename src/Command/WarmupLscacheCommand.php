@@ -172,14 +172,14 @@ class WarmupLscacheCommand extends Command
                         // Can't easily get handle from ID, just break
                     }
                     curl_multi_remove_handle($mh, $ch);
-                    curl_close($ch);
+                    unset($ch);
                     curl_multi_close($mh);
 
                     return;
                 }
 
                 curl_multi_remove_handle($mh, $ch);
-                curl_close($ch);
+                unset($ch);
                 unset($active[$id]);
             }
 
@@ -277,7 +277,7 @@ class WarmupLscacheCommand extends Command
         curl_setopt($ch, CURLOPT_USERAGENT, 'lscache_runner');
         curl_setopt($ch, CURLOPT_ENCODING, '');
         $result = curl_exec($ch);
-        curl_close($ch);
+        unset($ch);
 
         return $result ?: '';
     }
@@ -287,7 +287,7 @@ class WarmupLscacheCommand extends Command
         $cookie = '_lscache_vary=' . uniqid('lscache');
         $ch = $this->getCurlHandler($url, $cookie, true, 'lscache_runner', $timeout);
         $buffer = curl_exec($ch);
-        curl_close($ch);
+        unset($ch);
 
         $matches = [];
         $cookies = [];

@@ -864,7 +864,7 @@ class Cloudflare
 
         $response = curl_exec($ch);
         $error = curl_error($ch);
-        curl_close($ch);
+        unset($ch);
 
         if ($error) {
             return [];
@@ -914,7 +914,7 @@ class Cloudflare
 
         $response = curl_exec($ch);
         $error = curl_error($ch);
-        curl_close($ch);
+        unset($ch);
 
         if ($error) {
             return ['success' => false, 'errors' => [['message' => $error]]];

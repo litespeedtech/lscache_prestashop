@@ -8,18 +8,18 @@ on:
 
 jobs:
   # ================================================================
-  # 1. PHP Lint — Syntax check (includes 7.4 for compat verification)
+  # 1. PHP Lint — Syntax check
   # ================================================================
   php-lint:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.4', '8.0', '8.1', '8.2', '8.3']
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
     name: "PHP Lint (${{ matrix.php }})"
     steps:
       - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@v6
         with:
           php-version: ${{ matrix.php }}
       - name: PHP Syntax Check
@@ -42,9 +42,9 @@ jobs:
     name: "PHP CS Fixer"
     steps:
       - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@v6
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           tools: composer
       - name: Install dependencies
         run: composer install --dev --no-interaction --no-progress
@@ -59,9 +59,9 @@ jobs:
     name: "Composer Validate"
     steps:
       - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@v6
         with:
-          php-version: '8.2'
+          php-version: '8.3'
       - name: Validate composer.json
         run: composer validate --no-check-all --no-check-publish
 
@@ -74,11 +74,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.1', '8.2', '8.3']
+        php: ['8.1', '8.2', '8.3', '8.4']
     name: "Unit Tests (PHP ${{ matrix.php }})"
     steps:
       - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@v6
         with:
           php-version: ${{ matrix.php }}
           tools: composer
@@ -95,9 +95,9 @@ jobs:
     name: "Twig Lint"
     steps:
       - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@v6
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           tools: composer
       - name: Install dependencies
         run: composer install --no-interaction --no-progress

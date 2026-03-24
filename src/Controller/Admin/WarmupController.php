@@ -208,7 +208,7 @@ class WarmupController extends FrameworkBundleAdminController
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
         $error = curl_error($ch);
-        curl_close($ch);
+        unset($ch);
 
         $headers = substr($response, 0, $headerSize);
         $lscache = $this->extractHeader($headers, 'X-LiteSpeed-Cache');
@@ -244,7 +244,7 @@ class WarmupController extends FrameworkBundleAdminController
 
             $verifyResponse = curl_exec($ch2);
             $verifyHeaderSize = curl_getinfo($ch2, CURLINFO_HEADER_SIZE);
-            curl_close($ch2);
+            unset($ch2);
 
             $verifyHeaders = substr($verifyResponse, 0, $verifyHeaderSize);
             $verifyLscache = $this->extractHeader($verifyHeaders, 'X-LiteSpeed-Cache');
@@ -407,7 +407,7 @@ class WarmupController extends FrameworkBundleAdminController
         curl_setopt($ch, CURLOPT_USERAGENT, 'lscache_runner');
         curl_setopt($ch, CURLOPT_ENCODING, '');
         $result = curl_exec($ch);
-        curl_close($ch);
+        unset($ch);
 
         return $result ?: '';
     }
@@ -430,7 +430,7 @@ class WarmupController extends FrameworkBundleAdminController
         curl_setopt($ch, CURLOPT_USERAGENT, 'lscache_runner');
         curl_setopt($ch, CURLOPT_COOKIE, $cookie);
         $buffer = curl_exec($ch);
-        curl_close($ch);
+        unset($ch);
 
         $matches = [];
         $cookies = [];
