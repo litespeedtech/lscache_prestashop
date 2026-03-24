@@ -736,6 +736,12 @@ class LiteSpeedCache extends Module
         $pt = LiteSpeedCacheEsiItem::ESI_RENDERWIDGET;
 
         $esiParam = ['pt' => $pt, 'm' => $m, 'h' => $hook_name];
+
+        // Pass original URI so ESI controller can restore {$urls.current_url}
+        if ($m === 'ps_customersignin') {
+            $esiParam['ouri'] = $_SERVER['REQUEST_URI'];
+        }
+
         $conf = $lsc->config->canInjectEsi($m, $esiParam);
         if ($conf == false) {
             return false;
