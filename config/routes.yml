@@ -54,7 +54,6 @@ admin_litespeedcache_stats:
         _legacy_controller: AdminLiteSpeedCacheStats
         _legacy_link: AdminLiteSpeedCacheStats
 
-
 admin_litespeedcache_wizard:
     path: /litespeedcache/wizard
     methods: [GET]
