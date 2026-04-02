@@ -68,3 +68,30 @@ Subsequent requests should have the ```X-LiteSpeed-Cache-Control:hit``` response
 For additional instructions, tips, and ideas, please see 
 the [LiteSpeed Cache for PrestaShop documentation](https://docs.litespeedtech.com/lscache/lscps/).
 
+## FAQ
+
+### 1. How do I enable LiteSpeed ​​ESI
+
+<details>
+Please refer to this document to enable ESI feature in your LiteSpeed Web Server:
+
+https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:common_installation:shared-enable-individually
+
+If you are using native installation, please enable ESI feature in LiteSpeed Web Server admin panel: Server->Cache->Cache Features
+</details>
+
+### 2. Encounter 500 errors after enabling LiteSpeedCache Module
+
+<details>
+In admin panel->Design->Positions, find all hooks with 'LiteSpeed Cache Plugin' module, and move 'LiteSpeed Cache Plugin' module to top priority.
+</details>
+
+
+### 3. Unable to enable LiteSpeedCache Module, it shows error: the coreCallHook method in the hook key has been overwritten by the CookiesPlus module.
+
+<details>
+Deactivate cookieplus Module first then enable litespeedcache Module.
+
+Copy content of WEBROOT/modules/cookieplus/override/classes/Hook.php into WEBROOT/override/classes/HOOK.php, backup and delete WEBROOT/modules/cookieplus/override/classes/Hook.php, then you can activate CookiePlus Module.
+</details>
+
