@@ -129,6 +129,15 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             $params['smarty'] = $this->context->smarty;
             $params['cookie'] = $this->context->cookie;
             $params['cart'] = $this->context->cart;
+
+            $smarty = $params['smarty'];
+            $urls = $smarty->getTemplateVars('urls');
+            $currentUrl = $urls['current_url'];
+            if (strpos($currentUrl, 'litespeedcache/esi') !== false) {
+                $urls['current_url'] = $urls['base_url'];
+                $urls = $this->context->smarty->getTemplateVars('urls');
+                $urls['current_url'] = $urls['base_url'];
+            }            
         }
 
         return $module;
