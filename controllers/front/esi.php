@@ -27,6 +27,7 @@ use LiteSpeedCacheHelper as LSHelper;
 use LiteSpeedCacheLog as LSLog;
 
 require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/HookParamsResolver.php';
+require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/DynamicFragment.php';
 
 class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 {
@@ -104,6 +105,9 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
                 break;
             case EsiItem::ESI_SMARTYFIELD:
                 $this->processSmartyField($item);
+                break;
+            case EsiItem::ESI_DYNAMIC_FRAGMENT:
+                $this->processDynamicFragment($item);
                 break;
             case EsiItem::ESI_JSDEF:
                 LscIntegration::processJsDef($item);
@@ -255,5 +259,153 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         } else {
             LscIntegration::processModField($item);
         }
+    }
+
+    private function processDynamicFragment($item)
+    {
+        switch ($item->getParam('f')) {
+            case LiteSpeedCacheDynamicFragment::PRODUCT_ADD_TO_CART:
+                $this->processProductAddToCartFragment($item);
+                break;
+            case LiteSpeedCacheDynamicFragment::NOTIFICATIONS:
+                $this->processNotificationsFragment($item);
+                break;
+            default:
+                $item->setFailed('Unknown dynamic fragment ' . $item->getParam('f'));
+        }
+    }
+
+    private function processProductAddToCartFragment($item)
+    {
+        $product = $this->getPresentedProductFromItem($item);
+        if ($product == null) {
+            $item->setFailed('Missing product for add to cart fragment');
+
+            return;
+        }
+
+        $this->assignBaseTemplateVariables();
+        $this->context->smarty->assign('product', $product);
+
+        $template = $item->getParam('t') ?: 'catalog/_partials/product-add-to-cart.tpl';
+        $item->setContent($this->fetchThemeTemplate($template));
+    }
+
+    private function processNotificationsFragment($item)
+    {
+        $notifications = [
+            'error' => [],
+            'warning' => [],
+            'success' => [],
+            'info' => [],
+        ];
+
+        $idProduct = (int) $item->getParam('id_product');
+        if ($idProduct > 0 && (bool) Configuration::get('PS_DISPLAY_AMOUNT_IN_CART')) {
+            $quantities = $this->context->cart->getProductQuantityInAllVariants($idProduct);
+
+            if ($quantities['standalone_quantity'] > 0 && $quantities['pack_quantity'] > 0) {
+                $notifications['info'][] = $this->trans(
+                    'Your cart contains %1s of these products and another %2s of these are included in packs in your cart.',
+                    [$quantities['standalone_quantity'], $quantities['pack_quantity']],
+                    'Shop.Theme.Catalog'
+                );
+            } elseif ($quantities['standalone_quantity'] > 0) {
+                $notifications['info'][] = $this->trans(
+                    'Your cart contains %1s of these products.',
+                    [$quantities['standalone_quantity']],
+                    'Shop.Theme.Catalog'
+                );
+            } elseif ($quantities['pack_quantity'] > 0) {
+                $notifications['info'][] = $this->trans(
+                    '%1s of these products are included in packs in your cart.',
+                    [$quantities['pack_quantity']],
+                    'Shop.Theme.Catalog'
+                );
+            }
+        }
+
+        $this->assignBaseTemplateVariables();
+        $product = $this->getPresentedProductFromItem($item);
+        if ($product != null) {
+            $this->context->smarty->assign('product', $product);
+        }
+        $this->context->smarty->assign('notifications', $notifications);
+
+        $template = $item->getParam('t') ?: '_partials/notifications.tpl';
+        $item->setContent($this->fetchThemeTemplate($template));
+    }
+
+    private function assignBaseTemplateVariables()
+    {
+        $this->assignGeneralPurposeVariables();
+    }
+
+    private function getPresentedProductFromItem($item)
+    {
+        $idProduct = (int) $item->getParam('id_product');
+        if ($idProduct <= 0) {
+            return null;
+        }
+
+        $idProductAttribute = (int) $item->getParam('id_product_attribute');
+        $idCustomization = (int) $item->getParam('id_customization');
+
+        $productObj = new Product($idProduct, true, $this->context->language->id, $this->context->shop->id);
+        if (!Validate::isLoadedObject($productObj)) {
+            return null;
+        }
+
+        $product = (new PrestaShop\PrestaShop\Adapter\Presenter\Object\ObjectPresenter())->present($productObj);
+        $product['id_product'] = $idProduct;
+        $product['id_product_attribute'] = $idProductAttribute;
+        $product['id_customization'] = $idCustomization;
+        $product['out_of_stock'] = (int) $productObj->out_of_stock;
+        $product['minimal_quantity'] = $this->getProductMinimalQuantity($idProduct, $idProductAttribute, $product);
+        $product['cart_quantity'] = $this->context->cart->getProductQuantity($idProduct, $idProductAttribute)['quantity'];
+        $product['quantity_wanted'] = (int) Tools::getValue('quantity_wanted', max(1, (int) $product['minimal_quantity']));
+        $product['quantity_required'] = max(1, (int) $product['minimal_quantity'] - (int) $product['cart_quantity']);
+        $product = Product::getProductProperties($this->context->language->id, $product, $this->context);
+        if (!is_array($product)) {
+            return null;
+        }
+
+        $factory = new ProductPresenterFactory($this->context, new TaxConfiguration());
+
+        return $factory->getPresenter()->present(
+            $factory->getPresentationSettings(),
+            $product,
+            $this->context->language
+        );
+    }
+
+    private function getProductMinimalQuantity($idProduct, $idProductAttribute, $product)
+    {
+        if ($idProductAttribute > 0) {
+            $combination = new Combination($idProductAttribute);
+            if (Validate::isLoadedObject($combination)) {
+                return (int) $combination->minimal_quantity;
+            }
+        }
+
+        if (isset($product['minimal_quantity'])) {
+            return (int) $product['minimal_quantity'];
+        }
+
+        $productObj = new Product($idProduct, false, $this->context->language->id, $this->context->shop->id);
+        if (Validate::isLoadedObject($productObj)) {
+            return (int) $productObj->minimal_quantity;
+        }
+
+        return 1;
+    }
+
+    private function fetchThemeTemplate($template)
+    {
+        if (substr($template, -4) == '.tpl') {
+            $template = substr($template, 0, -4);
+        }
+
+        return $this->context->smarty->fetch($this->getTemplateFile($template));
     }
 }
