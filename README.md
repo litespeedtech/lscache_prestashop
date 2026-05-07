@@ -70,28 +70,21 @@ the [LiteSpeed Cache for PrestaShop documentation](https://docs.litespeedtech.co
 
 ## FAQ
 
-### 1. How do I enable LiteSpeed ​​ESI
+### 1. How do I enable LiteSpeed ESI?
 
-<details>
-Please refer to this document to enable ESI feature in your LiteSpeed Web Server:
+Please refer to this document to enable the ESI feature in LiteSpeed Web Server:
 
-https://www.litespeedtech.com/support/wiki/doku.php/litespeed_wiki:cache:common_installation:shared-enable-individually
+[Enabling the Crawler and ESI](https://docs.litespeedtech.com/lsws/cp/cpanel/lscache/#enabling-the-crawler-and-esi)
 
-If you are using native installation, please enable ESI feature in LiteSpeed Web Server admin panel: Server->Cache->Cache Features
-</details>
+If you are using a native installation, enable the ESI feature in the LSWS WebAdmin Console by navigating to **Server > Cache > Cache Features**.
 
-### 2. Encounter 500 errors after enabling LiteSpeedCache Module
+### 2. How can I avoid 500 errors after enabling the LiteSpeed Cache module?
 
-<details>
-In admin panel->Design->Positions, find all hooks with 'LiteSpeed Cache Plugin' module, and move 'LiteSpeed Cache Plugin' module to top priority.
-</details>
+Navigate to **Admin Panel > Design > Positions**, find all hooks for the **LiteSpeed Cache Plugin** module, and move them to top priority.
 
+### 3. Why can't I enable the LiteSpeed Cache module when CookiePlus has overwritten `coreCallHook`?
 
-### 3. Unable to enable LiteSpeedCache Module, it shows error: the coreCallHook method in the hook key has been overwritten by the CookiesPlus module.
-
-<details>
-Deactivate cookieplus Module first then enable litespeedcache Module.
-
-Copy content of WEBROOT/modules/cookieplus/override/classes/Hook.php into WEBROOT/override/classes/HOOK.php, backup and delete WEBROOT/modules/cookieplus/override/classes/Hook.php, then you can activate CookiePlus Module.
-</details>
-
+1. Deactivate the CookiePlus module, then enable the LiteSpeed Cache module.
+2. Copy the contents of `WEBROOT/modules/cookieplus/override/classes/Hook.php` into `WEBROOT/override/classes/HOOK.php`.
+3. Back up and delete `WEBROOT/modules/cookieplus/override/classes/Hook.php`.
+4. Activate the CookiePlus module.
