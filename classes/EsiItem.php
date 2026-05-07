@@ -34,6 +34,8 @@ class LiteSpeedCacheEsiItem
 
     const ESI_SMARTYFIELD = 'mf';
 
+    const ESI_DYNAMIC_FRAGMENT = 'df';
+
     const ESI_TOKEN = 'tk';
 
     const ESI_ENV = 'env';
@@ -273,6 +275,11 @@ class LiteSpeedCacheEsiItem
                         $err = 'missing f';
                     } elseif ($param['f'] == 'widget_block' && !isset($param['t'])) {
                         $err = 'missing t';
+                    }
+                    break;
+                case self::ESI_DYNAMIC_FRAGMENT:
+                    if (!isset($param['f']) || $param['f'] == '') {
+                        $err = 'missing f';
                     }
                     break;
                 default:

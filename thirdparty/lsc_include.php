@@ -28,6 +28,7 @@ include __DIR__ . '/LscIntegration.php';
 // share for all PS versions
 include __DIR__ . '/shared/LscToken.php';
 include __DIR__ . '/shared/LscEnv.php';
+include __DIR__ . '/shared/LscDynamicFragment.php';
 
 // third-party theme integration
 if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) { // for PS 1.7 only

@@ -694,6 +694,8 @@ class LiteSpeedCacheConfig
             /* add cache tags * */
             'overrideLayoutTemplate',
             'DisplayOverrideTemplate',
+            'displayDynamicFragmentBefore',
+            'displayDynamicFragmentAfter',
             'filterCategoryContent',
             'filterProductContent',
             'filterCmsContent',
