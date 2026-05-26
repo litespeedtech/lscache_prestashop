@@ -80,7 +80,7 @@ If you are using a native installation, enable the ESI feature in the LSWS WebAd
 
 ### 2. How can I avoid 500 errors after enabling the LiteSpeed Cache module?
 
-Navigate to **Admin Panel > Design > Positions**, find all hooks for the **LiteSpeed Cache Plugin** module, and move them to top priority.
+Navigate to **Admin Panel > Design > Positions**, find all hooks include the **LiteSpeed Cache Plugin** module, and move **LiteSpeed Cache Plugin** to top priority for these hooks.
 
 ### 3. Why can't I enable the LiteSpeed Cache module when CookiePlus has overwritten `coreCallHook`?
 
