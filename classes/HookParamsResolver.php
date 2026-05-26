@@ -92,7 +92,10 @@ class HookParamsResolver
         $presented['id_product_attribute'] = $idProductAttribute;
 
         $productFull = Product::getProductProperties($this->context->language->id, $presented, $this->context);
-
+        if (!is_array($productFull) || empty($productFull['id_product'])) {
+            return;
+        }
+        
         $productPresenter = new ProductPresenter(
             new ImageRetriever($this->context->link),
             $this->context->link,
