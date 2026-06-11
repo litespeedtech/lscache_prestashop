@@ -88,6 +88,8 @@ class HookParamsResolver
         $presented = (new ObjectPresenter())->present($productObj);
 
         // Add fields commonly required by templates/modules
+        $presented['id_product'] = (int) $productObj->id;
+        $presented['id'] = (int) $productObj->id;
         $presented['out_of_stock'] = (int) $productObj->out_of_stock;
         $presented['id_product_attribute'] = $idProductAttribute;
 
