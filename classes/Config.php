@@ -422,6 +422,7 @@ class LiteSpeedCacheConfig
             'BestSalesController' => self::TAG_SEARCH,
             'NewProductsController' => self::TAG_SEARCH,
             'PricesDropController' => self::TAG_SEARCH,
+            'af_seopagesseopageModuleFrontController' => self::TAG_SEARCH,
             'SitemapController' => self::TAG_SITEMAP,
             'StoresController' => self::TAG_STORES,
             'PageNotFoundController' => self::TAG_404,
