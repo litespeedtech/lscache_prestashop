@@ -274,7 +274,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         if (LiteSpeedCache::isRestrictedIP()) {
             $data['dev'] = 1;
         }
-        /* no longer check based on ctry
+
         if (!in_array('ctry', $bypass) && isset($psCookie->iso_code_country)) {
             $iso = $psCookie->iso_code_country;
             $id_country = (int)Configuration::get('PS_COUNTRY_DEFAULT');
@@ -282,7 +282,8 @@ class LiteSpeedCacheVaryCookie extends CookieCore
             if ($iso != $default_iso) {
                 $data['ctry'] = $iso;
             }
-        } */
+        }
+        
         if (!in_array('curr', $bypass) && isset($psCookie->id_currency)) {
             $configuration_curr = Configuration::get('PS_CURRENCY_DEFAULT');
             if ($psCookie->id_currency != $configuration_curr) {
