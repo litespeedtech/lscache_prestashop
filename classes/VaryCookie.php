@@ -278,6 +278,7 @@ class LiteSpeedCacheVaryCookie extends CookieCore
         if (!in_array('ctry', $bypass) && isset($psCookie->iso_code_country)) {
             $iso = $psCookie->iso_code_country;
             $id_country = (int)Configuration::get('PS_COUNTRY_DEFAULT');
+            Db::getInstance(_PS_USE_SQL_SLAVE_)->connect();
             $default_iso = Country::getIsoById($id_country);
             if ($iso != $default_iso) {
                 $data['ctry'] = $iso;
