@@ -783,7 +783,7 @@ class LiteSpeedCache extends Module
     }
     
     private static function getModuleParams($params, $tas){
-        if(!$tas || !$params) {
+        if(!$tas || !$params || !isset($params['smarty'])) {
             return false;
         }
 
