@@ -859,6 +859,16 @@ class LiteSpeedCache extends Module
         }
     }
 
+    public function enable($force_all = false)
+    {
+        //Disable CCC when enable LiteSpeedCache
+        Configuration::updateValue('PS_CSS_THEME_CACHE', 0);
+        Configuration::updateValue('PS_JS_THEME_CACHE', 0);
+        Configuration::updateValue('PS_HTACCESS_CACHE_CONTROL', 0);
+        Tools::generateHtaccess();
+        return Module::enable($this->name);
+    }
+        
     public function uninstall()
     {
         $this->uninstallTab();
