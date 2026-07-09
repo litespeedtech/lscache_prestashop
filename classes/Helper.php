@@ -280,7 +280,7 @@ class LiteSpeedCacheHelper
         // always remove first
         foreach ($oldlines as $line) {
             if (!$ind) {
-                if (strpos($line, 'LITESPEED_CACHE_START') || stripos($line, 'IfModule LiteSpeed')) {
+                if (strpos($line, 'LITESPEED_CACHE_START')) {
                     $ind = true;
                 } else {
                     $newlines[] = $line;
