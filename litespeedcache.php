@@ -32,6 +32,7 @@ require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/DebugLog.php';
 require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/Config.php';
 require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/Cache.php';
 require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/VaryCookie.php';
+require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/DynamicFragment.php';
 
 class LiteSpeedCache extends Module
 {
@@ -74,6 +75,8 @@ class LiteSpeedCache extends Module
 
     private $esiInjection;
 
+    private $dynamicFragmentLevel;
+
     private static $ccflag = 0; // cache control flag
 
     private static $no_cache_reason = '';
@@ -107,6 +110,7 @@ class LiteSpeedCache extends Module
         $this->esiInjection = ['tracker' => [],
             'marker' => [],
         ];
+        $this->dynamicFragmentLevel = 0;
 
         self::$ccflag |= $this->config->moduleEnabled();
         if (!defined('_LITESPEED_CACHE_')) {
@@ -124,7 +128,7 @@ class LiteSpeedCache extends Module
     
     public static function getVersion()
     {
-        return '1.6.0';
+        return '1.6.1';
     }
 
     public static function isActive()
@@ -386,6 +390,37 @@ class LiteSpeedCache extends Module
 
             return $comment;
         }
+    }
+
+    public function hookDisplayDynamicFragmentBefore($params)
+    {
+        $esiParam = LiteSpeedCacheDynamicFragment::buildEsiParam($params);
+        if ($esiParam == null) {
+            return '';
+        }
+
+        $conf = $this->config->canInjectEsi(LscDynamicFragment::NAME, $esiParam);
+        if ($conf == false) {
+            return '';
+        }
+
+        ++$this->dynamicFragmentLevel;
+
+        return $this->registerEsiMarker($esiParam, $conf);
+    }
+
+    public function hookDisplayDynamicFragmentAfter($params)
+    {
+        if ((self::$ccflag & self::CCBM_CAN_INJECT_ESI) == 0
+                || LiteSpeedCacheDynamicFragment::buildEsiParam($params) == null) {
+            return '';
+        }
+
+        if ($this->dynamicFragmentLevel > 0) {
+            --$this->dynamicFragmentLevel;
+        }
+
+        return self::ESI_MARKER_END;
     }
 
     // called by Media override addJsDef
@@ -732,6 +767,9 @@ class LiteSpeedCache extends Module
         }
 
         $lsc = self::myInstance();
+        if ($lsc->dynamicFragmentLevel > 0) {
+            return false;
+        }
         $m = $module->name;
         $pt = LiteSpeedCacheEsiItem::ESI_RENDERWIDGET;
 
@@ -761,6 +799,9 @@ class LiteSpeedCache extends Module
         }
 
         $lsc = self::myInstance();
+        if ($lsc->dynamicFragmentLevel > 0) {
+            return false;
+        }
         $m = $module->name;
         $pt = LiteSpeedCacheEsiItem::ESI_CALLHOOK;
 
