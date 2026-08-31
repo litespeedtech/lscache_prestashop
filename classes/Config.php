@@ -45,6 +45,10 @@ class LiteSpeedCacheConfig
 
     const TAG_PREFIX_PCOMMENTS = 'N';
 
+    const TAG_PREFIX_BLOG = 'B'; // prestablog article, bare tag is on every blog page
+
+    const TAG_PREFIX_BLOG_CATEGORY = 'BC'; // prestablog category listing
+
     const TAG_PREFIX_PRIVATE = 'PRIV';
 
     // public tags
@@ -414,7 +418,6 @@ class LiteSpeedCacheConfig
             'IndexController' => self::TAG_HOME, // controller name - tag linked to it
             'ProductController' => '',
             'CategoryController' => '',
-            'prestablogblogModuleFrontController' => '',// permit to cache prestablog module page                          
             'CmsController' => '',
             'ManufacturerController' => '',
             'SupplierController' => '',
