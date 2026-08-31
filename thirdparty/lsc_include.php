@@ -39,6 +39,7 @@ if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) { // for PS 1.7 only
     // integrated modules, feel free to comment out the modules you don't use
     include __DIR__ . '/1.7/LscGdprPro.php';
     include __DIR__ . '/1.7/LscPscartdropdown.php';
+    include __DIR__ . '/1.7/LscPrestablog.php';
 
     // integrated theme modules, feel free to comment out the themes you don't use
     include __DIR__ . '/1.7/iqit/loader.php';  // warehouse theme

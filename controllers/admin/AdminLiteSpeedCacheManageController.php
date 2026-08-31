@@ -36,6 +36,8 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
 
     private $license_disabled;
 
+    private $has_prestablog;
+
     public function __construct()
     {
         $this->bootstrap = true;
@@ -67,6 +69,8 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
                     . $this->trans('Please contact your sysadmin or your host to get a valid LiteSpeed license.');
         }
 
+        $this->has_prestablog = Module::isEnabled('prestablog');
+
         $this->labels = [
             'home' => $this->trans('Home Page'),
             '404' => $this->trans('All 404 Pages'),
@@ -75,6 +79,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             'supplier' => $this->trans('All Suppliers Pages'),
             'sitemap' => $this->trans('Site Map'),
             'cms' => $this->trans('All CMS Pages'),
+            'blog' => $this->trans('All Prestablog Pages'),
             'pc' => $this->trans('All Product Comments'),
             'priv' => $this->trans('All Private ESI Blocks'),
             'prod0' => $this->trans('Product'),
@@ -83,6 +88,8 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             'supplier0' => $this->trans('Supplier'),
             'cms0' => $this->trans('CMS'),
             'pc0' => $this->trans('Comments for Product ID'),
+            'blogart0' => $this->trans('Prestablog Article'),
+            'blogcat0' => $this->trans('Prestablog Category'),
             'shop0' => $this->trans('Shop'),
             'affectall' => $this->trans('This will affect all shops'),
         ];
@@ -171,6 +178,10 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             $tags[] = Conf::TAG_PREFIX_CMS;
             $info[] = $this->labels['cms'];
         }
+        if (Tools::getValue('cbPurge_blog')) {
+            $tags[] = Conf::TAG_PREFIX_BLOG;
+            $info[] = $this->labels['blog'];
+        }
         if (Tools::getValue('cbPurge_pc')) {
             $tags[] = Conf::TAG_PREFIX_PCOMMENTS;
             $info[] = $this->labels['pc'];
@@ -221,6 +232,14 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             case 'pc':
                 $pre = Conf::TAG_PREFIX_PCOMMENTS;
                 $desc = $this->labels['pc0'];
+                break;
+            case 'blogart':
+                $pre = Conf::TAG_PREFIX_BLOG;
+                $desc = $this->labels['blogart0'];
+                break;
+            case 'blogcat':
+                $pre = Conf::TAG_PREFIX_BLOG_CATEGORY;
+                $desc = $this->labels['blogcat0'];
                 break;
             case 'shop':
                 $pre = Conf::TAG_PREFIX_SHOP;
@@ -295,22 +314,26 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
     {
         $title = $this->trans('Purge by Selection');
         $form = $this->newFieldForm($title, 'list-ul', $title);
+        $cbQuery = [
+            ['id' => 'home', 'name' => $this->labels['home']],
+            ['id' => '404', 'name' => $this->labels['404']],
+            ['id' => 'search', 'name' => $this->labels['search']],
+            ['id' => 'brand', 'name' => $this->labels['brand']],
+            ['id' => 'supplier', 'name' => $this->labels['supplier']],
+            ['id' => 'sitemap', 'name' => $this->labels['sitemap']],
+            ['id' => 'cms', 'name' => $this->labels['cms']],
+        ];
+        if ($this->has_prestablog) {
+            $cbQuery[] = ['id' => 'blog', 'name' => $this->labels['blog']];
+        }
+        $cbQuery[] = ['id' => 'pc', 'name' => $this->labels['pc']];
+        $cbQuery[] = ['id' => 'priv', 'name' => $this->labels['priv']];
         $cbPurge = [
             'type' => 'checkbox',
             'label' => $this->trans('Select All Pages You Want to Purge'),
             'name' => 'cbPurge',
             'values' => [
-                'query' => [
-                    ['id' => 'home', 'name' => $this->labels['home']],
-                    ['id' => '404', 'name' => $this->labels['404']],
-                    ['id' => 'search', 'name' => $this->labels['search']],
-                    ['id' => 'brand', 'name' => $this->labels['brand']],
-                    ['id' => 'supplier', 'name' => $this->labels['supplier']],
-                    ['id' => 'sitemap', 'name' => $this->labels['sitemap']],
-                    ['id' => 'cms', 'name' => $this->labels['cms']],
-                    ['id' => 'pc', 'name' => $this->labels['pc']],
-                    ['id' => 'priv', 'name' => $this->labels['priv']],
-                ],
+                'query' => $cbQuery,
                 'id' => 'id', 'name' => 'name', ],
         ];
         $selCat = [
@@ -361,6 +384,10 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
             ['purgeby' => 'pc', 'name' => $this->labels['pc0']],
             ['purgeby' => 'shop', 'name' => $this->labels['shop0']],
         ];
+        if ($this->has_prestablog) {
+            $query[] = ['purgeby' => 'blogart', 'name' => $this->labels['blogart0']];
+            $query[] = ['purgeby' => 'blogcat', 'name' => $this->labels['blogcat0']];
+        }
         $textareaIds = [
             'type' => 'textarea',
             'class' => 'input',
