@@ -27,6 +27,7 @@ use LiteSpeedCacheHelper as LSHelper;
 use LiteSpeedCacheLog as LSLog;
 
 require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/HookParamsResolver.php';
+require_once _PS_MODULE_DIR_ . 'litespeedcache/classes/DynamicFragment.php';
 
 class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 {
@@ -57,7 +58,6 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
             if (is_string($item) && _LITESPEED_DEBUG_ >= LSLog::LEVEL_EXCEPTION) {
                 LSLog::log('Invalid ESI url ' . $item, LSLog::LEVEL_EXCEPTION);
-
                 return;
             }
             $this->populateItemContent($item);
@@ -67,7 +67,6 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
                 if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_EXCEPTION) {
                     LSLog::log('Invalid ESI url - module not found ', LSLog::LEVEL_EXCEPTION);
                 }
-
                 return;
             }
             $related = $item->getId();
@@ -90,7 +89,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         }
         ob_clean();
         echo $inline . $html;
-        ob_end_flush();        
+        ob_end_flush();
     }
 
     private function populateItemContent($item)
@@ -104,6 +103,13 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
                 break;
             case EsiItem::ESI_SMARTYFIELD:
                 $this->processSmartyField($item);
+                break;
+            case EsiItem::ESI_DYNAMIC_FRAGMENT:
+                if ($item->getParam('f') === LiteSpeedCacheDynamicFragment::NOTIFICATIONS) {
+                    $this->processNotificationsFragment($item);
+                } else {
+                    $item->setFailed('Unknown dynamic fragment ' . $item->getParam('f'));
+                }
                 break;
             case EsiItem::ESI_JSDEF:
                 LscIntegration::processJsDef($item);
@@ -129,7 +135,6 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             $params['smarty'] = $this->context->smarty;
             $params['cookie'] = $this->context->cookie;
             $params['cart'] = $this->context->cart;
-
             $smarty = $params['smarty'];
             $urls = $smarty->getTemplateVars('urls');
             $currentUrl = $urls['current_url'];
@@ -137,7 +142,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
                 $urls['current_url'] = $urls['base_url'];
                 $urls = $this->context->smarty->getTemplateVars('urls');
                 $urls['current_url'] = $urls['base_url'];
-            }            
+            }
         }
 
         return $module;
@@ -182,7 +187,6 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             }
 
             $method = $item->getParam('mt');
-
             $content = $module->$method($params);
 
             // Avoid empty ESI fragments: some hooks/modules may return NULL or empty content
@@ -205,10 +209,9 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
                 $mvs = explode('.', trim($mv));
                 if($mvs[0]!='smarty'){
                     if(!$mvs[1]){
-                        $params[$mvs[0]] = $mp1[$i];                        
+                        $params[$mvs[0]] = $mp1[$i];
                     } else {
                         if(isset($params[$mvs[0]])){
-
                             $params[$mvs[0]][$mvs[1]] = $mp1[$i];
                         } else {
                             $params[$mvs[0]] = [$mvs[1]=>$mp1[$i]];
@@ -230,7 +233,9 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             }
         }
 
-        // Apply hook-specific parameter fixes for ESI rendering
+        // Apply hook-specific parameter fixes for ESI rendering.
+        // The resolver is also kept as a fallback for themes without the dynamic fragments
+        // introduced in https://github.com/PrestaShop/hummingbird/pull/1101
         $hookParamsResolver = new HookParamsResolver($this->context);
         $hookParamsResolver->resolve($item, $params);
     }
@@ -244,7 +249,6 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
     {
         $item->setContent('');
     }
-
     private function processSmartyField($item)
     {
         $f = $item->getParam('f');
@@ -255,5 +259,52 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         } else {
             LscIntegration::processModField($item);
         }
+    }
+
+    private function processNotificationsFragment($item)
+    {
+        // Fallback used when notifications cannot be rendered through the
+        // ProductController refresh endpoint, for example outside product pages.
+        // Reuse FrontController::prepareNotifications() when available so
+        // redirect/session notifications follow PrestaShop's normal flow.
+        $notifications = $this->prepareDynamicFragmentNotifications();
+
+        $this->assignGeneralPurposeVariables();
+        $this->context->smarty->assign('notifications', $notifications);
+        $item->setContent($this->fetchThemeTemplate('_partials/notifications.tpl'));
+    }
+
+    private function prepareDynamicFragmentNotifications()
+    {
+        $notifications = [
+            'error' => [],
+            'warning' => [],
+            'success' => [],
+            'info' => [],
+        ];
+
+        // PrestaShop 1.7+ provides prepareNotifications() on FrontController.
+        // Keep the method_exists() check for compatibility with older PrestaShop
+        // versions still supported by the LiteSpeed Cache module.
+        if (method_exists($this, 'prepareNotifications')) {
+            $prepared = $this->prepareNotifications();
+            if (is_array($prepared)) {
+                foreach ($notifications as $type => $messages) {
+                    if (isset($prepared[$type]) && is_array($prepared[$type])) {
+                        $notifications[$type] = $prepared[$type];
+                    }
+                }
+            }
+        }
+
+        return $notifications;
+    }
+
+    private function fetchThemeTemplate($template)
+    {
+        if (substr($template, -4) == '.tpl') {
+            $template = substr($template, 0, -4);
+        }
+        return $this->context->smarty->fetch($this->getTemplateFile($template));
     }
 }

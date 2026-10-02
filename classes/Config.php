@@ -750,6 +750,9 @@ class LiteSpeedCacheConfig
             'addWebserviceResources',
             'updateProduct', // from Product array('id_product' => )
             'actionUpdateQuantity', // from StockAvailable array('id_product' => $id_product,...)
+            // Dynamic product fragments: reuse ProductController AJAX refresh
+            // to render ESI content without duplicating PrestaShop core logic.
+            'actionAjaxDieProductControllerdisplayAjaxRefreshBefore',
         ];
 
         if (version_compare(_PS_VERSION_, '1.7.1.0', '>=')) {

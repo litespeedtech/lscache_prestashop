@@ -38,6 +38,11 @@ use PrestaShop\PrestaShop\Adapter\Product\ProductColorsRetriever;
  * Some hooks rely on data normally prepared by front controllers (e.g. ProductController),
  * but in ESI context those params can be incomplete. This class rebuilds/enriches $params
  * only for supported hooks, keeping the logic isolated and easy to extend.
+ *
+ * TODO: The `hookDisplayProductAdditionalInfo` resolver is kept as a fallback for themes that
+ * do not expose the `product-additional-info` dynamic fragment.
+ * See https://github.com/PrestaShop/hummingbird/pull/1101.
+ * It can be removed once that fragment is consistently available across supported themes.
  */
 class HookParamsResolver
 {

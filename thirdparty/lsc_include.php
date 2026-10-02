@@ -28,12 +28,18 @@ include __DIR__ . '/LscIntegration.php';
 // share for all PS versions
 include __DIR__ . '/shared/LscToken.php';
 include __DIR__ . '/shared/LscEnv.php';
+include __DIR__ . '/shared/LscDynamicFragment.php';
 
 // third-party theme integration
 if (version_compare(_PS_VERSION_, '1.7.0.0', '>=')) { // for PS 1.7 only
     // default built-in modules
     include __DIR__ . '/1.7/LscCustomerSignIn.php';
     include __DIR__ . '/1.7/LscShoppingcart.php';
+
+    // TODO: This integration is kept as a fallback for themes that do not expose
+    // the "product-additional-info" dynamic fragment yet.
+    // See https://github.com/PrestaShop/hummingbird/pull/1101.
+    // It could be removed once supported themes consistently provide that fragment.
     include __DIR__ . '/1.7/LscEmailAlerts.php';
 
     // integrated modules, feel free to comment out the modules you don't use
