@@ -149,6 +149,20 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
             $item->setFailed();
         } else {
+            // Fix: restore original page URI so {$urls.current_url} is correct
+            $originalUri = $item->getParam('ouri');
+            if ($originalUri) {
+                $protocol = (Configuration::get('PS_SSL_ENABLED') ? 'https://' : 'http://');
+                $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : Tools::getHttpHost(true);
+                $currentUrl = $protocol . $host . $originalUri;
+
+                $urls = $this->context->smarty->getTemplateVars('urls');
+                if ($urls) {
+                    $urls['current_url'] = $currentUrl;
+                    $this->context->smarty->assign('urls', $urls);
+                }
+            }
+
             // h can be empty
             $item->preRenderWidget();
             $item->setContent($module->renderWidget($item->getParam('h'), $params));
