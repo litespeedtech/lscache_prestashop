@@ -119,6 +119,14 @@ class LiteSpeedCacheHelper
         }
     }
 
+    /**
+     * SECURITY PATCH (Sickboards 2026-10-26): HMAC over the raw pd value, keyed with the shop secret.
+     */
+    public static function esiSignature($pd)
+    {
+        return Tools::substr(hash_hmac('sha256', 'lsc_esi|' . (string) $pd, _COOKIE_KEY_), 0, 32);
+    }
+
     public static function genEsiElements(LiteSpeedCacheEsiItem $item)
     {
         if (!isset(self::$internal['esi_base_url'])) {
@@ -132,7 +140,10 @@ class LiteSpeedCacheHelper
         //   cache-tag='E.footer' as-var='1' cache-control='no-vary,public'/>
 
         // id is base64_encode(json_encode($params))
-        $url = self::$internal['esi_base_url'] . '&pd=' . urlencode($item->getId());
+        // SECURITY PATCH (Sickboards 2026-10-26): sign the ESI parameters so the ESI controller only
+        // renders blocks the shop itself generated (no hand-crafted pd: module/hook/template/mp values).
+        $url = self::$internal['esi_base_url'] . '&pd=' . urlencode($item->getId())
+            . '&sig=' . self::esiSignature($item->getId());
 
         $tagInline = '';
         $tagInclude = '';

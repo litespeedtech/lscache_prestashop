@@ -133,11 +133,12 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             $smarty = $params['smarty'];
             $urls = $smarty->getTemplateVars('urls');
             $currentUrl = $urls['current_url'];
-            if (strpos($currentUrl, 'litespeedcache/esi') !== false) {
+            if (is_array($urls) && isset($urls['current_url'], $urls['base_url'])
+                && strpos($urls['current_url'], 'litespeedcache/esi') !== false) {
+                // ESI is an internal fragment, never a post-login destination.
                 $urls['current_url'] = $urls['base_url'];
-                $urls = $this->context->smarty->getTemplateVars('urls');
-                $urls['current_url'] = $urls['base_url'];
-            }            
+                $smarty->assign('urls', $urls);
+            }           
         }
 
         return $module;
@@ -161,11 +162,20 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
             $item->setFailed();
         } else {
+            // SECURITY PATCH (Sickboards 2026-10-23): only allow real .tpl template files,
+            // never Smarty resources like string:/eval:/file: (template injection -> RCE)
+            $tpl = (string) $item->getParam('t');
+            if (!preg_match('#^(module:)?[A-Za-z0-9_./-]+\.tpl$#', $tpl) || strpos($tpl, '..') !== false) {
+                $item->setFailed('invalid template');
+
+                return;
+            }
+
             $this->handleModuleVariables($params, $item);
 
             $this->context->smarty->assign($module->getWidgetVariables('', $params));
 
-            $item->setContent($this->context->smarty->fetch($item->getParam('t')));
+            $item->setContent($this->context->smarty->fetch($tpl));
         }
     }
 
@@ -182,6 +192,16 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             }
 
             $method = $item->getParam('mt');
+
+            // SECURITY PATCH (Sickboards 2026-10-23): only call hook methods allowed in the ESI config
+            $check = ['pt' => LiteSpeedCacheEsiItem::ESI_CALLHOOK, 'mt' => $method];
+            if (!preg_match('/^(hook[A-Za-z0-9_]+|renderWidget)$/i', $method)
+                || !method_exists($module, $method)
+                || !$item->getConf()->canInject($check)) {
+                $item->setFailed('invalid method');
+
+                return;
+            }
 
             $content = $module->$method($params);
 
