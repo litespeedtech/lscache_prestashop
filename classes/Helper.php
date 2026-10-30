@@ -124,7 +124,10 @@ class LiteSpeedCacheHelper
      */
     public static function esiSignature($pd)
     {
-        $key = _COOKIE_KEY_ . '|' . _PS_ROOT_DIR_ . '|' . Module::getModuleIdByName(LiteSpeedCache::MODULE_NAME);
+        $moduleInstance = Module::getInstanceByName(LiteSpeedCache::MODULE_NAME);
+        $moduleId = $moduleInstance->id;
+
+        $key = _COOKIE_KEY_ . '|' . $moduleId . '|' . _PS_ROOT_DIR_  ;
 
         return Tools::substr(hash_hmac('sha256', 'lsc_esi|' . (string) $pd, $key), 0, 32);
     }
