@@ -133,7 +133,6 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
             $smarty = $params['smarty'];
             $urls = $smarty->getTemplateVars('urls');
-            $currentUrl = $urls['current_url'];
             if (is_array($urls) && isset($urls['current_url'], $urls['base_url'])
                 && strpos($urls['current_url'], 'litespeedcache/esi') !== false) {
                 // ESI is an internal fragment, never a post-login destination.
@@ -197,15 +196,14 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
         // SECURITY PATCH (Sickboards 2026-10-23): only call hook methods allowed in the ESI config
         if ( !is_string($method) || !preg_match('/^(hook[A-Za-z0-9_]+|renderWidget)$/i', $method)
-            || !method_exists($module, $method)
-            || !$item->getConf()->canInject(@$param)) {
+            || !$item->getConf()->canInject($param)) {
             $item->setFailed('invalid method');
-
             return;
         }
 
         $params = [];
-        if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
+        if ((($module = $this->initWidget($item->getParam('m'), $params)) == null)  || !method_exists($module, $method)) {
+
             $item->setFailed();
         } else {
             $this->handleModuleVariables($params, $item);
