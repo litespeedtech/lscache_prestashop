@@ -120,11 +120,13 @@ class LiteSpeedCacheHelper
     }
 
     /**
-     * SECURITY PATCH (Sickboards 2026-10-26): HMAC over the raw pd value, keyed with the shop secret.
+     * Sign the raw pd value with the shop secret and installation-specific context.
      */
     public static function esiSignature($pd)
     {
-        return Tools::substr(hash_hmac('sha256', 'lsc_esi|' . (string) $pd, _COOKIE_KEY_), 0, 32);
+        $key = _COOKIE_KEY_ . '|' . _PS_ROOT_DIR_ . '|' . Module::getModuleIdByName(LiteSpeedCache::MODULE_NAME);
+
+        return Tools::substr(hash_hmac('sha256', 'lsc_esi|' . (string) $pd, $key), 0, 32);
     }
 
     public static function genEsiElements(LiteSpeedCacheEsiItem $item)
