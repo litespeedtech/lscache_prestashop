@@ -55,9 +55,10 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
         } else {
             $item = EsiItem::decodeEsiUrl();
 
-            if (is_string($item) && _LITESPEED_DEBUG_ >= LSLog::LEVEL_EXCEPTION) {
-                LSLog::log('Invalid ESI url ' . $item, LSLog::LEVEL_EXCEPTION);
-
+            if (is_string($item)) {
+                if (_LITESPEED_DEBUG_ >= LSLog::LEVEL_EXCEPTION) {
+                    LSLog::log('Invalid ESI url ' . $item, LSLog::LEVEL_EXCEPTION);
+                }
                 return;
             }
             $this->populateItemContent($item);
@@ -158,18 +159,28 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
     private function processWidgetBlock($item)
     {
+        // Revalidate saved/related items too. Never render a request-supplied
+        // resource or inject request parameters into the Smarty context.
+        $param = $item->getParam();
+        $tpl = $item->getParam('t');
+
+        if ( !is_string($tpl) || !$item->getConf()->canInject($param)) {
+            $item->setFailed('remote widget template not allowed');
+            return;
+        }
+
+        // SECURITY PATCH (Sickboards 2026-10-23): only allow real .tpl template files,
+        // never Smarty resources like string:/eval:/file: (template injection -> RCE)
+        if (!preg_match('#^module:[A-Za-z0-9_\-/.]+\.tpl$#', $tpl) || strpos($tpl, '..') !== false) {
+            $item->setFailed('invalid template');
+
+            return;
+        } 
+
         $params = [];
         if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
             $item->setFailed();
         } else {
-            // SECURITY PATCH (Sickboards 2026-10-23): only allow real .tpl template files,
-            // never Smarty resources like string:/eval:/file: (template injection -> RCE)
-            $tpl = (string) $item->getParam('t');
-            if (!preg_match('#^module:[A-Za-z0-9_\-/.]+\.tpl$#', $tpl) || strpos($tpl, '..') !== false) {
-                $item->setFailed('invalid template');
-
-                return;
-            }
 
             $this->handleModuleVariables($params, $item);
 
@@ -181,6 +192,18 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
     private function processCallHook($item)
     {
+        $param = $item->getParam();
+        $method = $item->getParam('mt');
+
+        // SECURITY PATCH (Sickboards 2026-10-23): only call hook methods allowed in the ESI config
+        if ( !is_string($method) || !preg_match('/^(hook[A-Za-z0-9_]+|renderWidget)$/i', $method)
+            || !method_exists($module, $method)
+            || !$item->getConf()->canInject(@$param)) {
+            $item->setFailed('invalid method');
+
+            return;
+        }
+
         $params = [];
         if (($module = $this->initWidget($item->getParam('m'), $params)) == null) {
             $item->setFailed();
@@ -189,18 +212,6 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
 
             if (method_exists($module, 'getWidgetVariables')) {
                 $this->context->smarty->assign($module->getWidgetVariables('', $params));
-            }
-
-            $method = $item->getParam('mt');
-
-            // SECURITY PATCH (Sickboards 2026-10-23): only call hook methods allowed in the ESI config
-            $check = ['pt' => LiteSpeedCacheEsiItem::ESI_CALLHOOK, 'mt' => $method];
-            if (!preg_match('/^(hook[A-Za-z0-9_]+|renderWidget)$/i', $method)
-                || !method_exists($module, $method)
-                || !$item->getConf()->canInject($check)) {
-                $item->setFailed('invalid method');
-
-                return;
             }
 
             $content = $module->$method($params);

@@ -276,7 +276,7 @@ class LiteSpeedCacheEsiItem
                 case self::ESI_SMARTYFIELD:
                     if (!isset($param['f']) || $param['f'] == '') {
                         $err = 'missing f';
-                    } elseif ($param['f'] == 'widget_block' && !isset($param['t'])) {
+                    } elseif ($param['f'] == 'widget_block' && (!isset($param['t'])  || !is_string($param['t']))) {
                         $err = 'missing t';
                     }
                     break;
