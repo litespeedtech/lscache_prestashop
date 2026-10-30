@@ -836,6 +836,28 @@ class LiteSpeedCache extends Module
     {
         Tools::redirectAdmin($this->context->link->getAdminLink('AdminLiteSpeedCacheConfig'));
     }
+ 
+    public function enable($force_all = false)
+    {
+        if (!parent::enable($force_all)) {
+            return false;
+        }
+
+        $this->cache->purgeByTags('*', false, 'from enable');
+
+        return true;
+    }
+
+    public function disable($force_all = false)
+    {
+        $this->cache->purgeByTags('*', false, 'from disable');
+
+        if (!parent::disable($force_all)) {
+            return false;
+        }
+
+        return true;
+    }   
 
     public function install()
     {
