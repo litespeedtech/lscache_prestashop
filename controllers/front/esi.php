@@ -165,7 +165,7 @@ class LiteSpeedCacheEsiModuleFrontController extends ModuleFrontController
             // SECURITY PATCH (Sickboards 2026-10-23): only allow real .tpl template files,
             // never Smarty resources like string:/eval:/file: (template injection -> RCE)
             $tpl = (string) $item->getParam('t');
-            if (!preg_match('#^(module:)?[A-Za-z0-9_./-]+\.tpl$#', $tpl) || strpos($tpl, '..') !== false) {
+            if (!preg_match('#^module:[A-Za-z0-9_\-/.]+\.tpl$#', $tpl) || strpos($tpl, '..') !== false) {
                 $item->setFailed('invalid template');
 
                 return;
