@@ -844,6 +844,7 @@ class LiteSpeedCache extends Module
         }
 
         $this->cache->purgeByTags('*', false, 'from enable');
+        $this->cache->setCacheControlHeader();            
 
         return true;
     }
@@ -851,6 +852,7 @@ class LiteSpeedCache extends Module
     public function disable($force_all = false)
     {
         $this->cache->purgeByTags('*', false, 'from disable');
+        $this->cache->setCacheControlHeader();            
 
         if (!parent::disable($force_all)) {
             return false;
@@ -875,6 +877,9 @@ class LiteSpeedCache extends Module
             Configuration::updateValue(LiteSpeedCacheConfig::ENTRY_MODULE, $mod);
             LiteSpeedCacheHelper::htAccessBackup('b4lsc');
 
+            $this->cache->purgeByTags('*', false, 'from install');
+            $this->cache->setCacheControlHeader();            
+
             return $this->installHooks();
         } else {
             return false;
@@ -883,9 +888,11 @@ class LiteSpeedCache extends Module
 
     public function uninstall()
     {
+        $this->cache->purgeByTags('*', false, 'from uninstall');
+        $this->cache->setCacheControlHeader();            
+
         $this->uninstallTab();
         LiteSpeedCacheHelper::htAccessUpdate(0, 0, 0);
-        $this->cache->purgeByTags('*', false, 'from uninstall');
         Configuration::deleteByName(LiteSpeedCacheConfig::ENTRY_ALL);
         Configuration::deleteByName(LiteSpeedCacheConfig::ENTRY_SHOP);
         Configuration::deleteByName(LiteSpeedCacheConfig::ENTRY_MODULE);
