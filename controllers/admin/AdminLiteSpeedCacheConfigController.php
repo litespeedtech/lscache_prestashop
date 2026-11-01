@@ -135,6 +135,7 @@ class AdminLiteSpeedCacheConfigController extends ModuleAdminController
                 $this->processPurgeShops();
             }
         }
+        ob_start('LiteSpeedCache::callbackOutputFilter');
 
         return parent::postProcess();
     }

@@ -126,6 +126,7 @@ class AdminLiteSpeedCacheManageController extends ModuleAdminController
         } elseif (Tools::isSubmit('submitPurgeId')) {
             $this->processPurgeIds();
         }
+        ob_start('LiteSpeedCache::callbackOutputFilter');
 
         return parent::postProcess();
     }
