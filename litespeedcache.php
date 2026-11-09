@@ -447,6 +447,17 @@ class LiteSpeedCache extends Module
             return $reason;
         }
 
+        // PrestaShop 8 (Controller::isAjax) answers with JSON instead of the page as soon as
+        // the request carries Accept: application/json (or ajax=1). LiteSpeed keys its cache on
+        // the URL only, so such a JSON response must never be stored for the page URL, otherwise
+        // every visitor of that URL receives raw JSON until the entry is purged.
+        if (self::isAjaxRequest()) {
+            $reason = 'ajax request (ajax param, X-Requested-With or Accept: application/json)';
+            $this->setNotCacheable($reason);
+
+            return $reason;
+        }
+
         if (isset($_SERVER['LSCACHE_VARY_VALUE'])
             && ($_SERVER['LSCACHE_VARY_VALUE'] == 'guest' || $_SERVER['LSCACHE_VARY_VALUE'] == 'guestm')) {
             self::$ccflag |= self::CCBM_CACHEABLE | self::CCBM_GUEST; // no ESI allowed
@@ -811,6 +822,24 @@ class LiteSpeedCache extends Module
         }
 
         return $mp;
+    }
+
+    // mirrors Controller::isAjax() (PS 8) plus the classic X-Requested-With header
+    public static function isAjaxRequest()
+    {
+        if (Tools::getValue('ajax') || Tools::isSubmit('ajax')) {
+            return true;
+        }
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+            && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            return true;
+        }
+        if (!empty($_SERVER['HTTP_ACCEPT'])
+            && preg_match('#\bapplication/json\b#', $_SERVER['HTTP_ACCEPT'])) {
+            return true;
+        }
+
+        return false;
     }
 
     public static function forceNotCacheable($reason)
